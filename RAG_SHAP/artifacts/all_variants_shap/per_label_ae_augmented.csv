@@ -1,0 +1,16 @@
+label,n_build,n_eval,mean_proba,top1_acc,top3_acc,top5_acc
+Benign,14000,6000,0.014,0.524,0.952,0.954
+Bot,14000,6000,0.99,0.497,0.993,0.999
+Brute Force -Web,428,183,0.575,0.191,0.656,0.678
+Brute Force -XSS,161,69,0.731,0.014,0.957,0.971
+DDOS attack-HOIC,14000,6000,0.989,0.763,1.0,1.0
+DDOS attack-LOIC-UDP,1211,519,0.964,1.0,1.0,1.0
+DDoS attacks-LOIC-HTTP,14000,6000,0.99,0.494,0.992,1.0
+DoS attacks-GoldenEye,14000,6000,0.997,0.767,0.845,1.0
+DoS attacks-Hulk,14000,6000,0.996,0.857,0.969,0.974
+DoS attacks-SlowHTTPTest,14000,6000,0.999,0.017,1.0,1.0
+DoS attacks-Slowloris,7693,3297,0.985,0.688,0.905,0.905
+FTP-BruteForce,14000,6000,0.999,0.995,1.0,1.0
+Infilteration,14000,6000,0.018,0.554,0.95,0.962
+SQL Injection,61,26,0.594,0.577,0.769,1.0
+SSH-Bruteforce,14000,6000,0.998,0.417,0.496,1.0

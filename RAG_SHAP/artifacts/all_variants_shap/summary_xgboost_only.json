@@ -1,0 +1,11 @@
+{
+  "variant": "xgboost_only",
+  "n_features": 78,
+  "cap": 20000,
+  "seed": 42,
+  "build_frac": 0.7,
+  "n_eval": 64094,
+  "top1_acc": 0.6937310824726184,
+  "top3_acc": 0.9528973070802259,
+  "top5_acc": 0.9841794863793802
+}

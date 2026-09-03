@@ -1,0 +1,7 @@
+# Raw/split CSV data files exceed GitHub's 100MB per-file limit and are not
+# needed for code review — only the code + small model checkpoints are kept.
+UTS_Layer1/binary_split_dataset_z_Infilteration/*.csv
+
+# Python cache
+__pycache__/
+*.pyc

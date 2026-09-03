@@ -1,0 +1,11 @@
+{
+  "variant": "ae_augmented",
+  "n_features": 95,
+  "cap": 20000,
+  "seed": 42,
+  "build_frac": 0.7,
+  "n_eval": 64094,
+  "top1_acc": 0.5952663275813649,
+  "top3_acc": 0.918837956751022,
+  "top5_acc": 0.9837582300995413
+}
