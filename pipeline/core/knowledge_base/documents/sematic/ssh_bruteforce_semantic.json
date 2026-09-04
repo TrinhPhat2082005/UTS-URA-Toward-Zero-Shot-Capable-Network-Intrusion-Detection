@@ -1,0 +1,17 @@
+{
+  "id": "ssh_bruteforce",
+  "attack_type": "SSH Brute Force - Password Guessing",
+  "mitre_id": "T1110.001",
+  "rag_semantic_descriptions": [
+    "An automated tool is rapidly and repeatedly attempting to log in to the SSH service on port 22 by systematically guessing passwords from a dictionary or credential list.",
+    "The traffic shows thousands of short-lived TCP connections to port 22, each following the same pattern: cryptographic handshake, authentication attempt, server rejection, immediate disconnect.",
+    "Despite the encrypted SSH payload making content inspection impossible, the attack is identifiable by the rapid-fire connection establishment and teardown pattern targeting port 22.",
+    "Each individual network flow has an extremely short duration because the SSH server drops the connection the moment authentication fails, and the automated tool instantly starts a new attempt.",
+    "The packet size sequencing is highly uniform across thousands of flows — each follows the same predictable structure of key exchange, authentication guess, rejection response, and teardown.",
+    "The inter-arrival time between connection attempts is minimal, reflecting machine-speed automated scripting rather than a human administrator typing passwords manually.",
+    "The forward packet rate is very high as the tool aggressively initiates new SSH connections, while the server responses are relatively low-volume since they only send rejection messages.",
+    "Advanced attackers may distribute the brute force across multiple source IPs or introduce deliberate timing delays to evade threshold-based protections like fail2ban.",
+    "This could be confused with legitimate automation like Ansible, Puppet, or backup scripts using expired SSH keys, which also generate bursts of failed login attempts.",
+    "The attack targets the most common remote administration protocol and relies on weak or default passwords, making it one of the most frequently observed credential attacks on the internet."
+  ]
+}

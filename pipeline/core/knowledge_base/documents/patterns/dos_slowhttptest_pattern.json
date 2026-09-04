@@ -1,0 +1,116 @@
+{
+    "id": "dos_slowhttptest",
+    "attack_technique": "Endpoint Denial of Service: Service Exhaustion Flood",
+    "mitre_id": "T1499.002",
+    "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
+    "description": "Adversaries may execute 'Low-and-Slow' Application Layer DoS attacks to exhaust server resources. Tools like Slowhttptest simulate attacks such as Slowloris or Slow POST by opening legitimate HTTP connections and deliberately keeping them alive for as long as possible by sending fragmented, incomplete HTTP headers or extremely slow POST message bodies, ultimately exhausting the server's concurrent connection pool.",
+    "patterns": [
+        {
+            "category": "Traffic Timing and Duration (The 'Slow' Anomaly)",
+            "description": "Extreme anomalies in how long connections are held open and the pacing of the packets within those connections.",
+            "features": [
+                {
+                    "name": "Extreme Connection Longevity",
+                    "description": "The overall lifespan of a single network flow (High Flow Duration) is artificially extended for minutes or even hours, as the attacker actively prevents the connection from timing out.",
+                    "rag_keywords": [
+                        "High Flow Duration",
+                        "Connection holding",
+                        "Long-lived session",
+                        "Timeout evasion"
+                    ]
+                },
+                {
+                    "name": "Prolonged Inter-Arrival Times",
+                    "description": "There are massive, deliberate delays between the packets sent by the client (High Flow IAT Mean and High Fwd IAT Max). The attacker waits until the absolute last millisecond before the server's timeout threshold to send the next piece of data.",
+                    "rag_keywords": [
+                        "High Flow IAT Mean",
+                        "High Fwd IAT Max",
+                        "Delayed packets",
+                        "Drip-feeding data",
+                        "Slow pacing"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Traffic Volume and Rate (The 'Low' Anomaly)",
+            "description": "Anomalies indicating a deliberate lack of bandwidth utilization to fly under the radar of volumetric DDoS protection.",
+            "features": [
+                {
+                    "name": "Minimal Packet Transmission Rate",
+                    "description": "Unlike volumetric floods, the number of packets sent per second (Low Flow Pkts/s) is incredibly low. The attack relies on holding connections, not flooding the network.",
+                    "rag_keywords": [
+                        "Low Flow Pkts/s",
+                        "Low bandwidth",
+                        "Non-volumetric",
+                        "Stealth rate"
+                    ]
+                },
+                {
+                    "name": "Micro-Packet Fragmentation",
+                    "description": "The average size of the packets being sent (Low Packet Length Mean) is tiny. The attacker may send HTTP headers or POST bodies just one byte at a time to artificially prolong the transmission.",
+                    "rag_keywords": [
+                        "Low Packet Length Mean",
+                        "Micro-packets",
+                        "1-byte payload",
+                        "Fragmented HTTP"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Application Layer (HTTP) Indicators",
+            "description": "Specific behaviors within the HTTP protocol used to hold the stateful connections.",
+            "features": [
+                {
+                    "name": "Incomplete HTTP Headers (Slowloris)",
+                    "description": "The client continuously sends partial HTTP headers but intentionally never sends the final carriage return/line feed (CRLF) sequence that tells the server the request is complete.",
+                    "rag_keywords": [
+                        "Incomplete headers",
+                        "Missing CRLF",
+                        "Slowloris",
+                        "Pending request"
+                    ]
+                },
+                {
+                    "name": "Slow HTTP POST (R-U-Dead-Yet)",
+                    "description": "The client declares a large 'Content-Length' in the HTTP header, but then transmits the actual POST body at an excruciatingly slow rate (e.g., 1 byte every 10 seconds).",
+                    "rag_keywords": [
+                        "Slow POST",
+                        "RUDY",
+                        "R-U-Dead-Yet",
+                        "Content-Length spoofing",
+                        "Slow body transmission"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Evasion and False Positives",
+            "description": "Contextual indicators for distinguishing the attack from poor network conditions.",
+            "features": [
+                {
+                    "name": "Volumetric Detection Evasion",
+                    "description": "Because the attack uses perfectly valid TCP handshakes and requires almost zero bandwidth, it effortlessly bypasses traditional Layer 3/Layer 4 DDoS mitigation hardware and rate-limiters.",
+                    "rag_keywords": [
+                        "Bandwidth evasion",
+                        "Layer 7 DoS",
+                        "Valid TCP handshake",
+                        "DDoS bypass"
+                    ]
+                },
+                {
+                    "name": "High-Latency Client Resemblance (False Positive Filtering)",
+                    "description": "Legitimate mobile users on extremely poor cellular networks (e.g., edge-of-cell coverage) or clients connecting through high-latency satellite links/proxies can occasionally mimic these slow HTTP behaviors.",
+                    "rag_keywords": [
+                        "High latency",
+                        "Poor signal",
+                        "Mobile network",
+                        "False positive indicator",
+                        "Slow client"
+                    ]
+                }
+            ]
+        }
+    ]
+}

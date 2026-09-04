@@ -1,0 +1,32 @@
+{
+  "id": "dos_slowhttptest",
+  "title": "Endpoint Denial of Service: Service Exhaustion Flood (Slowhttptest)",
+  "category": "Impact",
+  "mitre_id": "T1499.002",
+  "mitre_tactic": "Impact",
+  "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
+  "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "description": "Slowhttptest is a highly configurable tool that simulates some Application Layer Denial of Service attacks. It implements most common low-bandwidth Application Layer DoS attacks.",
+  "network_indicators": {
+    "key_features": [
+      "High Flow Duration",
+      "Low Flow Pkts/s",
+      "High Flow IAT Mean",
+      "Low Packet Length"
+    ],
+    "traffic_pattern": "In the CIC-IDS2018 dataset, all flows labeled DoS attacks-SlowHTTPTest target Dst Port 21 (not the tool's documented HTTP ports 80/443), making this label's traffic pattern near-indistinguishable from FTP-BruteForce at the flow-feature level (confirmed against the original CSE-CIC-IDS2018 source: 139,890/139,890 SlowHTTPTest-labeled flows on port 21)."
+  },
+  "mitigation": [
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Limit connection duration and request header/body timeout."
+    },
+    {
+      "id": "M1050",
+      "name": "Exploit Protection",
+      "action": "Implement minimum data rate requirements for incoming connections."
+    }
+  ],
+  "false_positive_hints": "Mobile users on poor signal or proxies with high latency can occasionally mimic slow HTTP behaviors."
+}

@@ -1,0 +1,31 @@
+{
+  "id": "ssh_bruteforce",
+  "title": "SSH Brute Force Attack",
+  "category": "Brute Force",
+  "mitre_id": "T1110.001",
+  "mitre_tactic": "Credential Access",
+  "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "description": "Adversaries may attempt to gain access to an SSH server by systematically trying many passwords or passphrases.",
+  "network_indicators": {
+    "key_features": [
+      "High Flow Pkts/s",
+      "High Fwd Pkts/s",
+      "Low Flow IAT Mean",
+      "Dst Port 22"
+    ],
+    "traffic_pattern": "Rapid sequence of connection attempts to port 22 with characteristic packet sizes for SSH authentication."
+  },
+  "mitigation": [
+    {
+      "id": "M1036",
+      "name": "Account Use Policies",
+      "action": "Implement fail2ban or similar tools to block IPs after multiple failed SSH logins."
+    },
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Disable password authentication and use SSH keys instead."
+    }
+  ],
+  "false_positive_hints": "Automated administration scripts with expired credentials can trigger multiple failed login attempts."
+}

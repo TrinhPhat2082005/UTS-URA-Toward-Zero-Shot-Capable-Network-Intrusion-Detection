@@ -1,0 +1,17 @@
+{
+  "id": "ftp_bruteforce",
+  "attack_type": "FTP Brute Force - Password Guessing",
+  "mitre_id": "T1110.001",
+  "rag_semantic_descriptions": [
+    "An automated tool is rapidly attempting to guess FTP credentials by sending repetitive USER and PASS commands to the FTP service on port 21, receiving rejection codes after each failed attempt.",
+    "The traffic consists almost entirely of short text-based authentication commands followed by FTP response code 530 (Not logged in), with no actual file transfer operations like LIST, RETR, or STOR.",
+    "Each connection to port 21 follows a predictable cycle: login attempt, server rejection, connection teardown, and immediate reconnection — all happening at machine speed.",
+    "The packet sizes are distinctly small and uniform because the payloads only contain short username and password strings, unlike normal FTP sessions that would include file transfer data.",
+    "Unlike DoS attacks, this brute force shows a relatively balanced ratio of forward to backward packets because the attacker completes the TCP handshake and receives a server response for every guess.",
+    "Each individual FTP session has an extremely short duration because the server immediately drops the connection after the failed authentication, and the script instantly starts a new one.",
+    "The inter-arrival time between connection attempts is minimal, reflecting automated scripting that fires the next credential pair the instant the previous attempt is rejected.",
+    "Deep packet inspection may reveal usernames being tested alphabetically or passwords being pulled sequentially from common dictionary wordlists.",
+    "This could be triggered by a broken automated backup script or deployment tool using expired FTP credentials, creating a similar pattern of rapid failed logins.",
+    "The attack targets FTP's cleartext authentication mechanism, making it one of the easiest brute force attacks to detect via payload inspection but also one of the most common."
+  ]
+}

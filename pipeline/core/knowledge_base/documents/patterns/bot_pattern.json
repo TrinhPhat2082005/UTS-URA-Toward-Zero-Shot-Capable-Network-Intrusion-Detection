@@ -1,0 +1,106 @@
+{
+    "id": "bot",
+    "attack_technique": "Command and Control: Application Layer Protocol (Web Protocols)",
+    "mitre_id": "T1071.001",
+    "mitre_url": "https://attack.mitre.org/techniques/T1071/001/",
+    "description": "Adversaries may communicate using application layer protocols associated with web traffic (HTTP/HTTPS) to avoid detection. Botnets use periodic beaconing to maintain command-and-control channels, often disguising traffic as normal web browsing.",
+    "patterns": [
+        {
+            "category": "Beaconing and Periodicity",
+            "description": "Regular, automated communication patterns that reveal C2 activity.",
+            "features": [
+                {
+                    "name": "Periodic Inter-Arrival Time",
+                    "description": "The standard deviation of flow inter-arrival times (Flow IAT Std) is unusually low or shows a repeating pattern, indicating automated, scheduled communication rather than organic human browsing.",
+                    "rag_keywords": [
+                        "Periodic Flow IAT",
+                        "Low IAT Std",
+                        "Beaconing interval",
+                        "Scheduled communication",
+                        "C2 heartbeat"
+                    ]
+                },
+                {
+                    "name": "Long Flow Duration with Low Activity",
+                    "description": "Flows have abnormally high duration (Flow Duration) with relatively few packets exchanged, characteristic of keep-alive connections to C2 servers waiting for commands.",
+                    "rag_keywords": [
+                        "High Flow Duration",
+                        "Keep-alive connection",
+                        "Idle C2 channel",
+                        "Low packet density"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Packet Size and Structure",
+            "description": "Characteristics of the data payload exchanged in botnet communications.",
+            "features": [
+                {
+                    "name": "Small Uniform Packet Sizes",
+                    "description": "Packets exchanged are consistently small and uniform in size, typical of short command-and-control messages (check-in, heartbeat, status updates) rather than diverse web content downloads.",
+                    "rag_keywords": [
+                        "Small Packet Sizes",
+                        "Low Packet Length Variance",
+                        "Uniform payload",
+                        "C2 messages"
+                    ]
+                },
+                {
+                    "name": "Asymmetric Traffic Pattern",
+                    "description": "Very few backward packets (Total Bwd Pkts) compared to forward packets, as the infected host sends beacons out but receives minimal commands back during idle periods.",
+                    "rag_keywords": [
+                        "Low Total Bwd Pkts",
+                        "Asymmetric traffic",
+                        "Outbound-heavy flow",
+                        "Beacon response ratio"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Protocol and Port Usage",
+            "description": "How botnets abuse legitimate protocols and ports.",
+            "features": [
+                {
+                    "name": "Web Port Abuse",
+                    "description": "C2 traffic flows over standard web ports (80, 443, 8080) to blend in with legitimate HTTP/HTTPS traffic and bypass firewall rules.",
+                    "rag_keywords": [
+                        "Port 80",
+                        "Port 443",
+                        "Port 8080",
+                        "Protocol abuse",
+                        "Firewall evasion"
+                    ]
+                },
+                {
+                    "name": "DNS-based C2 Tunneling",
+                    "description": "Some botnets use DNS queries (port 53) as a covert channel for command-and-control, encoding data within DNS request and response fields.",
+                    "rag_keywords": [
+                        "DNS tunneling",
+                        "Port 53",
+                        "Covert channel",
+                        "Data exfiltration"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Evasion and False Positives",
+            "description": "How to distinguish botnet C2 from legitimate periodic traffic.",
+            "features": [
+                {
+                    "name": "Legitimate Background Services Resemblance",
+                    "description": "Background update services, telemetry, cloud sync applications, and software update checks can produce similar periodic patterns. Distinguishing requires analyzing destination reputation and payload entropy.",
+                    "rag_keywords": [
+                        "Background updates",
+                        "Telemetry traffic",
+                        "Cloud sync",
+                        "False positive indicator",
+                        "Legitimate periodic"
+                    ]
+                }
+            ]
+        }
+    ]
+}

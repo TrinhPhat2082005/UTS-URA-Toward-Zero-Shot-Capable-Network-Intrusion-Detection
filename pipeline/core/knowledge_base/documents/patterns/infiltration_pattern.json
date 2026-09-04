@@ -1,0 +1,120 @@
+{
+    "id": "infiltration",
+    "attack_technique": "Exploit Public-Facing Application",
+    "mitre_id": "T1190",
+    "mitre_url": "https://attack.mitre.org/techniques/T1190/",
+    "description": "Adversaries may attempt to exploit a software vulnerability (such as buffer overflows, path traversal, or Remote Code Execution) in an internet-facing service to gain an initial foothold. This profile captures the network signature of the exploit delivery phase, often followed immediately by the establishment of a persistent, interactive reverse-shell or secondary payload download.",
+    "patterns": [
+        {
+            "category": "Payload Delivery and Packet Size",
+            "description": "Anomalies related to the physical size of the packets used to deliver the exploit code.",
+            "features": [
+                {
+                    "name": "Anomalous Maximum Packet Length",
+                    "description": "The attack often involves sending a highly specialized, oversized packet (High Max Packet Length) to trigger a buffer overflow or deliver a compiled exploit payload in a single, massive request.",
+                    "rag_keywords": [
+                        "Max Packet Length",
+                        "Buffer overflow",
+                        "Oversized packet",
+                        "Exploit payload",
+                        "RCE delivery",
+                        "Variable Packet Length"
+                    ]
+                },
+                {
+                    "name": "Low Forward Packet Volume",
+                    "description": "Unlike volumetric attacks, successful infiltration often requires very few packets. A precise exploit may only need a handful of forward packets (Low Total Fwd Pkts) to compromise the target.",
+                    "rag_keywords": [
+                        "Low Total Fwd Pkts",
+                        "Single-shot exploit",
+                        "Precision attack",
+                        "Minimal packet count"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Session Timing and Persistence",
+            "description": "Metrics highlighting how the connection is maintained after the initial exploit succeeds.",
+            "features": [
+                {
+                    "name": "Extended Flow Longevity",
+                    "description": "Once the exploit succeeds, the connection often transitions into an interactive reverse-shell or command session, keeping the network flow open indefinitely (High Flow Duration).",
+                    "rag_keywords": [
+                        "High Flow Duration",
+                        "Persistent access",
+                        "Reverse shell",
+                        "Interactive session",
+                        "Prolonged connection"
+                    ]
+                },
+                {
+                    "name": "Erratic Inter-Arrival Times",
+                    "description": "A high variance in the time between forward packets (High Fwd IAT Std) strongly suggests an interactive session where a human attacker is typing commands, causing irregular pauses, rather than a steady automated script.",
+                    "rag_keywords": [
+                        "Fwd IAT Std",
+                        "Erratic timing",
+                        "Human typing",
+                        "Interactive shell",
+                        "Irregular pauses"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Traffic Volume and Service Behavior",
+            "description": "Characteristics of the flow rate and the targeted services.",
+            "features": [
+                {
+                    "name": "Stealthy Packet Transmission Rate",
+                    "description": "The overall rate of packets per second (Low Flow Pkts/s) remains very low to evade rate-limiting and threshold-based IDS alerts.",
+                    "rag_keywords": [
+                        "Low Flow Pkts/s",
+                        "Stealthy transmission",
+                        "Low and slow evasion",
+                        "Rate-limit bypass"
+                    ]
+                },
+                {
+                    "name": "Atypical Service Communication",
+                    "description": "The exploit may target any vulnerable service (represented by a randomized or unspecified typical port), or the resulting bind-shell may open on a non-standard, high-numbered ephemeral port to await the attacker's connection.",
+                    "rag_keywords": [
+                        "Atypical service",
+                        "Non-standard port",
+                        "Bind shell",
+                        "Ephemeral port",
+                        "Service exploitation"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Context and False Positives",
+            "description": "Indicators for distinguishing malicious infiltration from benign administrative activity.",
+            "features": [
+                {
+                    "name": "Interactive Admin Resemblance (False Positive Filtering)",
+                    "description": "Legitimate administrative tools (like SSH, RDP, or PowerShell Remoting) naturally exhibit high flow durations, erratic typing timings, and variable packet lengths, potentially mimicking a post-infiltration reverse shell.",
+                    "rag_keywords": [
+                        "Administrative activity",
+                        "SSH",
+                        "RDP",
+                        "Remote administration",
+                        "Legitimate interactive session",
+                        "False positive indicator"
+                    ]
+                },
+                {
+                    "name": "Software Update Signatures",
+                    "description": "Specialized software updates pulling large initial payloads over atypical ports can occasionally trigger similar maximum packet length and duration alerts.",
+                    "rag_keywords": [
+                        "Software update",
+                        "Large patch download",
+                        "Benign payload",
+                        "False positive indicator"
+                    ]
+                }
+            ]
+        }
+    ]
+}

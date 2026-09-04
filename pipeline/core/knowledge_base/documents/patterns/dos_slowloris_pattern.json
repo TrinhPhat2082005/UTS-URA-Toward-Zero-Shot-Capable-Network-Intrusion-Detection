@@ -1,0 +1,116 @@
+{
+    "id": "dos_slowloris",
+    "attack_technique": "Endpoint Denial of Service: Service Exhaustion Flood",
+    "mitre_id": "T1499.002",
+    "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
+    "description": "Adversaries may cause a DoS by exhausting resources on an endpoint service. Slowloris is a specific 'low-and-slow' tool that achieves this by opening multiple connections to the targeted web server and keeping them open as long as possible. It does this by continuously sending partial HTTP requests, holding server threads open indefinitely and preventing legitimate users from connecting.",
+    "patterns": [
+        {
+            "category": "Application Layer (HTTP) Protocol Manipulation",
+            "description": "The defining signature of Slowloris involving the deliberate manipulation of HTTP header completion.",
+            "features": [
+                {
+                    "name": "Incomplete HTTP Headers (Missing CRLF)",
+                    "description": "The client sends a valid HTTP request line and headers but intentionally withholds the final blank line (Carriage Return Line Feed - CRLF / '\\r\\n\\r\\n') required to terminate the header block. The server waits indefinitely for the request to finish.",
+                    "rag_keywords": [
+                        "Incomplete headers",
+                        "Missing CRLF",
+                        "Partial HTTP request",
+                        "Header withholding",
+                        "Unfinished request"
+                    ]
+                },
+                {
+                    "name": "Bogus Header Drip-Feeding",
+                    "description": "To prevent the server from timing out the idle connection, the client periodically sends fake, randomized, or redundant HTTP headers (e.g., 'X-a: b') at extremely slow intervals.",
+                    "rag_keywords": [
+                        "Bogus headers",
+                        "Drip-feeding",
+                        "Keep-alive injection",
+                        "Fake HTTP headers"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Traffic Timing and Duration",
+            "description": "Anomalies in how long connections are held open and the pacing of the packets.",
+            "features": [
+                {
+                    "name": "Extreme Connection Longevity",
+                    "description": "The overall lifespan of a single network flow (High Flow Duration) is artificially extended for minutes or hours, successfully bypassing short-term session timeouts.",
+                    "rag_keywords": [
+                        "High Flow Duration",
+                        "Long-lived session",
+                        "Persistent connection",
+                        "Timeout evasion"
+                    ]
+                },
+                {
+                    "name": "Prolonged Inter-Arrival Times",
+                    "description": "Massive deliberate delays exist between the packets sent by the client (High Flow IAT Mean and High Fwd IAT Max). The attacker waits until just before the server's timeout threshold to send the next partial header.",
+                    "rag_keywords": [
+                        "High Flow IAT Mean",
+                        "High Fwd IAT Max",
+                        "Delayed packets",
+                        "Slow pacing"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Traffic Volume and Resource Impact",
+            "description": "Anomalies indicating a deliberate lack of bandwidth utilization to exhaust server threads instead of network pipes.",
+            "features": [
+                {
+                    "name": "Thread Starvation (Non-Volumetric)",
+                    "description": "The attack uses minimal network bandwidth (Low Flow Pkts/s) but aims to tie up all available worker threads or processes on the target server (famously effective against thread-based servers like older Apache versions).",
+                    "rag_keywords": [
+                        "Low Flow Pkts/s",
+                        "Thread starvation",
+                        "Worker exhaustion",
+                        "Connection pool limit",
+                        "Non-volumetric"
+                    ]
+                },
+                {
+                    "name": "Micro-Packet Sizing",
+                    "description": "The average size of the packets being sent (Low Packet Length Mean) is tiny, as the attacker is only sending a few bytes of text (a single header line) every few seconds or minutes.",
+                    "rag_keywords": [
+                        "Low Packet Length Mean",
+                        "Micro-packets",
+                        "Tiny payload",
+                        "Fragmented text"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Evasion and False Positives",
+            "description": "Contextual indicators for distinguishing the attack from poor network conditions.",
+            "features": [
+                {
+                    "name": "DDoS Appliance Evasion",
+                    "description": "Because the TCP three-way handshake is completed legitimately and the bandwidth footprint is negligible, volumetric DDoS protection appliances often fail to detect Slowloris.",
+                    "rag_keywords": [
+                        "Bandwidth evasion",
+                        "Valid TCP handshake",
+                        "DDoS mitigation bypass",
+                        "Layer 7 DoS"
+                    ]
+                },
+                {
+                    "name": "Congested Network Resemblance (False Positive Filtering)",
+                    "description": "Clients on extremely slow, congested networks, or devices with severe packet loss, may naturally exhibit behaviors similar to low-and-slow partial request attacks.",
+                    "rag_keywords": [
+                        "Congested network",
+                        "Packet loss",
+                        "High latency",
+                        "Slow client",
+                        "False positive indicator"
+                    ]
+                }
+            ]
+        }
+    ]
+}

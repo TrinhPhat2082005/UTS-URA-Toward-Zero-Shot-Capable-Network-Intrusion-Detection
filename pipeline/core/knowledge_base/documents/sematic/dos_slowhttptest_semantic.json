@@ -1,0 +1,17 @@
+{
+  "id": "dos_slowhttptest",
+  "attack_type": "DoS - SlowHTTPTest (Low-and-Slow)",
+  "mitre_id": "T1499.002",
+  "rag_semantic_descriptions": [
+    "A low-and-slow denial of service attack is holding web server connections open for extremely long durations by sending incomplete HTTP headers or extremely slow POST bodies, one byte at a time.",
+    "The attacker is deliberately drip-feeding data to the server just fast enough to avoid timeout disconnection, keeping each connection alive for minutes or hours while consuming a server thread.",
+    "Unlike volumetric floods, this attack uses almost zero bandwidth — it ties up server resources by occupying connection slots with artificially prolonged, never-completing HTTP requests.",
+    "The flow data shows extreme connection longevity with massive deliberate delays between packets, where the client waits until the last millisecond before the server's timeout to send the next byte.",
+    "This Slowloris-style attack opens legitimate TCP connections but never finishes sending the HTTP request, keeping the server in a perpetual waiting state for the request to complete.",
+    "The average packet sizes are tiny — often just a single byte — because the attacker is fragmenting HTTP headers or POST bodies into the smallest possible pieces to maximize connection duration.",
+    "Because the attack uses perfectly valid TCP handshakes and minimal bandwidth, it completely bypasses traditional Layer 3/Layer 4 DDoS mitigation hardware and rate-limiting defenses.",
+    "The server's concurrent connection pool is slowly being filled by these lingering half-complete requests, eventually leaving no room for legitimate users to establish new connections.",
+    "A Slow POST (R-U-Dead-Yet) variant declares a large Content-Length in the HTTP header but then transmits the actual body at an excruciatingly slow rate, forcing the server to wait.",
+    "This could be confused with a legitimate mobile user on a very poor cellular connection, but the pattern of multiple simultaneous slow connections from the same source reveals its malicious intent."
+  ]
+}

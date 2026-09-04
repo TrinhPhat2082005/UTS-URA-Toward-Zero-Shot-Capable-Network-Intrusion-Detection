@@ -1,0 +1,115 @@
+{
+    "id": "ddos_udp_flood",
+    "attack_technique": "Network Denial of Service: Direct Network Flood",
+    "mitre_id": "T1498.001",
+    "mitre_url": "https://attack.mitre.org/techniques/T1498/001/",
+    "description": "Adversaries may attempt to cause a denial of service (DoS) by degrading or blocking the availability of services to users by targeting network and system resources with a high volume of direct network traffic, specifically utilizing the User Datagram Protocol (UDP) to overwhelm the target's processing capacity.",
+    "patterns": [
+        {
+            "category": "Traffic Volume and Rate",
+            "description": "Anomalies related to the sheer volume and speed of incoming data packets.",
+            "features": [
+                {
+                    "name": "Extreme Packet Rate",
+                    "description": "A massive spike in the number of packets transmitted per second (Flow Pkts/s and Bwd Pkts/s), designed to exhaust the network bandwidth or processing resources of the target.",
+                    "rag_keywords": [
+                        "High Flow Pkts/s",
+                        "High Bwd Pkts/s",
+                        "Packet flood",
+                        "High volume traffic",
+                        "Resource exhaustion"
+                    ]
+                },
+                {
+                    "name": "Asymmetric Packet Flow",
+                    "description": "A highly unbalanced flow where the number of incoming packets (Total Bwd Pkts) overwhelmingly exceeds any outgoing responses from the target, indicating a one-way flood.",
+                    "rag_keywords": [
+                        "Total Bwd Pkts",
+                        "Asymmetric traffic",
+                        "Unidirectional flow",
+                        "Incoming flood"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Traffic Frequency and Timing",
+            "description": "Network traffic patterns related to connection intervals and flow duration.",
+            "features": [
+                {
+                    "name": "Microsecond Inter-Arrival Time",
+                    "description": "The mean time between successive packets (Flow IAT Mean) drops to near-zero. Packets arrive back-to-back without the natural pauses seen in legitimate user traffic.",
+                    "rag_keywords": [
+                        "Low Flow IAT Mean",
+                        "Short interval",
+                        "Back-to-back packets",
+                        "Automated generation"
+                    ]
+                },
+                {
+                    "name": "Short-Lived Aggressive Flows",
+                    "description": "The overall duration of individual network flows (Flow Duration) is often exceptionally short because the attacker sends a rapid burst of packets without waiting for or establishing a stateful connection.",
+                    "rag_keywords": [
+                        "Low Flow Duration",
+                        "Short flow",
+                        "Connectionless burst",
+                        "Stateless attack"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Protocol and Port Characteristics",
+            "description": "Anomalies found within the transport layer protocols and port selection.",
+            "features": [
+                {
+                    "name": "Connectionless UDP Dominance",
+                    "description": "A sudden, overwhelming dominance of UDP protocol traffic in the network, taking advantage of its connectionless nature to send data without a three-way handshake.",
+                    "rag_keywords": [
+                        "UDP Protocol",
+                        "Connectionless",
+                        "Transport layer anomaly",
+                        "Datagram flood"
+                    ]
+                },
+                {
+                    "name": "Randomized/Exhaustive Port Targeting",
+                    "description": "Traffic is directed at a wide, random array of destination ports (often represented as Port 0 in aggregations) to force the target server to check for listening applications and generate ICMP Destination Unreachable responses.",
+                    "rag_keywords": [
+                        "Random ports",
+                        "Port exhaustion",
+                        "ICMP Unreachable",
+                        "Unused ports"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Evasion and False Positives",
+            "description": "Contextual indicators to separate malicious floods from legitimate high-volume traffic.",
+            "features": [
+                {
+                    "name": "Source IP Spoofing",
+                    "description": "The flood often originates from highly randomized, spoofed source IP addresses to mask the attacker's identity and prevent simple IP-based blocking.",
+                    "rag_keywords": [
+                        "Spoofed IP",
+                        "Randomized source",
+                        "IP falsification",
+                        "Distributed sources"
+                    ]
+                },
+                {
+                    "name": "Contextual Misalignment (False Positive Filtering)",
+                    "description": "The high-volume UDP traffic lacks the behavioral context of legitimate heavy UDP usage, such as online gaming servers, VoIP communications, or media streaming platforms.",
+                    "rag_keywords": [
+                        "Media streaming",
+                        "Online gaming",
+                        "VoIP",
+                        "Telemetry",
+                        "Legitimate high-volume UDP"
+                    ]
+                }
+            ]
+        }
+    ]
+}

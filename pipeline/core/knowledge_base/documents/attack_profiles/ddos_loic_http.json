@@ -1,0 +1,31 @@
+{
+  "id": "ddos_loic_http",
+  "title": "Endpoint Denial of Service: Application Exhaustion Flood (LOIC HTTP)",
+  "category": "Impact",
+  "mitre_id": "T1499.002",
+  "mitre_tactic": "Impact",
+  "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
+  "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "description": "Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. LOIC (Low Orbit Ion Cannon) in HTTP mode floods a target with HTTP GET/POST requests from multiple coordinated hosts to exhaust web server threads and connections.",
+  "network_indicators": {
+    "key_features": [
+      "Low Flow IAT Min",
+      "High Init Fwd Win Byts",
+      "Dst Port 80/443"
+    ],
+    "traffic_pattern": "Rapid, repeated HTTP GET/POST requests from multiple coordinated source IPs with minimal inter-arrival time between requests."
+  },
+  "mitigation": [
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Rate-limit per-IP request rate and deploy a CDN/WAF with DDoS scrubbing."
+    },
+    {
+      "id": "M1050",
+      "name": "Exploit Protection",
+      "action": "Use connection/thread limits and behavioral anomaly detection to identify coordinated request floods."
+    }
+  ],
+  "false_positive_hints": "Aggressive web crawlers or misconfigured monitoring tools polling frequently can resemble low-and-fast HTTP flood traffic."
+}

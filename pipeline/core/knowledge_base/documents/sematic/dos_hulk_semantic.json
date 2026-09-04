@@ -1,0 +1,17 @@
+{
+  "id": "dos_hulk",
+  "attack_type": "DoS - HULK (HTTP Unbearable Load King)",
+  "mitre_id": "T1499.002",
+  "rag_semantic_descriptions": [
+    "The HULK tool is generating a massive flood of HTTP GET requests where every single request has uniquely randomized headers and URI parameters to bypass server-side caching mechanisms.",
+    "This attack forces the web server to dynamically process every request because the randomized User-Agent strings, Referer headers, and URL parameters prevent any cached response from being served.",
+    "Despite the randomized content inside each request, the overall packet sizes remain surprisingly uniform, revealing that an automated script is generating the traffic rather than organic human browsing.",
+    "A sustained high-volume flood of forward packets is overwhelming the server's application pool, while the server's response rate has dropped to near-zero as it chokes on processing unique requests.",
+    "The attack evades signature-based IDS/IPS systems because every request payload is different — there is no repeating pattern for traditional detection rules to match against.",
+    "This is a polymorphic HTTP flood where the tool randomizes every aspect of each request to appear unique, requiring anomaly-based detection rather than signature matching.",
+    "The network flow shows erratic inter-arrival times combined with massive forward packet rates, which is characteristic of HULK's multi-threaded request generation engine.",
+    "The web server is being forced to perform full dynamic page rendering for every single incoming request because none of them match any cache keys, exhausting CPU and memory resources.",
+    "At first glance this could be mistaken for a flash crowd or aggressive search engine crawlers, but the low variance in packet lengths and the impossibly high request rate give away its automated nature.",
+    "HULK's cache-busting strategy is particularly effective against web applications that rely on caching layers like Varnish or CDN edge caches, as every request appears genuinely unique."
+  ]
+}

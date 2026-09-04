@@ -1,0 +1,31 @@
+{
+  "id": "web_attack_xss",
+  "title": "Initial Access: Drive-by Compromise (Cross-Site Scripting)",
+  "category": "Initial Access",
+  "mitre_id": "T1189",
+  "mitre_tactic": "Initial Access",
+  "mitre_url": "https://attack.mitre.org/techniques/T1189/",
+  "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "description": "Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.",
+  "network_indicators": {
+    "key_features": [
+      "High Init Fwd Win Byts",
+      "High TotLen Bwd Pkts",
+      "Dst Port 80/443"
+    ],
+    "traffic_pattern": "HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters."
+  },
+  "mitigation": [
+    {
+      "id": "M1050",
+      "name": "Exploit Protection",
+      "action": "Enforce output encoding and input sanitization on all user-controllable fields."
+    },
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Deploy WAF rules to identify and block common XSS payload signatures."
+    }
+  ],
+  "false_positive_hints": "Legitimate content containing HTML-like text or code snippets (e.g. developer forums) can occasionally trigger XSS pattern alerts."
+}

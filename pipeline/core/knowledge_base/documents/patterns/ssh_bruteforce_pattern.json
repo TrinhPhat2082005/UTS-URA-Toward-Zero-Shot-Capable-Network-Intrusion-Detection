@@ -1,0 +1,118 @@
+{
+    "id": "ssh_bruteforce",
+    "attack_technique": "Brute Force: Password Guessing",
+    "mitre_id": "T1110.001",
+    "mitre_url": "https://attack.mitre.org/techniques/T1110/001/",
+    "description": "Adversaries may attempt to gain access to secure systems by systematically guessing passwords or passphrases against the Secure Shell (SSH) service. Because the payload is encrypted, detection relies on recognizing the rapid, repetitive establishment and immediate teardown of TCP connections directed at Port 22.",
+    "patterns": [
+        {
+            "category": "Application Layer (SSH) Anomalies",
+            "description": "Behaviors specific to the encrypted SSH handshake and authentication phase.",
+            "features": [
+                {
+                    "name": "Targeted Port and Protocol",
+                    "description": "Traffic is exclusively directed at the standard SSH port (TCP 22), with packet structures reflecting the cryptographic handshake (Key Exchange) followed immediately by authentication attempts.",
+                    "rag_keywords": [
+                        "Port 22",
+                        "Dst Port",
+                        "SSH handshake",
+                        "Encrypted authentication",
+                        "Key exchange"
+                    ]
+                },
+                {
+                    "name": "Predictable Packet Size Sequencing",
+                    "description": "Even though the payload is encrypted, the sequence of packet sizes remains highly uniform across thousands of flows. It represents: Handshake -> Auth Guess -> Server Rejection -> Teardown.",
+                    "rag_keywords": [
+                        "Uniform packet size",
+                        "Predictable sequence",
+                        "Ciphertext size",
+                        "Auth rejection size"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Traffic Volume and Rate",
+            "description": "Anomalies indicating an automated script is driving the connection attempts to maximize guesses per second.",
+            "features": [
+                {
+                    "name": "Connection Thrashing (Forward Packet Surge)",
+                    "description": "A significantly high rate of packets sent from the client (High Flow Pkts/s, High Fwd Pkts/s, and High Total Fwd Pkts) as the automated tool rapidly initiates new connection sockets.",
+                    "rag_keywords": [
+                        "High Flow Pkts/s",
+                        "High Fwd Pkts/s",
+                        "Total Fwd Pkts",
+                        "Connection thrashing",
+                        "Automated guessing"
+                    ]
+                },
+                {
+                    "name": "Asymmetrical Server Response",
+                    "description": "The server responds with standard rejection messages and closes the socket, leading to a generally lower volume of backward packets (Low Bwd Pkts/s) compared to the aggressive forward request rate.",
+                    "rag_keywords": [
+                        "Low Bwd Pkts/s",
+                        "Asymmetrical flow",
+                        "Server rejection",
+                        "Socket closure"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Session Timing and Duration",
+            "description": "Metrics highlighting the automated, rapid-fire teardown of failed sessions.",
+            "features": [
+                {
+                    "name": "Micro-Session Durations",
+                    "description": "Because the SSH server drops the connection (or the client resets it) the exact moment authentication fails, the overall lifespan of each individual network flow (Low Flow Duration) is extremely short.",
+                    "rag_keywords": [
+                        "Low Flow Duration",
+                        "Short session",
+                        "Rapid teardown",
+                        "Immediate disconnect",
+                        "Auth failure drop"
+                    ]
+                },
+                {
+                    "name": "Machine-Speed Inter-Arrival Time",
+                    "description": "The mean time between packets (Low Flow IAT Mean) is minimal, reflecting an automated script instantly firing the next guess rather than a human administrator typing.",
+                    "rag_keywords": [
+                        "Low Flow IAT Mean",
+                        "Automated pace",
+                        "Machine-speed",
+                        "Scripted timing"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Context and False Positives",
+            "description": "Indicators to separate malicious password guessing from benign operational errors.",
+            "features": [
+                {
+                    "name": "Distributed Brute Force (Fail2Ban Evasion)",
+                    "description": "Advanced attackers may distribute the attack across a botnet (multiple source IPs) or introduce deliberate timing delays to evade standard threshold-based IP bans like fail2ban.",
+                    "rag_keywords": [
+                        "Distributed brute force",
+                        "Fail2ban evasion",
+                        "Botnet sources",
+                        "Rate-limit bypass"
+                    ]
+                },
+                {
+                    "name": "Misconfigured Automation (False Positive Filtering)",
+                    "description": "Rapid bursts of failed SSH logins are frequently caused by benign automation, such as configuration management tools (Ansible, Puppet) or administrative scripts attempting to log in with rotated or expired SSH keys/passwords.",
+                    "rag_keywords": [
+                        "Admin script",
+                        "Ansible",
+                        "Puppet",
+                        "Expired credentials",
+                        "Automated backup",
+                        "False positive indicator"
+                    ]
+                }
+            ]
+        }
+    ]
+}

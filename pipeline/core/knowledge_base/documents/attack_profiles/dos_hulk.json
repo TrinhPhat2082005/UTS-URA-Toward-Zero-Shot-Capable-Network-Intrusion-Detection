@@ -1,0 +1,32 @@
+{
+  "id": "dos_hulk",
+  "title": "Endpoint Denial of Service: Service Exhaustion Flood (HULK)",
+  "category": "Impact",
+  "mitre_id": "T1499.002",
+  "mitre_tactic": "Impact",
+  "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
+  "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "description": "Adversaries may attempt to cause a denial of service (DoS) by sending a high volume of network traffic directly to a target. This specific profile mimics the HULK (Http Unbearable Load King) tool, which generates unique HTTP requests to exhaust server resources and bypass caching.",
+  "network_indicators": {
+    "key_features": [
+      "High Flow Pkts/s",
+      "High Fwd Pkts/s",
+      "High Flow IAT Mean",
+      "Low Packet Length Variance"
+    ],
+    "traffic_pattern": "Massive volume of unique HTTP GET requests with randomized headers (User-Agent, Referer) to prevent server-side caching and exhaust the application pool."
+  },
+  "mitigation": [
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Use upstream filtering services (ISP/CDN) to intercept traffic before it reaches the target network."
+    },
+    {
+      "id": "M1031",
+      "name": "Network Intrusion Prevention",
+      "action": "Implement signature-based or anomaly-based IDS/IPS to detect and block HULK-specific request patterns."
+    }
+  ],
+  "false_positive_hints": "Legitimate flash crowds or aggressive web crawlers can sometimes generate high volumes of unique requests."
+}

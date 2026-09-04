@@ -1,0 +1,17 @@
+{
+  "id": "ddos_udp_flood",
+  "attack_type": "DDoS - UDP Flood",
+  "mitre_id": "T1498.001",
+  "rag_semantic_descriptions": [
+    "A massive volume of UDP packets is flooding the target network, exploiting the connectionless nature of UDP to send data without any handshake or session establishment.",
+    "The network is overwhelmed by a high-rate stream of UDP datagrams targeting random or specific ports, forcing the server to check for listening applications and respond with ICMP Destination Unreachable messages.",
+    "This is a stateless volumetric flood using UDP protocol, where packets arrive back-to-back with microsecond inter-arrival times and no legitimate session context.",
+    "An abnormal dominance of UDP traffic has suddenly appeared on the network, with packets directed at a wide range of random destination ports to maximize resource consumption on the target.",
+    "The attack shows a highly asymmetric traffic pattern where the incoming UDP packet volume massively outweighs any outgoing responses, indicating a one-way connectionless flood.",
+    "Spoofed source IP addresses are being used to send a torrent of UDP packets, making it impossible to trace the true origin and rendering IP-based blocklists useless.",
+    "The flow data reveals exceptionally short-lived aggressive bursts of UDP traffic with no stateful connection establishment, characteristic of an automated flooding tool.",
+    "Unlike legitimate high-volume UDP usage such as video streaming or gaming, this traffic lacks any behavioral context or application-layer structure — it is pure noise designed to overwhelm.",
+    "The target server is being forced to process thousands of UDP packets per second on closed ports, generating a storm of ICMP unreachable responses that further consume resources.",
+    "This UDP flood takes advantage of the protocol's lack of built-in congestion control, allowing the attacker to blast packets at maximum rate without any flow regulation."
+  ]
+}

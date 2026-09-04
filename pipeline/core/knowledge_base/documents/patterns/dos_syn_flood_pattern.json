@@ -1,0 +1,114 @@
+{
+    "id": "dos_syn_flood",
+    "attack_technique": "Network Denial of Service: Direct Network Flood",
+    "mitre_id": "T1498.001",
+    "mitre_url": "https://attack.mitre.org/techniques/T1498/001/",
+    "description": "Adversaries may attempt to cause a denial of service by exhausting the target's connection state tables. A SYN Flood exploits the standard TCP three-way handshake by sending a massive volume of SYN (synchronize) packets to the target but intentionally failing to send the final ACK (acknowledge) packet. This leaves the server with thousands of 'half-open' connections, rapidly exhausting its SYN backlog and preventing legitimate users from establishing new TCP connections.",
+    "patterns": [
+        {
+            "category": "TCP Handshake Anomalies",
+            "description": "Specific manipulations of the Transport Control Protocol (TCP) connection initiation process.",
+            "features": [
+                {
+                    "name": "Extreme SYN Flag Ratio",
+                    "description": "An abnormally high percentage of incoming packets have only the SYN flag set (High SYN Flag Cnt). The attacker is constantly requesting new connections without ever sending data.",
+                    "rag_keywords": [
+                        "SYN Flag Cnt",
+                        "TCP SYN",
+                        "Half-open connection",
+                        "TCP handshake anomaly",
+                        "SYN packet"
+                    ]
+                },
+                {
+                    "name": "Missing ACK Completion",
+                    "description": "The client completely ignores the server's SYN-ACK responses and never sends the final ACK packet required to establish a fully open, stateful TCP connection.",
+                    "rag_keywords": [
+                        "Missing ACK",
+                        "Incomplete handshake",
+                        "Unacknowledged SYN",
+                        "One-way handshake"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Traffic Volume and Direction",
+            "description": "Anomalies in the flow of packets, indicating a highly asymmetric attack.",
+            "features": [
+                {
+                    "name": "Forward Packet Flood",
+                    "description": "A massive surge in packets sent from the client to the server (High Fwd Pkts/s), specifically consisting of lightweight connection requests rather than heavy data payloads.",
+                    "rag_keywords": [
+                        "High Fwd Pkts/s",
+                        "High Flow Pkts/s",
+                        "Forward packet surge",
+                        "Request flood"
+                    ]
+                },
+                {
+                    "name": "Asymmetric Backward Flow",
+                    "description": "Because the connections are never completed and data is never requested, the server sends very few backward packets (Low Bwd Pkts/s)—usually just the initial SYN-ACK responses before the connection drops.",
+                    "rag_keywords": [
+                        "Low Bwd Pkts/s",
+                        "Asymmetric traffic",
+                        "SYN-ACK response",
+                        "Low return traffic"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "State and Timing Exhaustion",
+            "description": "Behaviors related to the duration of flows and the exhaustion of server memory.",
+            "features": [
+                {
+                    "name": "Truncated Flow Durations",
+                    "description": "Because the TCP handshakes are never completed, network flow trackers will either log exceptionally short, incomplete flows (Low Flow Duration) or record connections that strictly hit the server's SYN timeout limit.",
+                    "rag_keywords": [
+                        "Low Flow Duration",
+                        "Incomplete flow",
+                        "SYN timeout",
+                        "Connection drop"
+                    ]
+                },
+                {
+                    "name": "SYN Backlog Exhaustion",
+                    "description": "The attack rapidly fills the operating system's connection queue (SYN backlog), causing the server to silently drop or reject new, legitimate TCP connection requests.",
+                    "rag_keywords": [
+                        "SYN backlog",
+                        "Connection queue",
+                        "State table exhaustion",
+                        "Resource depletion"
+                    ]
+                }
+            ]
+        },
+        {
+            "category": "Evasion and False Positives",
+            "description": "Contextual indicators for distinguishing the attack from legitimate traffic behavior.",
+            "features": [
+                {
+                    "name": "Source IP Spoofing",
+                    "description": "SYN floods almost universally utilize highly randomized, spoofed source IP addresses. This prevents the attacker from receiving the SYN-ACKs and makes IP-based blocklists ineffective.",
+                    "rag_keywords": [
+                        "Spoofed IP",
+                        "Randomized source",
+                        "IP falsification",
+                        "Distributed sources"
+                    ]
+                },
+                {
+                    "name": "Peak Traffic Resemblance (False Positive Filtering)",
+                    "description": "During legitimate peak traffic events (flash crowds), servers will naturally experience elevated SYN counts. However, in legitimate scenarios, these SYNs are almost immediately followed by ACKs to complete the handshake.",
+                    "rag_keywords": [
+                        "Flash crowd",
+                        "Peak traffic",
+                        "Legitimate SYN spike",
+                        "False positive indicator"
+                    ]
+                }
+            ]
+        }
+    ]
+}
