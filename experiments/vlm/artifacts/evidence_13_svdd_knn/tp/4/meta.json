@@ -1,0 +1,27 @@
+{
+  "row_idx": 4,
+  "set_type": "tp",
+  "label": 1,
+  "xgb_proba": 0.96247876,
+  "source_split": "val_binary.csv",
+  "dst_port": 80.0,
+  "protocol": 17.0,
+  "true_attack_label": "DDOS attack-LOIC-UDP",
+  "shap_top_features": {
+    "Fwd Header Len": 1.5042595863342285,
+    "TotLen Fwd Pkts": 0.8555389642715454,
+    "Fwd Seg Size Min": -0.6224787831306458,
+    "Init Fwd Win Byts": -0.5728902816772461,
+    "Dst Port": 0.5632966160774231
+  },
+  "shap_image": "shap.png",
+  "chart_images": [
+    "chart_pkt_length_profile.png",
+    "chart_flag_composition.png",
+    "chart_iat_timing.png",
+    "chart_directional_balance.png"
+  ],
+  "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 1.00)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion Flood (LOIC UDP) (T1499.002)\n- **Tactic:** Impact\n- **Description:** A UDP flood is a type of denial-of-service attack in which a large number of User Datagram Protocol (UDP) packets are sent to a targeted server with the aim of overwhelming that device's ability to process and respond.\n- **Typical Pattern:** Flood of UDP packets often with spoofed source IPs targeting random or specific ports.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 1.00)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (LOIC HTTP) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. LOIC (Low Orbit Ion Cannon) in HTTP mode floods a target with HTTP GET/POST requests from multiple coordinated hosts to exhaust web server threads and connections.\n- **Typical Pattern:** Rapid, repeated HTTP GET/POST requests from multiple coordinated source IPs with minimal inter-arrival time between requests.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.74)\n- **Benign Pattern:** Benign Traffic (No Attack Detected) (N/A)\n- **Tactic:** N/A\n- **Description:** This profile represents normal, legitimate network traffic patterns commonly seen in benign flows: standard protocol handshakes, ordinary application request/response cycles, and routine service traffic. It does not itself determine whether any specific flow is an attack or not \u2014 it is one of several candidate patterns a flow's SHAP signature may resemble, to be weighed against the other retrieved matches and the flow's own primary evidence (SHAP attribution values, traffic charts) rather than treated as a default or preferred conclusion.\n- **Typical Pattern:** Traffic volume, packet timing, and flag composition fall within the range typically seen for legitimate application traffic on the observed port/protocol.\n\n",
+  "rag_predicted_label": "DDOS attack-LOIC-UDP",
+  "rag_is_potential_zero_day": false
+}

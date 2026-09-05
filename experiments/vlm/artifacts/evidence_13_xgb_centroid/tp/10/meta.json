@@ -1,0 +1,27 @@
+{
+  "row_idx": 20,
+  "set_type": "tp",
+  "label": 1,
+  "xgb_proba": 0.99851924,
+  "source_split": "test_binary.csv",
+  "dst_port": 21.0,
+  "protocol": 6.0,
+  "true_attack_label": "FTP-BruteForce",
+  "shap_top_features": {
+    "Fwd Seg Size Min": 3.128889322280884,
+    "Init Fwd Win Byts": 1.133208155632019,
+    "Dst Port": 0.933965802192688,
+    "Fwd Header Len": 0.9222198724746704,
+    "Flow IAT Mean": -0.5250561833381653
+  },
+  "shap_image": "shap.png",
+  "chart_images": [
+    "chart_pkt_length_profile.png",
+    "chart_flag_composition.png",
+    "chart_iat_timing.png",
+    "chart_directional_balance.png"
+  ],
+  "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 1.00)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion Flood (Slowhttptest) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Slowhttptest is a highly configurable tool that simulates some Application Layer Denial of Service attacks. It implements most common low-bandwidth Application Layer DoS attacks.\n- **Typical Pattern:** Slowly sending HTTP headers or POST bodies to keep connections open as long as possible.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 1.00)\n- **Technique:** Brute Force: Password Guessing (FTP) (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may use brute force techniques to attempt access to valid accounts by guessing passwords. This profile focuses on FTP services where numerous login attempts are made systematically.\n- **Typical Pattern:** Frequent, rapid connection attempts to port 21, typically with small packet sizes representing repetitive USER and PASS commands.\n- **Mitigation:** Account Use Policies, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1110/001/\n\n#### Match 3 (Confidence: 0.90)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion (Slowloris) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting resources on an endpoint service. Slowloris achieves this by opening many connections and keeping them open as long as possible by sending partial HTTP requests.\n- **Typical Pattern:** Persistent connections with minimal data throughput, holding server threads open indefinitely to prevent legitimate users from connecting.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n",
+  "rag_predicted_label": "DoS attacks-SlowHTTPTest",
+  "rag_is_potential_zero_day": false
+}

@@ -1,0 +1,384 @@
+{
+  "fp": [
+    {
+      "row_idx": 0,
+      "set_type": "fp",
+      "label": 0,
+      "xgb_proba": 0.71724397,
+      "source_split": "val_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 6.0,
+      "true_attack_label": null,
+      "shap_top_features": {
+        "Fwd Seg Size Min": -0.9174042344093323,
+        "Fwd Header Len": 0.7777566313743591,
+        "svdd_dist_6": -0.7447898387908936,
+        "Dst Port": 0.6400611400604248,
+        "svdd_dist_3": -0.45492392778396606
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n> [!WARNING]\n> The observed behavior has LOW similarity to known attack patterns. This may be a NOVEL ATTACK or ZERO-DAY exploit.\n\n#### Match 1 (Confidence: 0.73)\n- **Technique:** Initial Access: Drive-by Compromise (Cross-Site Scripting) (T1189)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.\n- **Typical Pattern:** HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1189/\n\n#### Match 2 (Confidence: 0.67)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (HOIC) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. HOIC (High Orbit Ion Cannon) coordinates many hosts to send high-volume HTTP requests, often with randomized headers via 'boosters', to exhaust server resources and evade simple filtering.\n- **Typical Pattern:** Coordinated high-volume HTTP requests from multiple source IPs, with randomized headers to defeat basic signature and caching defenses.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.62)\n- **Technique:** Initial Access: Exploit Public-Facing Application (SQL Injection) (T1190)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. SQL injection targets flaws in the database query logic of web applications.\n- **Typical Pattern:** HTTP GET/POST requests containing encoded SQL syntax, unusual escape characters, or boolean logic probes.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1190/\n\n",
+      "rag_predicted_label": "Brute Force -XSS",
+      "rag_is_potential_zero_day": true
+    }
+  ],
+  "tp": [
+    {
+      "row_idx": 0,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.99459887,
+      "source_split": "test_binary.csv",
+      "dst_port": 8080.0,
+      "protocol": 6.0,
+      "true_attack_label": "Bot",
+      "shap_top_features": {
+        "Fwd Header Len": 0.7522882223129272,
+        "svdd_dist_9": 0.7478837966918945,
+        "Init Fwd Win Byts": 0.5725443959236145,
+        "Dst Port": 0.32880204916000366,
+        "Fwd IAT Std": 0.31223440170288086
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 0.82)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (HOIC) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. HOIC (High Orbit Ion Cannon) coordinates many hosts to send high-volume HTTP requests, often with randomized headers via 'boosters', to exhaust server resources and evade simple filtering.\n- **Typical Pattern:** Coordinated high-volume HTTP requests from multiple source IPs, with randomized headers to defeat basic signature and caching defenses.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 0.78)\n- **Technique:** Resource Development: Acquire Infrastructure (Botnet) + Collection: Screen Capture (T1583.005)\n- **Tactic:** Resource Development\n- **Description:** This dataset attack label spans a botnet's two functional roles: acquiring/operating the botnet infrastructure itself, and the infected host performing screen-capture data collection on behalf of the operator. Periodic beaconing over HTTP/HTTPS is a common transport pattern for both stages, but transport-layer camouflage is not itself the technique captured here.\n- **Typical Pattern:** Regular 'heartbeat' signals (beacons) from the infected host to an external controller, often masked as legitimate web browsing.\n- **Mitigation:** Network Intrusion Prevention, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1583/005/\n\n#### Match 3 (Confidence: 0.66)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (LOIC HTTP) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. LOIC (Low Orbit Ion Cannon) in HTTP mode floods a target with HTTP GET/POST requests from multiple coordinated hosts to exhaust web server threads and connections.\n- **Typical Pattern:** Rapid, repeated HTTP GET/POST requests from multiple coordinated source IPs with minimal inter-arrival time between requests.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n",
+      "rag_predicted_label": "DDOS attack-HOIC",
+      "rag_is_potential_zero_day": false
+    },
+    {
+      "row_idx": 1,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.9452349,
+      "source_split": "val_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 6.0,
+      "true_attack_label": "Brute Force -Web",
+      "shap_top_features": {
+        "Fwd Seg Size Min": -0.8797000050544739,
+        "Fwd Header Len": 0.778587818145752,
+        "svdd_dist_6": -0.6816233396530151,
+        "Dst Port": 0.6401656866073608,
+        "Fwd Pkts/s": 0.2774776518344879
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n> [!WARNING]\n> The observed behavior has LOW similarity to known attack patterns. This may be a NOVEL ATTACK or ZERO-DAY exploit.\n\n#### Match 1 (Confidence: 0.77)\n- **Technique:** Initial Access: Drive-by Compromise (Cross-Site Scripting) (T1189)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.\n- **Typical Pattern:** HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1189/\n\n#### Match 2 (Confidence: 0.71)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (HOIC) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. HOIC (High Orbit Ion Cannon) coordinates many hosts to send high-volume HTTP requests, often with randomized headers via 'boosters', to exhaust server resources and evade simple filtering.\n- **Typical Pattern:** Coordinated high-volume HTTP requests from multiple source IPs, with randomized headers to defeat basic signature and caching defenses.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.67)\n- **Technique:** Initial Access: Exploit Public-Facing Application (SQL Injection) (T1190)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. SQL injection targets flaws in the database query logic of web applications.\n- **Typical Pattern:** HTTP GET/POST requests containing encoded SQL syntax, unusual escape characters, or boolean logic probes.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1190/\n\n",
+      "rag_predicted_label": "Brute Force -XSS",
+      "rag_is_potential_zero_day": true
+    },
+    {
+      "row_idx": 2,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.99158114,
+      "source_split": "test_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 6.0,
+      "true_attack_label": "Brute Force -XSS",
+      "shap_top_features": {
+        "svdd_dist_6": -0.9743406772613525,
+        "Fwd Seg Size Min": -0.8485509157180786,
+        "Fwd Header Len": 0.8298596739768982,
+        "svdd_dist_9": 0.7665641903877258,
+        "Init Fwd Win Byts": 0.5943548083305359
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n> [!WARNING]\n> The observed behavior has LOW similarity to known attack patterns. This may be a NOVEL ATTACK or ZERO-DAY exploit.\n\n#### Match 1 (Confidence: 0.77)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (HOIC) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. HOIC (High Orbit Ion Cannon) coordinates many hosts to send high-volume HTTP requests, often with randomized headers via 'boosters', to exhaust server resources and evade simple filtering.\n- **Typical Pattern:** Coordinated high-volume HTTP requests from multiple source IPs, with randomized headers to defeat basic signature and caching defenses.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 0.72)\n- **Technique:** Initial Access: Drive-by Compromise (Cross-Site Scripting) (T1189)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.\n- **Typical Pattern:** HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1189/\n\n#### Match 3 (Confidence: 0.65)\n- **Technique:** Initial Access: Exploit Public-Facing Application (SQL Injection) (T1190)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. SQL injection targets flaws in the database query logic of web applications.\n- **Typical Pattern:** HTTP GET/POST requests containing encoded SQL syntax, unusual escape characters, or boolean logic probes.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1190/\n\n",
+      "rag_predicted_label": "DDOS attack-HOIC",
+      "rag_is_potential_zero_day": true
+    },
+    {
+      "row_idx": 3,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.9796963,
+      "source_split": "test_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 6.0,
+      "true_attack_label": "DDOS attack-HOIC",
+      "shap_top_features": {
+        "Fwd Header Len": 0.8207554817199707,
+        "svdd_dist_9": 0.7572331428527832,
+        "Fwd Seg Size Min": -0.7487487196922302,
+        "Dst Port": 0.7145874500274658,
+        "Init Fwd Win Byts": 0.5867081880569458
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 0.95)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (HOIC) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. HOIC (High Orbit Ion Cannon) coordinates many hosts to send high-volume HTTP requests, often with randomized headers via 'boosters', to exhaust server resources and evade simple filtering.\n- **Typical Pattern:** Coordinated high-volume HTTP requests from multiple source IPs, with randomized headers to defeat basic signature and caching defenses.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 0.77)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (LOIC HTTP) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. LOIC (Low Orbit Ion Cannon) in HTTP mode floods a target with HTTP GET/POST requests from multiple coordinated hosts to exhaust web server threads and connections.\n- **Typical Pattern:** Rapid, repeated HTTP GET/POST requests from multiple coordinated source IPs with minimal inter-arrival time between requests.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.69)\n- **Technique:** Initial Access: Drive-by Compromise (Cross-Site Scripting) (T1189)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.\n- **Typical Pattern:** HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1189/\n\n",
+      "rag_predicted_label": "DDOS attack-HOIC",
+      "rag_is_potential_zero_day": false
+    },
+    {
+      "row_idx": 4,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.96247876,
+      "source_split": "val_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 17.0,
+      "true_attack_label": "DDOS attack-LOIC-UDP",
+      "shap_top_features": {
+        "Fwd Header Len": 1.5042595863342285,
+        "TotLen Fwd Pkts": 0.8555389642715454,
+        "Fwd Seg Size Min": -0.6224787831306458,
+        "Init Fwd Win Byts": -0.5728902816772461,
+        "Dst Port": 0.5632966160774231
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 1.00)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion Flood (LOIC UDP) (T1499.002)\n- **Tactic:** Impact\n- **Description:** A UDP flood is a type of denial-of-service attack in which a large number of User Datagram Protocol (UDP) packets are sent to a targeted server with the aim of overwhelming that device's ability to process and respond.\n- **Typical Pattern:** Flood of UDP packets often with spoofed source IPs targeting random or specific ports.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 0.67)\n- **Technique:** Initial Access: Drive-by Compromise (Cross-Site Scripting) (T1189)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.\n- **Typical Pattern:** HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1189/\n\n#### Match 3 (Confidence: 0.60)\n- **Technique:** Brute Force: Password Guessing (Web Application Login) (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may attempt to gain access to a web application by systematically trying many username/password combinations against its login form, without knowledge of valid credentials.\n- **Typical Pattern:** Repeated HTTP POST requests to a login endpoint with varying credential payloads, from a single or small set of source IPs.\n- **Mitigation:** Account Use Policies, Multi-factor Authentication\n- **Reference:** https://attack.mitre.org/techniques/T1110/001/\n\n",
+      "rag_predicted_label": "DDOS attack-LOIC-UDP",
+      "rag_is_potential_zero_day": false
+    },
+    {
+      "row_idx": 5,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.9959926,
+      "source_split": "val_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 6.0,
+      "true_attack_label": "DDoS attacks-LOIC-HTTP",
+      "shap_top_features": {
+        "ECE Flag Cnt": 1.0327459573745728,
+        "Init Bwd Win Byts": 0.9470667243003845,
+        "Fwd Header Len": 0.9377263188362122,
+        "Fwd Seg Size Min": -0.7613130211830139,
+        "Dst Port": 0.49928733706474304
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 0.89)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (LOIC HTTP) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. LOIC (Low Orbit Ion Cannon) in HTTP mode floods a target with HTTP GET/POST requests from multiple coordinated hosts to exhaust web server threads and connections.\n- **Typical Pattern:** Rapid, repeated HTTP GET/POST requests from multiple coordinated source IPs with minimal inter-arrival time between requests.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 0.82)\n- **Technique:** Resource Development: Acquire Infrastructure (Botnet) + Collection: Screen Capture (T1583.005)\n- **Tactic:** Resource Development\n- **Description:** This dataset attack label spans a botnet's two functional roles: acquiring/operating the botnet infrastructure itself, and the infected host performing screen-capture data collection on behalf of the operator. Periodic beaconing over HTTP/HTTPS is a common transport pattern for both stages, but transport-layer camouflage is not itself the technique captured here.\n- **Typical Pattern:** Regular 'heartbeat' signals (beacons) from the infected host to an external controller, often masked as legitimate web browsing.\n- **Mitigation:** Network Intrusion Prevention, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1583/005/\n\n#### Match 3 (Confidence: 0.76)\n- **Technique:** Initial Access: Exploit Public-Facing Application (SQL Injection) (T1190)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. SQL injection targets flaws in the database query logic of web applications.\n- **Typical Pattern:** HTTP GET/POST requests containing encoded SQL syntax, unusual escape characters, or boolean logic probes.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1190/\n\n",
+      "rag_predicted_label": "DDoS attacks-LOIC-HTTP",
+      "rag_is_potential_zero_day": false
+    },
+    {
+      "row_idx": 6,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.9980215,
+      "source_split": "val_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 6.0,
+      "true_attack_label": "DoS attacks-GoldenEye",
+      "shap_top_features": {
+        "Fwd Seg Size Min": 1.774304747581482,
+        "Fwd Header Len": 1.3436189889907837,
+        "svdd_dist_1": 1.070307731628418,
+        "Dst Port": 1.0184422731399536,
+        "Fwd Pkts/s": -0.527055025100708
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 0.86)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion (Slowloris) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting resources on an endpoint service. Slowloris achieves this by opening many connections and keeping them open as long as possible by sending partial HTTP requests.\n- **Typical Pattern:** Persistent connections with minimal data throughput, holding server threads open indefinitely to prevent legitimate users from connecting.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 0.82)\n- **Technique:** DoS GoldenEye Attack (T1499.002)\n- **Tactic:** Impact\n- **Description:** GoldenEye is a DoS tool that performs a layer 7 DoS attack by exhausting the application pool resources. It uses Keep-Alive and Cache-Control headers to persist connections.\n- **Typical Pattern:** Persistent HTTP connections with high request rates designed to exhaust server-side resources.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.80)\n- **Technique:** Brute Force: Password Guessing (FTP) (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may use brute force techniques to attempt access to valid accounts by guessing passwords. This profile focuses on FTP services where numerous login attempts are made systematically.\n- **Typical Pattern:** Frequent, rapid connection attempts to port 21, typically with small packet sizes representing repetitive USER and PASS commands.\n- **Mitigation:** Account Use Policies, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1110/001/\n\n",
+      "rag_predicted_label": "DoS attacks-Slowloris",
+      "rag_is_potential_zero_day": false
+    },
+    {
+      "row_idx": 7,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.9980464,
+      "source_split": "test_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 6.0,
+      "true_attack_label": "DoS attacks-Hulk",
+      "shap_top_features": {
+        "Fwd Seg Size Min": 3.0682551860809326,
+        "Fwd Header Len": 1.1136455535888672,
+        "Dst Port": 0.7624519467353821,
+        "svdd_dist_6": -0.49153971672058105,
+        "Init Fwd Win Byts": 0.41375240683555603
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 0.97)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion Flood (HULK) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may attempt to cause a denial of service (DoS) by sending a high volume of network traffic directly to a target. This specific profile mimics the HULK (Http Unbearable Load King) tool, which generates unique HTTP requests to exhaust server resources and bypass caching.\n- **Typical Pattern:** Massive volume of unique HTTP GET requests with randomized headers (User-Agent, Referer) to prevent server-side caching and exhaust the application pool.\n- **Mitigation:** Filter Network Traffic, Network Intrusion Prevention\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 0.93)\n- **Technique:** Brute Force: Password Guessing (FTP) (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may use brute force techniques to attempt access to valid accounts by guessing passwords. This profile focuses on FTP services where numerous login attempts are made systematically.\n- **Typical Pattern:** Frequent, rapid connection attempts to port 21, typically with small packet sizes representing repetitive USER and PASS commands.\n- **Mitigation:** Account Use Policies, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1110/001/\n\n#### Match 3 (Confidence: 0.93)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion Flood (Slowhttptest) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Slowhttptest is a highly configurable tool that simulates some Application Layer Denial of Service attacks. It implements most common low-bandwidth Application Layer DoS attacks.\n- **Typical Pattern:** Slowly sending HTTP headers or POST bodies to keep connections open as long as possible.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n",
+      "rag_predicted_label": "DoS attacks-Hulk",
+      "rag_is_potential_zero_day": false
+    },
+    {
+      "row_idx": 8,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.99851924,
+      "source_split": "test_binary.csv",
+      "dst_port": 21.0,
+      "protocol": 6.0,
+      "true_attack_label": "DoS attacks-SlowHTTPTest",
+      "shap_top_features": {
+        "Fwd Seg Size Min": 2.897294521331787,
+        "Fwd Header Len": 0.9063587188720703,
+        "Dst Port": 0.8776431679725647,
+        "svdd_dist_9": 0.8081567883491516,
+        "Init Fwd Win Byts": 0.6476259827613831
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 1.00)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion Flood (Slowhttptest) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Slowhttptest is a highly configurable tool that simulates some Application Layer Denial of Service attacks. It implements most common low-bandwidth Application Layer DoS attacks.\n- **Typical Pattern:** Slowly sending HTTP headers or POST bodies to keep connections open as long as possible.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 1.00)\n- **Technique:** Brute Force: Password Guessing (FTP) (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may use brute force techniques to attempt access to valid accounts by guessing passwords. This profile focuses on FTP services where numerous login attempts are made systematically.\n- **Typical Pattern:** Frequent, rapid connection attempts to port 21, typically with small packet sizes representing repetitive USER and PASS commands.\n- **Mitigation:** Account Use Policies, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1110/001/\n\n#### Match 3 (Confidence: 0.96)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion Flood (HULK) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may attempt to cause a denial of service (DoS) by sending a high volume of network traffic directly to a target. This specific profile mimics the HULK (Http Unbearable Load King) tool, which generates unique HTTP requests to exhaust server resources and bypass caching.\n- **Typical Pattern:** Massive volume of unique HTTP GET requests with randomized headers (User-Agent, Referer) to prevent server-side caching and exhaust the application pool.\n- **Mitigation:** Filter Network Traffic, Network Intrusion Prevention\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n",
+      "rag_predicted_label": "DoS attacks-SlowHTTPTest",
+      "rag_is_potential_zero_day": false
+    },
+    {
+      "row_idx": 9,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.9983429,
+      "source_split": "val_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 6.0,
+      "true_attack_label": "DoS attacks-Slowloris",
+      "shap_top_features": {
+        "Fwd Seg Size Min": 2.601999521255493,
+        "Init Bwd Win Byts": 1.0985734462738037,
+        "Fwd Header Len": 0.994850218296051,
+        "Dst Port": 0.8984699845314026,
+        "Init Fwd Win Byts": 0.5541538596153259
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 0.97)\n- **Technique:** SSH Brute Force Attack (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may attempt to gain access to an SSH server by systematically trying many passwords or passphrases.\n- **Typical Pattern:** Rapid sequence of connection attempts to port 22 with characteristic packet sizes for SSH authentication.\n- **Mitigation:** Account Use Policies, Filter Network Traffic\n\n#### Match 2 (Confidence: 0.96)\n- **Technique:** DoS GoldenEye Attack (T1499.002)\n- **Tactic:** Impact\n- **Description:** GoldenEye is a DoS tool that performs a layer 7 DoS attack by exhausting the application pool resources. It uses Keep-Alive and Cache-Control headers to persist connections.\n- **Typical Pattern:** Persistent HTTP connections with high request rates designed to exhaust server-side resources.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.90)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion (Slowloris) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting resources on an endpoint service. Slowloris achieves this by opening many connections and keeping them open as long as possible by sending partial HTTP requests.\n- **Typical Pattern:** Persistent connections with minimal data throughput, holding server threads open indefinitely to prevent legitimate users from connecting.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n",
+      "rag_predicted_label": "SSH-Bruteforce",
+      "rag_is_potential_zero_day": false
+    },
+    {
+      "row_idx": 10,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.99851924,
+      "source_split": "test_binary.csv",
+      "dst_port": 21.0,
+      "protocol": 6.0,
+      "true_attack_label": "FTP-BruteForce",
+      "shap_top_features": {
+        "Fwd Seg Size Min": 2.897294521331787,
+        "Fwd Header Len": 0.9063587188720703,
+        "Dst Port": 0.8776431679725647,
+        "svdd_dist_9": 0.8081567883491516,
+        "Init Fwd Win Byts": 0.6476259827613831
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 1.00)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion Flood (Slowhttptest) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Slowhttptest is a highly configurable tool that simulates some Application Layer Denial of Service attacks. It implements most common low-bandwidth Application Layer DoS attacks.\n- **Typical Pattern:** Slowly sending HTTP headers or POST bodies to keep connections open as long as possible.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 1.00)\n- **Technique:** Brute Force: Password Guessing (FTP) (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may use brute force techniques to attempt access to valid accounts by guessing passwords. This profile focuses on FTP services where numerous login attempts are made systematically.\n- **Typical Pattern:** Frequent, rapid connection attempts to port 21, typically with small packet sizes representing repetitive USER and PASS commands.\n- **Mitigation:** Account Use Policies, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1110/001/\n\n#### Match 3 (Confidence: 0.96)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion Flood (HULK) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may attempt to cause a denial of service (DoS) by sending a high volume of network traffic directly to a target. This specific profile mimics the HULK (Http Unbearable Load King) tool, which generates unique HTTP requests to exhaust server resources and bypass caching.\n- **Typical Pattern:** Massive volume of unique HTTP GET requests with randomized headers (User-Agent, Referer) to prevent server-side caching and exhaust the application pool.\n- **Mitigation:** Filter Network Traffic, Network Intrusion Prevention\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n",
+      "rag_predicted_label": "DoS attacks-SlowHTTPTest",
+      "rag_is_potential_zero_day": false
+    },
+    {
+      "row_idx": 11,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.9930345,
+      "source_split": "test_binary.csv",
+      "dst_port": 80.0,
+      "protocol": 6.0,
+      "true_attack_label": "SQL Injection",
+      "shap_top_features": {
+        "Fwd Seg Size Min": -0.8260430097579956,
+        "Fwd Header Len": 0.7998927235603333,
+        "svdd_dist_6": -0.6816233396530151,
+        "Dst Port": 0.639148473739624,
+        "Init Fwd Win Byts": 0.5675987005233765
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n> [!WARNING]\n> The observed behavior has LOW similarity to known attack patterns. This may be a NOVEL ATTACK or ZERO-DAY exploit.\n\n#### Match 1 (Confidence: 0.78)\n- **Technique:** Initial Access: Drive-by Compromise (Cross-Site Scripting) (T1189)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.\n- **Typical Pattern:** HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1189/\n\n#### Match 2 (Confidence: 0.77)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (HOIC) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. HOIC (High Orbit Ion Cannon) coordinates many hosts to send high-volume HTTP requests, often with randomized headers via 'boosters', to exhaust server resources and evade simple filtering.\n- **Typical Pattern:** Coordinated high-volume HTTP requests from multiple source IPs, with randomized headers to defeat basic signature and caching defenses.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.72)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (LOIC HTTP) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. LOIC (Low Orbit Ion Cannon) in HTTP mode floods a target with HTTP GET/POST requests from multiple coordinated hosts to exhaust web server threads and connections.\n- **Typical Pattern:** Rapid, repeated HTTP GET/POST requests from multiple coordinated source IPs with minimal inter-arrival time between requests.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n",
+      "rag_predicted_label": "Brute Force -XSS",
+      "rag_is_potential_zero_day": true
+    },
+    {
+      "row_idx": 12,
+      "set_type": "tp",
+      "label": 1,
+      "xgb_proba": 0.9982597,
+      "source_split": "test_binary.csv",
+      "dst_port": 22.0,
+      "protocol": 6.0,
+      "true_attack_label": "SSH-Bruteforce",
+      "shap_top_features": {
+        "Fwd Seg Size Min": 3.1903460025787354,
+        "Dst Port": 0.874855101108551,
+        "Fwd Header Len": 0.8663612604141235,
+        "Init Bwd Win Byts": 0.8250926733016968,
+        "Init Fwd Win Byts": 0.42319852113723755
+      },
+      "shap_image": "shap.png",
+      "chart_images": [
+        "chart_pkt_length_profile.png",
+        "chart_flag_composition.png",
+        "chart_iat_timing.png",
+        "chart_directional_balance.png"
+      ],
+      "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 0.97)\n- **Technique:** SSH Brute Force Attack (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may attempt to gain access to an SSH server by systematically trying many passwords or passphrases.\n- **Typical Pattern:** Rapid sequence of connection attempts to port 22 with characteristic packet sizes for SSH authentication.\n- **Mitigation:** Account Use Policies, Filter Network Traffic\n\n#### Match 2 (Confidence: 0.96)\n- **Technique:** DoS GoldenEye Attack (T1499.002)\n- **Tactic:** Impact\n- **Description:** GoldenEye is a DoS tool that performs a layer 7 DoS attack by exhausting the application pool resources. It uses Keep-Alive and Cache-Control headers to persist connections.\n- **Typical Pattern:** Persistent HTTP connections with high request rates designed to exhaust server-side resources.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.93)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion (Slowloris) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting resources on an endpoint service. Slowloris achieves this by opening many connections and keeping them open as long as possible by sending partial HTTP requests.\n- **Typical Pattern:** Persistent connections with minimal data throughput, holding server threads open indefinitely to prevent legitimate users from connecting.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n",
+      "rag_predicted_label": "SSH-Bruteforce",
+      "rag_is_potential_zero_day": false
+    }
+  ]
+}

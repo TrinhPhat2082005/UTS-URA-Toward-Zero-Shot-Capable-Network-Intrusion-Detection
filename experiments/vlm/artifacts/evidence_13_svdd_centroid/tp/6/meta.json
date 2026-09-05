@@ -1,0 +1,27 @@
+{
+  "row_idx": 12,
+  "set_type": "tp",
+  "label": 1,
+  "xgb_proba": 0.9980215,
+  "source_split": "val_binary.csv",
+  "dst_port": 80.0,
+  "protocol": 6.0,
+  "true_attack_label": "DoS attacks-GoldenEye",
+  "shap_top_features": {
+    "Fwd Seg Size Min": 1.774304747581482,
+    "Fwd Header Len": 1.3436189889907837,
+    "svdd_dist_1": 1.070307731628418,
+    "Dst Port": 1.0184422731399536,
+    "Fwd Pkts/s": -0.527055025100708
+  },
+  "shap_image": "shap.png",
+  "chart_images": [
+    "chart_pkt_length_profile.png",
+    "chart_flag_composition.png",
+    "chart_iat_timing.png",
+    "chart_directional_balance.png"
+  ],
+  "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 0.86)\n- **Technique:** Endpoint Denial of Service: Service Exhaustion (Slowloris) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting resources on an endpoint service. Slowloris achieves this by opening many connections and keeping them open as long as possible by sending partial HTTP requests.\n- **Typical Pattern:** Persistent connections with minimal data throughput, holding server threads open indefinitely to prevent legitimate users from connecting.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 2 (Confidence: 0.82)\n- **Technique:** DoS GoldenEye Attack (T1499.002)\n- **Tactic:** Impact\n- **Description:** GoldenEye is a DoS tool that performs a layer 7 DoS attack by exhausting the application pool resources. It uses Keep-Alive and Cache-Control headers to persist connections.\n- **Typical Pattern:** Persistent HTTP connections with high request rates designed to exhaust server-side resources.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.80)\n- **Technique:** Brute Force: Password Guessing (FTP) (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may use brute force techniques to attempt access to valid accounts by guessing passwords. This profile focuses on FTP services where numerous login attempts are made systematically.\n- **Typical Pattern:** Frequent, rapid connection attempts to port 21, typically with small packet sizes representing repetitive USER and PASS commands.\n- **Mitigation:** Account Use Policies, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1110/001/\n\n",
+  "rag_predicted_label": "DoS attacks-Slowloris",
+  "rag_is_potential_zero_day": false
+}

@@ -1,83 +1,103 @@
 # UTS-URA: Toward Zero-Shot-Capable Network Intrusion Detection
 
-Repo này tách rõ 2 tầng khác nhau về bản chất:
+Repo tách rõ 2 tầng khác nhau về bản chất:
 
-- **`pipeline/`** — code sản xuất thật, hệ thống end-to-end chạy được (capture → Layer 1 ML →
-  SHAP → RAG → Layer 2 VLM). Đây là những gì `main.py` thực sự `import`/gọi lúc runtime.
-- **`experiments/`** — code + kết quả thí nghiệm dùng để *tạo ra* các thành phần trong
-  `pipeline/` (notebook train AE/SVDD/CLAD, script build SHAP centroid, so sánh biến thể...).
-  Không tự chạy độc lập thành hệ thống, mà là bằng chứng nghiên cứu/quá trình đi tới quyết định
-  cuối cùng trong `pipeline/`.
+- **`project_root/`** : hệ thống end-to-end chạy được (capture → Layer 1 ML
+  → SHAP → RAG → Layer 2 VLM). Đây là những gì `main.py` thực sự `import`/gọi lúc runtime.
+- **`experiments/`** : code + kết quả thí nghiệm dùng để *tạo ra* các thành phần trong
+  `project_root/` (notebook train AE/SVDD/CLAD, script build SHAP centroid/k-NN, so sánh biến
+  thể...). Không tự chạy độc lập thành hệ thống, mà là bằng chứng nghiên cứu/quá trình đi tới
+  quyết định cuối cùng trong `project_root/`.
 
 Không bao gồm data thô lớn (`.csv` trong `binary_split_dataset_z_Infilteration/` bị loại qua
 `.gitignore` vì vượt giới hạn GitHub) — chỉ giữ code, model checkpoint nhỏ, và kết quả đã chạy.
 
-## `pipeline/` — Hệ thống production
+## Sơ đồ cấu trúc
 
 ```
-pipeline/
-├── main.py                    # Orchestrator, 3 mode (capture-only / +ML+SHAP / +RAG+VLM)
-├── requirements.txt
-├── test_ml_shap_rag.py        # Test nhanh Layer 1 + SHAP + RAG (không cần VLM)
-└── core/
-    ├── capture/sniffer.py     # TShark → CICFlowMeter → CSV
-    ├── layer1_ml/
-    │   ├── model_handler.py   # Layer1Inference — load model, map cột CICFlowMeter
-    │   ├── explainer.py       # IDSExplainer — SHAP TreeExplainer, get_shap_dict()
-    │   └── artifacts/         # Model + scaler cho 3 biến thể: ae/, svdd/, xgboost_only/,
-    │                           # + shap_centroid/ (multi-class model cho retrieval)
-    ├── knowledge_base/
-    │   ├── kb_builder.py      # Build FAISS index từ documents/
-    │   ├── documents/         # attack_profiles/, patterns/, sematic/ — 15 attack type
-    │   └── embeddings/        # faiss.index, documents.json, shap_centroids.json
-    ├── layer2_vlm/
-    │   ├── inference.py             # VLMAnalyst — Qwen2.5-VL 7B, RAG-augmented prompting
-    │   ├── shap_centroid_retriever.py  # Retriever mặc định (SHAP vector làm query key)
-    │   ├── rag_retriever.py            # Retriever legacy (text embedding), baseline so sánh
-    │   ├── visualizer.py              # 4 biểu đồ traffic từ PCAP
-    │   └── prompter.py
-    └── utils/                  # config.py, clear_buffer.py
+UTS_URA/
+├── README.md
+│
+├── project_root/                       # Hệ thống production
+│   ├── main.py                         # Orchestrator — 3 mode (capture-only / +ML+SHAP / +RAG+VLM)
+│   ├── requirements.txt
+│   ├── test_ml_shap_rag.py             # Test nhanh Layer 1 + SHAP + RAG (không cần VLM)
+│   └── core/
+│       ├── capture/
+│       │   └── sniffer.py              # TShark → CICFlowMeter → CSV
+│       ├── layer1_ml/
+│       │   ├── model_handler.py        # Layer1Inference — load model, map cột CICFlowMeter
+│       │   ├── explainer.py            # IDSExplainer — SHAP TreeExplainer
+│       │   └── artifacts/              # Model + scaler cho từng biến thể
+│       │       ├── xgboost_only/       #   XGBoost thuần (baseline)
+│       │       ├── ae/                 #   AE-augmented XGBoost
+│       │       ├── svdd/               #   Mixture SVDD-augmented XGBoost
+│       │       └── shap_centroid/      #   Model phụ dùng để build SHAP centroid retrieval
+│       ├── knowledge_base/
+│       │   ├── kb_builder.py           # Build FAISS index từ documents/
+│       │   ├── documents/              # attack_profiles/, patterns/, sematic/ — 15 attack type
+│       │   └── embeddings/             # faiss.index, documents.json, shap_centroids.json
+│       ├── layer2_vlm/
+│       │   ├── inference.py            # VLMAnalyst — Qwen2.5-VL 7B, RAG-augmented prompting
+│       │   ├── shap_centroid_retriever.py  # Retriever mặc định (SHAP vector làm query key)
+│       │   ├── rag_retriever.py        # Retriever legacy (text embedding), baseline so sánh
+│       │   └── visualizer.py           # 4 biểu đồ traffic từ PCAP
+│       └── utils/
+│           ├── config.py
+│           └── clear_buffer.py
+│
+└── experiments/                        # Thí nghiệm & bằng chứng nghiên cứu
+    │
+    ├── ml/                             # Layer 1 ML — huấn luyện & so sánh model
+    │   ├── binary_split_dataset_z_Infilteration/   # Split gốc (CSV bị .gitignore)
+    │   ├── xgboost_only/                # Baseline XGBoost thuần
+    │   ├── ae_xgboost/                  # Notebook + checkpoint AE + XGBoost-augmented
+    │   ├── svdd_xgboost/                # Notebook + checkpoint Mixture Deep SVDD + XGBoost
+    │   ├── clad_baseline/               # CLAD — chỉ dùng baseline so sánh, KHÔNG merge vào pipeline
+    │   └── comparison/                  # So sánh tổng hợp AE/SVDD/CLAD/XGBoost
+    │
+    ├── rag_shap/                        # SHAP-vector retrieval (nguồn gốc shap_centroid_retriever.py)
+    │   ├── kaggle_build_all_variants_shap.py   # Tính SHAP vector + centroid cho cả 3 biến thể
+    │   ├── eval_retrieval_no_infilt.py         # So Top-1/3/5 accuracy: centroid-mean vs k-NN
+    │   ├── model/                       # Checkpoint Layer 1 tải từ Kaggle (xgboost_only/ae/svdd)
+    │   └── artifacts/all_variants_shap/ # SHAP vector, centroid, summary đã chạy
+    │
+    └── vlm/                             # Thí nghiệm VLM confidence-gate (FP-correction)
+        ├── build_fp_tp_set.py           # Tạo bộ FP/TP tự nhiên từ Layer 1 (test+val split)
+        ├── flow_visualizer.py           # 4 chart traffic từ flow CSV (thay PcapVisualizer)
+        ├── gate_prompt.py               # Các phiên bản system prompt cho VLM gate
+        ├── shap_centroid_retriever.py   # Retriever centroid — bản độc lập cho Kaggle
+        ├── shap_knn_retriever.py        # Retriever k-NN (so sánh với centroid)
+        ├── prepare_evidence_kaggle_variant_centroid.py  # Build evidence bundle — centroid
+        ├── prepare_evidence_kaggle_variant_knn.py       # Build evidence bundle — k-NN
+        ├── run_vlm_remote_clean.py      # Chạy VLM trên Kaggle GPU, sinh report + verdict
+        ├── analyze_results.py           # Tính FP-corrected / TP-preserved / net FP reduction
+        └── artifacts/
+            ├── evidence_13_{xgb,ae,svdd}_{centroid,knn}/  # Evidence bundle (SHAP+chart+RAG)
+            └── results/{centroid,knn}/  # Output VLM (results_13_{variant}_{centroid,knn}.jsonl)
 ```
 
-**Chạy thử**: xem hướng dẫn trong `pipeline/main.py` (3 mode: capture-only, +ML+SHAP, đầy đủ
-+RAG+VLM) — cần `tshark`, CICFlowMeter, và môi trường có đủ dependency trong `requirements.txt`.
+## `project_root/` — Chạy thử
 
-## `experiments/` — Thí nghiệm & bằng chứng nghiên cứu
+```bash
+cd project_root
+pip install -r requirements.txt
+python main.py --mode 1   # Capture-only (TShark + CICFlowMeter)
+python main.py --mode 2   # + Layer 1 ML + SHAP
+python main.py --mode 3   # + RAG + Layer 2 VLM (đầy đủ)
+```
 
-### `experiments/layer1_ml/` — Layer 1 ML (binary anomaly gate)
+Cần `tshark`, CICFlowMeter, và (mode 3) Qwen2.5-VL 7B tải sẵn. Trước khi chạy RAG, build FAISS
+index một lần: `python core/knowledge_base/kb_builder.py`.
 
-Kiến trúc gốc: 1 split cố định (`binary_split_dataset_z_Infilteration/`), chỉ label
-**Infiltration** làm zero-shot held-out (chưa phải leave-one-out 15-label mới).
+## `experiments/` — Ba nhóm thí nghiệm
 
-- `ae_xgboost/` — Notebook Autoencoder + XGBoost-augmented (`autoencoder_xgboost_ids_v2.ipynb`),
-  checkpoint (`checkpoints/`), biểu đồ (`images/`).
-- `svdd_xgboost/` — Notebook Mixture Deep SVDD + XGBoost-augmented (`svdd_xgboost_ids.ipynb`),
-  checkpoint, biểu đồ.
-- `xgboost_only/` — Model + scaler baseline XGBoost thuần (không augment).
-- `clad_baseline/` — CLAD (Contrastive Learning for Anomaly Detection) — **chỉ dùng làm baseline
-  so sánh, không merge vào `pipeline/`** (`model.py`, `train.py`, `eval.py`, `losses/`, `util/`,
-  `checkpoints/`).
-- `comparison/` — So sánh tổng hợp giữa các model (AE/SVDD/CLAD/XGBoost).
-- `binary_split_dataset_z_Infilteration/` — Split data gốc (CSV bị `.gitignore`, chỉ giữ cấu
-  trúc thư mục).
+| Thư mục | Câu hỏi nghiên cứu | Kết quả nuôi vào production |
+|---|---|---|
+| `ml/` | AE hay SVDD-augmented XGBoost tốt hơn CLAD/XGBoost thuần cho zero-shot Infiltration? | `project_root/core/layer1_ml/artifacts/{ae,svdd,xgboost_only}/` |
+| `rag_shap/` | SHAP vector làm query key cho RAG có đáng tin hơn text embedding không? | `project_root/core/layer2_vlm/shap_centroid_retriever.py` |
+| `vlm/` | VLM có thể "sửa" False Positive của Layer 1 mà không làm mất True Positive không? | Chưa merge — đang ở giai đoạn thí nghiệm (xem `PROJECT_STATE.md`) |
 
-### `experiments/rag_shap/` — SHAP-Centroid Retrieval (RAG)
-
-Cơ chế retrieval dùng SHAP attribution vector làm query key thay vì text embedding — so sánh
-retrieval quality giữa 3 biến thể Layer 1. Đây là nguồn gốc của
-`pipeline/core/layer2_vlm/shap_centroid_retriever.py`.
-
-- `kaggle_build_all_variants_shap.py` — Chạy trên Kaggle GPU: tính SHAP vector cho mọi flow ở cả
-  3 biến thể (xgboost-only / AE-augmented / SVDD-augmented), lưu ma trận SHAP thô + centroid.
-- `eval_retrieval_no_infilt.py` — Đọc lại SHAP vector đã lưu, tính Top-1/3/5 retrieval accuracy
-  (2 phương pháp: centroid-mean và KNN), loại nhãn Infiltration (zero-shot, không phải target
-  công bằng để so sánh).
-- `model/` — Checkpoint Layer 1 đã tải về từ Kaggle, dùng làm input cho
-  `kaggle_build_all_variants_shap.py`:
-  - `xgboost_only/` — `xgb_only_model_v1_infilteration.pkl`, scaler tương ứng.
-  - `ae/` — `ae_best.pt`, `xgb_aug_model.pkl`, scaler tương ứng.
-  - `svdd/` — 10 sphere encoder (`encoder_0..9.pt`), `centers.npy`, `radii.npy`,
-    `xgb_svdd_model.pkl`, scaler tương ứng.
-- `artifacts/all_variants_shap/` — Kết quả đã chạy: SHAP vector đầy đủ (`shap_full_*.npz`),
-  centroid từng biến thể (`shap_centroids_*.json`), bảng per-label (`per_label_*.csv`), tổng hợp
-  (`summary_*.json`, `cross_variant_summary.json`).
+Chi tiết từng script trong `experiments/vlm/`: xem comment đầu file — mỗi script đều có docstring
+ngắn nêu vai trò trong pipeline 2 giai đoạn (prepare evidence trên Kaggle CPU → chạy VLM trên
+Kaggle GPU → phân tích kết quả local).

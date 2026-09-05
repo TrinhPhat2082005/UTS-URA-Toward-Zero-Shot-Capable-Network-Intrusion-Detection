@@ -1,0 +1,27 @@
+{
+  "row_idx": 11,
+  "set_type": "tp",
+  "label": 1,
+  "xgb_proba": 0.9930345,
+  "source_split": "test_binary.csv",
+  "dst_port": 80.0,
+  "protocol": 6.0,
+  "true_attack_label": "SQL Injection",
+  "shap_top_features": {
+    "Fwd Seg Size Min": -0.8260430097579956,
+    "Fwd Header Len": 0.7998927235603333,
+    "svdd_dist_6": -0.6816233396530151,
+    "Dst Port": 0.639148473739624,
+    "Init Fwd Win Byts": 0.5675987005233765
+  },
+  "shap_image": "shap.png",
+  "chart_images": [
+    "chart_pkt_length_profile.png",
+    "chart_flag_composition.png",
+    "chart_iat_timing.png",
+    "chart_directional_balance.png"
+  ],
+  "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n#### Match 1 (Confidence: 1.00)\n- **Technique:** Initial Access: Exploit Public-Facing Application (SQL Injection) (T1190)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. SQL injection targets flaws in the database query logic of web applications.\n- **Typical Pattern:** HTTP GET/POST requests containing encoded SQL syntax, unusual escape characters, or boolean logic probes.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1190/\n\n#### Match 2 (Confidence: 1.00)\n- **Technique:** Initial Access: Drive-by Compromise (Cross-Site Scripting) (T1189)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.\n- **Typical Pattern:** HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1189/\n\n#### Match 3 (Confidence: 0.98)\n- **Technique:** Brute Force: Password Guessing (Web Application Login) (T1110.001)\n- **Tactic:** Credential Access\n- **Description:** Adversaries may attempt to gain access to a web application by systematically trying many username/password combinations against its login form, without knowledge of valid credentials.\n- **Typical Pattern:** Repeated HTTP POST requests to a login endpoint with varying credential payloads, from a single or small set of source IPs.\n- **Mitigation:** Account Use Policies, Multi-factor Authentication\n- **Reference:** https://attack.mitre.org/techniques/T1110/001/\n\n",
+  "rag_predicted_label": "SQL Injection",
+  "rag_is_potential_zero_day": false
+}

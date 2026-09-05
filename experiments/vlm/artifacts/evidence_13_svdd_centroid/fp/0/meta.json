@@ -1,0 +1,27 @@
+{
+  "row_idx": 0,
+  "set_type": "fp",
+  "label": 0,
+  "xgb_proba": 0.71724397,
+  "source_split": "val_binary.csv",
+  "dst_port": 80.0,
+  "protocol": 6.0,
+  "true_attack_label": null,
+  "shap_top_features": {
+    "Fwd Seg Size Min": -0.9174042344093323,
+    "Fwd Header Len": 0.7777566313743591,
+    "svdd_dist_6": -0.7447898387908936,
+    "Dst Port": 0.6400611400604248,
+    "svdd_dist_3": -0.45492392778396606
+  },
+  "shap_image": "shap.png",
+  "chart_images": [
+    "chart_pkt_length_profile.png",
+    "chart_flag_composition.png",
+    "chart_iat_timing.png",
+    "chart_directional_balance.png"
+  ],
+  "rag_context": "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n> [!WARNING]\n> The observed behavior has LOW similarity to known attack patterns. This may be a NOVEL ATTACK or ZERO-DAY exploit.\n\n#### Match 1 (Confidence: 0.73)\n- **Technique:** Initial Access: Drive-by Compromise (Cross-Site Scripting) (T1189)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.\n- **Typical Pattern:** HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1189/\n\n#### Match 2 (Confidence: 0.67)\n- **Technique:** Endpoint Denial of Service: Application Exhaustion Flood (HOIC) (T1499.002)\n- **Tactic:** Impact\n- **Description:** Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. HOIC (High Orbit Ion Cannon) coordinates many hosts to send high-volume HTTP requests, often with randomized headers via 'boosters', to exhaust server resources and evade simple filtering.\n- **Typical Pattern:** Coordinated high-volume HTTP requests from multiple source IPs, with randomized headers to defeat basic signature and caching defenses.\n- **Mitigation:** Filter Network Traffic, Exploit Protection\n- **Reference:** https://attack.mitre.org/techniques/T1499/002/\n\n#### Match 3 (Confidence: 0.62)\n- **Technique:** Initial Access: Exploit Public-Facing Application (SQL Injection) (T1190)\n- **Tactic:** Initial Access\n- **Description:** Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. SQL injection targets flaws in the database query logic of web applications.\n- **Typical Pattern:** HTTP GET/POST requests containing encoded SQL syntax, unusual escape characters, or boolean logic probes.\n- **Mitigation:** Exploit Protection, Filter Network Traffic\n- **Reference:** https://attack.mitre.org/techniques/T1190/\n\n",
+  "rag_predicted_label": "Brute Force -XSS",
+  "rag_is_potential_zero_day": true
+}
