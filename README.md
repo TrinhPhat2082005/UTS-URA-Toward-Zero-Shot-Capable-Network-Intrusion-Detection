@@ -92,11 +92,11 @@ index một lần: `python core/knowledge_base/kb_builder.py`.
 
 ## `experiments/` — Ba nhóm thí nghiệm
 
-| Thư mục | Câu hỏi nghiên cứu | Kết quả nuôi vào production |
-|---|---|---|
-| `ml/` | AE hay SVDD-augmented XGBoost tốt hơn CLAD/XGBoost thuần cho zero-shot Infiltration? | `project_root/core/layer1_ml/artifacts/{ae,svdd,xgboost_only}/` |
-| `rag_shap/` | SHAP vector làm query key cho RAG có đáng tin hơn text embedding không? | `project_root/core/layer2_vlm/shap_centroid_retriever.py` |
-| `vlm/` | VLM có thể "sửa" False Positive của Layer 1 mà không làm mất True Positive không? | Chưa merge — đang ở giai đoạn thí nghiệm (xem `PROJECT_STATE.md`) |
+| Thư mục | Câu hỏi nghiên cứu | Trạng thái | Đã đưa vào production ở đâu |
+|---|---|---|---|
+| `ml/` | AE hay SVDD-augmented XGBoost tốt hơn CLAD/XGBoost thuần cho zero-shot Infiltration? | đã merge | `project_root/core/layer1_ml/artifacts/{ae,svdd,xgboost_only}/` |
+| `rag_shap/` | SHAP vector làm query key cho RAG có đáng tin hơn text embedding không? | đã merge | `project_root/core/layer2_vlm/shap_centroid_retriever.py` |
+| `vlm/` | VLM có thể "sửa" False Positive của Layer 1 mà không làm mất True Positive không? | chưa merge |  |
 
 Chi tiết từng script trong `experiments/vlm/`: xem comment đầu file — mỗi script đều có docstring
 ngắn nêu vai trò trong pipeline 2 giai đoạn (prepare evidence trên Kaggle CPU → chạy VLM trên
