@@ -1,6 +1,7 @@
 # Raw/split CSV data files exceed GitHub's 100MB per-file limit and are not
 # needed for code review — only the code + small model checkpoints are kept.
 experiments/ml/binary_split_dataset_z_Infilteration/*.csv
+project_root/data/*.csv
 
 # Python cache
 __pycache__/
