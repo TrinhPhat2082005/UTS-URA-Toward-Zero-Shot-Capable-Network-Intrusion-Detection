@@ -57,13 +57,17 @@ def main():
     parser.add_argument("--layer1_variant", type=str, choices=["xgboost", "ae", "svdd"], default="xgboost",
                         help="Layer 1 gate: 'xgboost' (plain gate), 'ae' (AE-augmented XGBoost), "
                              "'svdd' (XGBoost + Mixture Deep SVDD OR-Fusion)")
-    parser.add_argument("--retriever", type=str, choices=["shap_centroid", "text_rag"], default="shap_centroid",
-                        help="RAG bridge: 'shap_centroid' (cosine match against per-label SHAP "
-                             "centroids, default — see RAG_ISSUES.md for why this replaced text_rag), "
-                             "'text_rag' (legacy FAISS/sentence-embedding retriever)")
+    parser.add_argument("--retriever", type=str, choices=["shap_knn", "shap_centroid"], default="shap_knn",
+                        help="RAG bridge: 'shap_knn' (cosine match against the FULL per-label SHAP "
+                             "build pool, default — beat centroid-mean on top-1 known-attack "
+                             "retrieval accuracy, see shap_knn_retriever.py), 'shap_centroid' "
+                             "(cosine match against per-label SHAP mean centroids). The legacy "
+                             "FAISS/sentence-embedding retriever (RAGRetriever) has been removed "
+                             "from this pipeline — see RAG_ISSUES.md for why; it is retained only "
+                             "as an offline baseline for the retrieval ablation (Table 7).")
     parser.add_argument("--shap_centroid_threshold", type=float, default=0.8,
-                        help="Cosine similarity threshold for shap_centroid retriever. Below this "
-                             "for every label -> flagged as a potential zero-day.")
+                        help="Cosine similarity threshold for the shap_knn/shap_centroid retrievers. "
+                             "Below this for every label -> flagged as a potential zero-day.")
 
     args = parser.parse_args()
     
@@ -106,18 +110,19 @@ def main():
         
         print(f"[3] Loading RAG bridge (retriever={args.retriever})...")
         try:
-            if args.retriever == "shap_centroid":
+            if args.retriever == "shap_knn":
+                from shap_knn_retriever import SHAPKNNRetriever
+                rag = SHAPKNNRetriever(
+                    npz_path=os.path.join(PROJECT_ROOT, "core", "knowledge_base", "embeddings", "shap_full_xgboost_only.npz"),
+                    profiles_dir=os.path.join(PROJECT_ROOT, "core", "knowledge_base", "documents", "attack_profiles"),
+                    threshold=args.shap_centroid_threshold,
+                )
+            else:
                 from shap_centroid_retriever import SHAPCentroidRetriever
                 rag = SHAPCentroidRetriever(
                     centroids_path=os.path.join(PROJECT_ROOT, "core", "knowledge_base", "embeddings", "shap_centroids.json"),
                     profiles_dir=os.path.join(PROJECT_ROOT, "core", "knowledge_base", "documents", "attack_profiles"),
                     threshold=args.shap_centroid_threshold,
-                )
-            else:
-                from rag_retriever import RAGRetriever
-                rag = RAGRetriever(
-                    index_path=os.path.join(PROJECT_ROOT, "core", "knowledge_base", "embeddings", "faiss.index"),
-                    docs_path=os.path.join(PROJECT_ROOT, "core", "knowledge_base", "embeddings", "documents.json")
                 )
         except Exception as e:
             print(f"[Warning] RAG unavailable: {e}. Continuing without RAG.")
@@ -161,29 +166,22 @@ def main():
 
                 explainer = IDSExplainer(l1_handler.bst, l1_handler.model_features)
 
-                # Single TreeExplainer call returns waterfall PNGs, per-flow SHAP
-                # dicts, and full SHAP vectors (reused directly by shap_centroid
-                # retriever, avoiding a second TreeExplainer pass).
-                shap_paths, shap_dicts, full_vectors = explainer.explain_and_get_dicts(ids_anomaly, preds_anomaly)
+                # Single TreeExplainer call returns waterfall PNGs and full SHAP
+                # vectors (reused directly by the shap_knn/shap_centroid
+                # retriever, avoiding a second TreeExplainer pass). The top-k
+                # SHAP dict return value is unused now that the text-embedding
+                # retriever (which queried on it) has been removed.
+                shap_paths, _shap_dicts, full_vectors = explainer.explain_and_get_dicts(ids_anomaly, preds_anomaly)
 
                 # RAG Retrieval: one context per anomalous flow
                 rag_contexts = []
-                if rag and args.retriever == "shap_centroid":
-                    print(f"[RAG] SHAP-centroid matching for {len(ids_anomaly)} flow(s) "
+                if rag:
+                    print(f"[RAG] {args.retriever} matching for {len(ids_anomaly)} flow(s) "
                           f"(threshold={args.shap_centroid_threshold})...")
                     rag_results = rag.retrieve_batch(full_vectors, top_k=3)
                     for flow_idx, rag_result in enumerate(rag_results):
                         rag_contexts.append(rag.format_context_for_vlm(rag_result))
                         print(f"[RAG] Flow {flow_idx+1} | Predicted: {rag_result['predicted_label']}")
-                        print(f"       Latency: {rag_result['latency_ms']:.1f}ms | Zero-day: {rag_result['is_potential_zero_day']}")
-                        for m in rag_result['matches']:
-                            print(f"       → {m['doc']['title']} (conf: {m['confidence']:.2f})")
-                elif rag:
-                    print(f"[RAG] Querying Knowledge Base for {len(shap_dicts)} flow(s)...")
-                    for flow_idx, shap_dict in enumerate(shap_dicts):
-                        rag_result = rag.retrieve(shap_dict, top_k=3)
-                        rag_contexts.append(rag.format_context_for_vlm(rag_result))
-                        print(f"[RAG] Flow {flow_idx+1} | Query: {rag_result['query']}")
                         print(f"       Latency: {rag_result['latency_ms']:.1f}ms | Zero-day: {rag_result['is_potential_zero_day']}")
                         for m in rag_result['matches']:
                             print(f"       → {m['doc']['title']} (conf: {m['confidence']:.2f})")
