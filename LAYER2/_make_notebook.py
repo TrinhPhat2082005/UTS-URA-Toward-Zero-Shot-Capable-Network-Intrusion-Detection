@@ -5,14 +5,21 @@ import os
 C = []
 
 
+def _lines(s):
+    """Chuoi nhieu dong -> list dong DUNG chuan nbformat: moi phan tu (tru
+    phan tu cuoi) phai giu lai '\n' o cuoi. Thieu no thi cac tool doc notebook
+    khac Jupyter (nbconvert, VSCode, GitHub preview) co the noi dong sai."""
+    lines = s.rstrip("\n").split("\n")
+    return [ln + "\n" for ln in lines[:-1]] + (lines[-1:] if lines else [])
+
+
 def md(s):
-    C.append({"cell_type": "markdown", "metadata": {},
-              "source": s.rstrip("\n").split("\n")})
+    C.append({"cell_type": "markdown", "metadata": {}, "source": _lines(s)})
 
 
 def code(s):
     C.append({"cell_type": "code", "execution_count": None, "metadata": {},
-              "outputs": [], "source": s.rstrip("\n").split("\n")})
+              "outputs": [], "source": _lines(s)})
 
 
 # --------------------------------------------------------------------------
@@ -338,8 +345,7 @@ print("zero-day flag  :", df["rag_is_potential_zero_day"].sum(), "/", len(df))""
 code("""# Ca VLM doan SAI - doc de hieu kieu loi
 d = metrics.usable(df)
 bad = d[~d.apply(lambda r: metrics._match(r["predicted_class"], r.get("Label_Text")), axis=1)]
-print(f"{len(bad)}/{len(d)} ca sai
-")
+print(f"{len(bad)}/{len(d)} ca sai")
 display(bad[["Label_Text", "rag_predicted_label", "predicted_class",
              "rag_top_sim", "confidence_logprob"]].head(20))""")
 
@@ -365,8 +371,7 @@ if RUN_SENSITIVITY:
     OUT_S = os.path.join(config.OUT_DIR, f"results_sensitivity_{config.VARIANT}.jsonl")
 
     for variant in ["neutral", "trust_rag", "trust_visual"]:
-        print(f"
---- {variant} ---")
+        print(f"\\n--- {variant} ---")
         for _, row in sub.iterrows():
             rec = pipeline.analyze_sample(
                 row=row, l1=l1, ev=ev, vlm=vlm, feature_names=feats,
