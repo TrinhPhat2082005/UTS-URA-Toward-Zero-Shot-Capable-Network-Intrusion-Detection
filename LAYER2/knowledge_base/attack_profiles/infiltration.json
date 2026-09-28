@@ -1,0 +1,47 @@
+{
+  "id": "infiltration",
+  "title": "Execution: User Execution (Malicious File) + Discovery: Network Service Scanning",
+  "category": "Infiltration",
+  "mitre_id": "T1204.002",
+  "mitre_tactic": "Execution",
+  "mitre_url": "https://attack.mitre.org/techniques/T1204/002/",
+  "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "mitre_stages": [
+    {
+      "order": 1,
+      "tactic": "Execution",
+      "mitre_id": "T1204.002",
+      "technique_name": "User Execution: Malicious File",
+      "note": "Victim opens a malicious file to establish the initial foothold."
+    },
+    {
+      "order": 2,
+      "tactic": "Discovery",
+      "mitre_id": "T1046",
+      "technique_name": "Network Service Discovery",
+      "note": "Attacker scans the internal network from the compromised host to map reachable services."
+    }
+  ],
+  "description": "This dataset attack label spans two stages: a malicious file is opened to gain an initial foothold on the host, followed by internal network service scanning from the compromised machine. This can include buffer overflows, path traversal, or remote code execution as the initial vector.",
+  "network_indicators": {
+    "key_features": [
+      "High Flow Duration",
+      "Variable Packet Length",
+      "Atypical Service Communication"
+    ],
+    "traffic_pattern": "Initial exploit payload followed by persistent command and control traffic or data exfiltration."
+  },
+  "mitigation": [
+    {
+      "id": "M1051",
+      "name": "Update Software",
+      "action": "Regularly patch and update all software and operating systems."
+    },
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Use network segmentation to limit the impact of a successful infiltration."
+    }
+  ],
+  "false_positive_hints": "Unusual but legitimate administrative activity or specialized software updates can sometimes mimic infiltration patterns."
+}

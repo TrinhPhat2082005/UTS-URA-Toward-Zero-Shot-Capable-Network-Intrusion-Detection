@@ -1,0 +1,32 @@
+{
+  "id": "dos_goldeneye",
+  "title": "DoS GoldenEye Attack",
+  "category": "DoS",
+  "mitre_id": "T1499.002",
+  "mitre_tactic": "Impact",
+  "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
+  "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "description": "GoldenEye is a DoS tool that performs a layer 7 DoS attack by exhausting the application pool resources. It uses Keep-Alive and Cache-Control headers to persist connections.",
+  "network_indicators": {
+    "key_features": [
+      "High Flow Pkts/s",
+      "High Fwd Pkts/s",
+      "Low Flow IAT Mean",
+      "Specific HTTP Headers"
+    ],
+    "traffic_pattern": "Persistent HTTP connections with high request rates designed to exhaust server-side resources."
+  },
+  "mitigation": [
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Implement rate limiting and connection limits per source IP."
+    },
+    {
+      "id": "M1050",
+      "name": "Exploit Protection",
+      "action": "Use WAF to detect and block GoldenEye-specific request patterns."
+    }
+  ],
+  "false_positive_hints": "Aggressive web crawlers or misconfigured client applications might generate similar high-frequency request patterns."
+}

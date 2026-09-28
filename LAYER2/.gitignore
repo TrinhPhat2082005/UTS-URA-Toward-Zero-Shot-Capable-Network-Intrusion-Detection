@@ -1,0 +1,7 @@
+# Du lieu nang - nam tren Kaggle Dataset, khong commit
+data/
+artifacts/
+evidence_cache/
+__pycache__/
+*.pyc
+dataset-metadata.json

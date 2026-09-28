@@ -1,0 +1,31 @@
+{
+  "id": "web_attack_sql_injection",
+  "title": "Initial Access: Exploit Public-Facing Application (SQL Injection)",
+  "category": "Initial Access",
+  "mitre_id": "T1190",
+  "mitre_tactic": "Initial Access",
+  "mitre_url": "https://attack.mitre.org/techniques/T1190/",
+  "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "description": "Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. SQL injection targets flaws in the database query logic of web applications.",
+  "network_indicators": {
+    "key_features": [
+      "SQL Keywords in Payload",
+      "Variable Packet Length",
+      "Dst Port 80/443"
+    ],
+    "traffic_pattern": "HTTP GET/POST requests containing encoded SQL syntax, unusual escape characters, or boolean logic probes."
+  },
+  "mitigation": [
+    {
+      "id": "M1050",
+      "name": "Exploit Protection",
+      "action": "Enforce input validation and use parameterized queries in application code."
+    },
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Deploy WAF rules to identify and block common SQL injection signatures."
+    }
+  ],
+  "false_positive_hints": "Search queries or form submissions containing apostrophes or technical language can occasionally trigger SQLi alerts."
+}
