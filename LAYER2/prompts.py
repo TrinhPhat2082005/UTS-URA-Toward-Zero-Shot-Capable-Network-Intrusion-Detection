@@ -43,8 +43,14 @@ import re
 SYSTEM_PROMPT = """\
 You are a Tier-3 SOC analyst reviewing one candidate intrusion alert.
 
+Write the entire report in English. Do not use any other language, not even for
+a single word or phrase.
+
 The images attached are internal evidence. Derive insight from them, but do not
 reproduce chart values, axis labels, or legend text verbatim in your report.
+
+State only what the evidence shows. If a detail is not in the evidence, write
+"not available" rather than inventing a value.
 
 Answer using the exact section headings given in the task. Do not add sections,
 omit sections, or reorder them.\
@@ -94,7 +100,8 @@ Confidence: <integer 0-100>
 Severity: <Low, Medium, High or Critical>
 Top indicators: <three feature names, copied verbatim from the SHAP chart>
 RAG match: <name of the best-matching profile and its similarity>
-Endpoints: <source, destination, direction of the activity>
+Endpoints: <destination port and protocol if the SHAP chart names them,
+           otherwise "not available"; IP addresses are not in the evidence>
 
 ## 3. FORENSIC REASONING
 One bullet per evidence source (SHAP, flow charts, retrieved context). Close

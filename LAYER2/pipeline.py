@@ -352,22 +352,36 @@ class VLMRunner:
         argmax, gia tri se nam trong [1/V, 1.0] va thuc te thuong > 0.3.
         """
         try:
-            toks = self.processor.tokenizer.convert_ids_to_tokens(seq.tolist())
-            low = [t.lower().lstrip("Ġ▁_ ") for t in toks]
+            import re
+            tok = self.processor.tokenizer
+            ids = seq.tolist()
+            text = tok.decode(ids, skip_special_tokens=False)
 
-            idx = None
-            for i, t in enumerate(low):
-                if t.startswith("predicted"):
-                    # bo qua " class" va ":" de toi token ten lop
-                    for j in range(i + 1, min(i + 6, len(low))):
-                        if ":" in toks[j]:
-                            idx = j + 1
-                            break
-                    break
-            if idx is None or idx >= len(scores):
+            # Muc 2 moi la cho model chon lop; chu "predicted" cung xuat hien o
+            # muc 1 (Executive summary) nen phai neo theo tieu de muc 2 truoc.
+            start = 0
+            m2 = re.search(r"#{1,4}\s*2\.", text)
+            if m2:
+                start = m2.end()
+
+            m = re.compile(r"predicted\s*class\s*\**\s*:\s*\**\s*",
+                           re.I).search(text, start)
+            if m is None:
                 return None
-            probs = self.torch.softmax(scores[idx][0].float(), dim=-1)
-            return float(probs[seq[idx]].item())
+            target = m.end()          # vi tri ky tu bat dau ten lop
+
+            # Cong don do dai tung token cho den khi vuot qua target. Cach nay
+            # khong phu thuoc tokenizer cat chu the nao (co the la "**", ":",
+            # hay " class" dinh lien nhau).
+            acc = 0
+            for i, t in enumerate(ids):
+                acc += len(tok.decode([t], skip_special_tokens=False))
+                if acc > target:
+                    if i >= len(scores):
+                        return None
+                    probs = self.torch.softmax(scores[i][0].float(), dim=-1)
+                    return float(probs[ids[i]].item())
+            return None
         except Exception:
             return None
 

@@ -223,17 +223,26 @@ def report_quality(df, verbose=True):
         conv.append(bool(re.search(r"converg|contradict|conflict|disagree|agree",
                                    str(r.get("reasoning") or ""), re.I)))
 
+    # Qwen thi thoang ro ngon ngu goc (vd "packets流向目的地端口8080"). Report
+    # lan tieng Trung thi khong dung duoc, nen phai dem.
+    cjk = re.compile(r"[一-鿿]")
+    non_en = [bool(cjk.search(str(r.get("raw_output") or ""))) for _, r in d.iterrows()]
+
     out = {
         "n": n,
         "m8_evidence_grounding": float(np.mean(grounded)),
         "m9_hallucinated_evidence": float(np.mean(halluc)),
         "m10_convergence_stated": float(np.mean(conv)),
+        "non_english_rate": float(np.mean(non_en)),
     }
     if verbose:
         print(f"\n  M8 nhac dung feature SHAP {out['m8_evidence_grounding']:6.1%}")
         print(f"  M9 nhac feature khong co  {out['m9_hallucinated_evidence']:6.1%}"
               f"   (uoc luong, can ra tay xac nhan)")
         print(f"  M10 co cau ket luan hoi tu {out['m10_convergence_stated']:6.1%}")
+        if out["non_english_rate"]:
+            print(f"  !! report lan chu Han     {out['non_english_rate']:6.1%}"
+                  f"   ({sum(non_en)}/{n} ban ghi)")
     return out
 
 
