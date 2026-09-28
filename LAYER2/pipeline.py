@@ -625,3 +625,44 @@ def append_jsonl(rec, path=None):
         print(f"  !! khong ghi duoc vao thu muc goc -> {path}")
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False, default=str) + "\n")
+
+
+# ==========================================================================
+# Tai tao anh tu row_idx
+# ==========================================================================
+def rebuild_images(row_idx, l1, ev, feature_names, out_dir=None, val_df=None):
+    """Ve lai 5 anh evidence cho MOT dong, chi can row_idx.
+
+    5 anh khong duoc luu trong results_*.jsonl (analyze_sample xoa ngay sau
+    khi VLM doc xong, keep_images=False mac dinh o cell 9) - JSON chi con lai
+    2 con so n_images/t_images_s, khong mang du lieu de dung lai anh. Doc
+    row_idx tu ban ghi JSON roi goi ham nay la ra dung lai duoc ca 5 anh, vi
+    Layer 1 (cung checkpoint, cung threshold) tren dung dong val_full.csv do
+    luon cho dung mot SHAP vector - khong co gi ngau nhien trong buoc nay.
+
+    Args:
+        row_idx: so nguyen - lay tu rec["row_idx"] cua mot dong trong
+                 results_*.jsonl.
+        l1, ev: Layer1Engine va EvidenceBuilder da khoi tao (nhu o cell 3-4).
+        feature_names: 78 ten cot feature goc (tra ve tu load_alert_pool()).
+        out_dir: noi luu anh; mac dinh EVIDENCE_DIR/rebuilt_s<row_idx>.
+        val_df: DataFrame val_full.csv da doc san, de tranh doc lai file moi
+                lan goi ham nay cho nhieu row_idx lien tiep.
+
+    Returns:
+        (image_paths, row) - duong dan 5 anh va dong flow dung de ve.
+    """
+    if val_df is None:
+        val_df = pd.read_csv(config.VAL_BINARY_CSV)
+    row = val_df.iloc[int(row_idx)]
+
+    if out_dir is None:
+        out_dir = os.path.join(config.EVIDENCE_DIR, f"rebuilt_s{row_idx}")
+
+    X = row[feature_names].to_numpy(dtype="float64").reshape(1, -1)
+    Xf = l1.build_input(X)
+    proba, sv = l1.score(X)
+
+    imgs, _ = ev.make_images(row, sv[0], l1.feature_names, out_dir,
+                             float(proba[0]), model_input=Xf[0])
+    return imgs, row
