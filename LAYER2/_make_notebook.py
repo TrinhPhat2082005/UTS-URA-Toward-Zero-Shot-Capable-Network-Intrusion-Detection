@@ -84,9 +84,18 @@ code('''# import os, sys, subprocess
 # print("code:", LAYER2)
 # print("data:", DATA)
 # print("out :", os.environ["UTS_OUT"])
+''')
 
-# Kaggle da co torch/transformers/xgboost/shap; thuong chi thieu 2 goi nay:
-# !pip install -q qwen-vl-utils bitsandbytes''')
+md("""### Cai dependency
+
+Kaggle da co torch/transformers/xgboost/shap. Hai goi duoi thuong thieu hoac
+qua cu - ban bitsandbytes cu bao `ImportError: requires bitsandbytes>=0.46.1`
+khi nap model 4-bit.
+
+Restart session la mat het goi cai them, nen chay lai cell nay moi lan restart.
+Cai xong bitsandbytes PHAI restart kernel (no nap thu vien CUDA luc import).""")
+
+code('''!pip install -q -U "bitsandbytes>=0.46.1" qwen-vl-utils''')
 
 md("""### Khong chac ten dataset?
 
