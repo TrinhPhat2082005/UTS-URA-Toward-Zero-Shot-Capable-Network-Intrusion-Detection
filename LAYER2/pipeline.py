@@ -295,7 +295,11 @@ class VLMRunner:
         print("VLM san sang.")
 
     def generate(self, system_prompt, user_prompt, image_paths):
-        """Tra (raw_text, confidence_logprob, latency_s)."""
+        """Tra (raw_text, conf, latency_s).
+
+        conf = {"p": float, "token": str} hoac None neu khong xac nhan duoc
+        vi tri token ten lop.
+        """
         from qwen_vl_utils import process_vision_info
 
         content = [{"type": "text", "text": user_prompt}]
@@ -332,7 +336,11 @@ class VLMRunner:
 
         conf = None
         if config.VLM_RETURN_LOGPROBS and getattr(out, "scores", None):
-            conf = self._class_logprob(seq, out.scores)
+            # Parse ten lop TRUOC roi moi do confidence: phai biet model da
+            # chon lop gi thi moi xac nhan duoc token do dung la token do.
+            import prompts
+            cls = prompts.parse_report(raw).get("predicted_class")
+            conf = self._class_logprob(seq, out.scores, cls)
 
         # Giai phong ngay: chay 140 mau lien tiep thi bo nho scores/inputs tich
         # luy se day GPU den OOM o vai chuc mau dau.
@@ -341,16 +349,35 @@ class VLMRunner:
 
         return raw, conf, latency
 
-    def _class_logprob(self, seq, scores):
-        """Xac suat model gan cho token DAU TIEN cua ten lop du doan.
+    # So token toi da duoc phep bo qua sau dau ':' truoc khi tu bo. Du cho cac
+    # ky tu dem nhu " ", "**", "\n"; qua nguong nay thi chac chan da lech.
+    _CONF_MAX_SKIP = 5
 
-        Tim cum "Predicted class:" trong chuoi token, roi lay softmax prob cua
-        token ngay sau dau ':' - do la luc model thuc su chon lop nao. Day la do
-        chac chan noi tai, doc lap voi con so Confidence no tu khai.
+    def _class_logprob(self, seq, scores, predicted_class):
+        """Xac suat model gan cho token DAU TIEN cua ten lop.
+
+        Tra {"p": float, "token": str} hoac None.
+
+        VI SAO CAN predicted_class
+        --------------------------
+        Chi dinh vi bang phep cong don do dai token la khong du: lech mot token
+        thi p van la mot so hop le (xac suat cua dau ':' chang han) ma khong co
+        gi bao loi - sai am tham. Nen sau khi dinh vi, doi chieu token voi ten
+        lop ma parser da boc duoc tu text; hai duong nay doc lap nhau nen khop
+        duoc la bang chung du manh.
+
+        Khong yeu cau ten lop thuoc 14 nhan: neu VLM tra "DoS GoldenEye Attack"
+        thi token "DoS" van khop prefix, van do duoc. Viec ten do co dung
+        taxonomy hay khong la chuyen cua M1, khong phai cua ham nay.
 
         Luu y khi bao cao: do_sample=False (greedy) nen token duoc chon luon la
-        argmax, gia tri se nam trong [1/V, 1.0] va thuc te thuong > 0.3.
+        argmax; gia tri nam trong [1/V, 1.0]. Ten lop dai bi cat nhieu token
+        nen chi do duoc token dau (vd "Do" cua "DoS_attacks_Hulk").
         """
+        cls = (predicted_class or "").strip().strip("*`").lower()
+        if not cls:
+            return None
+
         try:
             import re
             tok = self.processor.tokenizer
@@ -359,28 +386,39 @@ class VLMRunner:
 
             # Muc 2 moi la cho model chon lop; chu "predicted" cung xuat hien o
             # muc 1 (Executive summary) nen phai neo theo tieu de muc 2 truoc.
-            start = 0
             m2 = re.search(r"#{1,4}\s*2\.", text)
-            if m2:
-                start = m2.end()
+            start = m2.end() if m2 else 0
 
-            m = re.compile(r"predicted\s*class\s*\**\s*:\s*\**\s*",
-                           re.I).search(text, start)
+            m = re.compile(r"predicted\s*class\s*\**\s*:", re.I).search(text, start)
             if m is None:
                 return None
-            target = m.end()          # vi tri ky tu bat dau ten lop
+            target = m.end()          # ngay sau dau ':'
 
-            # Cong don do dai tung token cho den khi vuot qua target. Cach nay
-            # khong phu thuoc tokenizer cat chu the nao (co the la "**", ":",
-            # hay " class" dinh lien nhau).
-            acc = 0
+            # Cong don do dai token da decode de doi vi tri KY TU sang chi so
+            # TOKEN. Cach nay khong phu thuoc tokenizer cat chu the nao.
+            acc, first = 0, None
             for i, t in enumerate(ids):
                 acc += len(tok.decode([t], skip_special_tokens=False))
                 if acc > target:
-                    if i >= len(scores):
-                        return None
-                    probs = self.torch.softmax(scores[i][0].float(), dim=-1)
-                    return float(probs[ids[i]].item())
+                    first = i
+                    break
+            if first is None:
+                return None
+
+            # Tu vi tri do, bo qua cac token dem (" ", "**", xuong dong) cho
+            # den khi gap token bat dau bang CHU, roi xac nhan no la doan dau
+            # cua ten lop.
+            for i in range(first, min(first + self._CONF_MAX_SKIP, len(ids))):
+                if i >= len(scores):
+                    return None
+                raw_tok = tok.decode([ids[i]], skip_special_tokens=False)
+                t = raw_tok.strip().strip("*`")
+                if not t or not t[0].isalpha():
+                    continue                      # ky tu dem, doc tiep
+                if not cls.startswith(t.lower()):
+                    return None                   # chu la -> da lech, bo
+                probs = self.torch.softmax(scores[i][0].float(), dim=-1)
+                return {"p": float(probs[ids[i]].item()), "token": raw_tok}
             return None
         except Exception:
             return None
@@ -474,7 +512,11 @@ def analyze_sample(row, l1, ev, vlm, feature_names, prompt_variant="neutral",
 
         parsed = prompts.parse_report(raw)
         rec["confidence_stated"] = parsed.pop("confidence")
-        rec["confidence_logprob"] = conf_lp
+
+        # conf_lp la {"p", "token"} hoac None. Ghi ca token da do de sau nay
+        # doc lai duoc no da bat dung cho hay chua.
+        rec["confidence_logprob"] = conf_lp["p"] if conf_lp else None
+        rec["conf_token"] = conf_lp["token"] if conf_lp else None
         rec.update(parsed)
 
         rec["latency_s"] = (rec["t_layer1_s"] + t_rag + t_img + t_vlm)
