@@ -233,7 +233,8 @@ print("-" * 70)
 print("severity    :", rec.get("severity"), "| MITRE:", rec.get("mitre_id"))
 print("top_indicat :", rec.get("top_indicators"))
 print("SHAP top-5  :", [f["name"] for f in (rec.get("shap_top_features") or [])])
-print("conf logprob:", rec.get("confidence_logprob"), "| tu khai:", rec.get("confidence_stated"))
+print("conf logprob:", rec.get("confidence_logprob"),
+      f"(token do: {rec.get('conf_token')!r})", "| tu khai:", rec.get("confidence_stated"))
 print("n_sections  :", rec.get("n_sections"), "/6 | parse_error:", rec.get("parse_error"))
 print("latency     :", round(rec.get("latency_s", 0), 1), "s")""")
 
