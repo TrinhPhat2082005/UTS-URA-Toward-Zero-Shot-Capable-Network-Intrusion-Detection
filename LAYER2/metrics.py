@@ -59,12 +59,26 @@ def _norm(s):
     return re.sub(r"[\s_\-]+", "", s).lower()
 
 
+def _words(s):
+    """Tach thanh tu con theo _/-/khoang trang, bo 's' so nhieu cuoi tu."""
+    return [w.lower().rstrip("s") for w in re.split(r"[\s_\-]+", s or "") if w]
+
+
 def _match(a, b):
-    """Hai ten co chi cung mot lop khong (so prefix sau khi chuan hoa)."""
+    """Hai ten co chi cung mot lop khong.
+
+    Hai buoc: (1) so prefix sau khi chuan hoa het ky tu ngan cach - bat duoc
+    da so ca; (2) so tung tu con, bo qua 's' so nhieu cuoi moi tu - bat duoc
+    ca lech kieu "DDoS_attacks_LOIC_HTTP" vs "DDOS_attack_LOIC_HTTP" (VLM
+    doi dung 's' giua chuoi, khong phai sai nghia). Phat hien tren 140 mau
+    dau tien: thieu buoc 2 lam M1 bao 61% thay vi dung 65%.
+    """
     na, nb = _norm(a), _norm(b)
     if not na or not nb:
         return False
-    return na == nb or na.startswith(nb) or nb.startswith(na)
+    if na == nb or na.startswith(nb) or nb.startswith(na):
+        return True
+    return _words(a) == _words(b)
 
 
 def usable(df):
