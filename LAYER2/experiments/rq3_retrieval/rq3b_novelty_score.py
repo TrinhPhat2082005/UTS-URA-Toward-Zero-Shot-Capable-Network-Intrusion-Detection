@@ -62,7 +62,18 @@ for bi, a in ((0, 0.004), (1, 0.015)):
             x, y = np.array([r[k1] for r in ev]), np.array([r[k2] for r in ev])
             p = wilcoxon(x, y, zero_method="zsplit").pvalue
             P(f"- {n1} vs {n2}: chenh TB {np.mean(x - y):+.3f}, hon o {int((x > y).sum())}/{len(x)} round, Wilcoxon p = {p:.3f}")
-        e2e = np.mean([r["zs"] * r.get("full_d5", 0.0) for r in rows])
+        # Quy uoc cua paper (tab:res-novelty): chi cac round hop le KHONG phai song sinh
+        P(f"\n**Paper (tab:res-novelty) — {len(ex)} round, bo song sinh:**\n")
+        P("| Khoa | AUROC | Detect@5% |")
+        P("|---|---|---|")
+        for k, nm in KEYS:
+            P(f"| {nm} | {np.mean([r[k] for r in ex]):.3f} | {np.mean([r[k + '_d5'] for r in ex]):.3f} |")
+        for m, sfx in (("AUROC", ""), ("Detect@5%", "_d5")):
+            x = np.array([r["full" + sfx] for r in ex])
+            y = np.array([r["raw" + sfx] for r in ex])
+            P(f"- {m} SHAP day du vs Feature tho: Wilcoxon p = {wilcoxon(x, y, zero_method='zsplit').pvalue:.3f}")
+        P("")
+        e2e =np.mean([r["zs"] * r.get("full_d5", 0.0) for r in rows])
         e2e_ex = np.mean([r["zs"] * r.get("full_d5", 0.0) for r in rows if not r["twin"]])
         P(f"- End-to-end zero-day (ZS-Acc x Detect@5%, SHAP day du, 14 round, round khong hop le = 0): {e2e:.4f} (bo song sinh: {e2e_ex:.4f})\n")
         P("| Round | n unk | n known | ZS-Acc | Trung lap (unk) | AUROC SHAP day du | AUROC SHAP 78 | AUROC tho | Det@5% SHAP | Tactic (SHAP) | Tactic (tho) |")

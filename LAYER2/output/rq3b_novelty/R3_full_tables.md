@@ -1,8 +1,3 @@
-# R3 — Zero-day voi pool DAY DU (khop pipeline)
-
-Ngay chay: 2026-10-01. Moi round: pool = TOAN BO attack trong train_benign_attack.csv cua round (13 loai, 106,090–122,048 flow, khong benign, khong gioi han); query = TOAN BO alert (known: attack cua val_binary; unknown: loai bi giau) o nguong FPR alpha tren benign train. Novelty = trung binh L2 toi 10 lang gieng gan nhat. Round hop le: >= 20 alert unknown va known. Wilcoxon cap theo round. End-to-end = ZS-Acc x Detect@5%, round khong hop le tinh = 0. Dau ‡ = cap song sinh FTP/SlowHTTPTest.
-
-Thay the ket qua pool gioi han 2,000/loai trong R3_ZERODAY.md.
 
 ## alpha = 0.4%
 
@@ -17,6 +12,17 @@ Thay the ket qua pool gioi han 2,000/loai trong R3_ZERODAY.md.
 - SHAP day du vs Feature tho: chenh TB +0.149, hon o 10/12 round, Wilcoxon p = 0.034
 - SHAP 78 vs Feature tho: chenh TB +0.149, hon o 10/12 round, Wilcoxon p = 0.034
 - SHAP day du vs SHAP 78: chenh TB +0.000, hon o 0/12 round, Wilcoxon p = 1.000
+
+**Paper (tab:res-novelty) — 10 round, bo song sinh:**
+
+| Khoa | AUROC | Detect@5% |
+|---|---|---|
+| SHAP day du | 0.960 | 0.872 |
+| SHAP 78 | 0.960 | 0.872 |
+| Feature tho | 0.935 | 0.841 |
+- AUROC SHAP day du vs Feature tho: Wilcoxon p = 0.131
+- Detect@5% SHAP day du vs Feature tho: Wilcoxon p = 0.188
+
 - End-to-end zero-day (ZS-Acc x Detect@5%, SHAP day du, 14 round, round khong hop le = 0): 0.4213 (bo song sinh: 0.4436)
 
 | Round | n unk | n known | ZS-Acc | Trung lap (unk) | AUROC SHAP day du | AUROC SHAP 78 | AUROC tho | Det@5% SHAP | Tactic (SHAP) | Tactic (tho) |
@@ -47,6 +53,17 @@ Thay the ket qua pool gioi han 2,000/loai trong R3_ZERODAY.md.
 - SHAP day du vs Feature tho: chenh TB +0.133, hon o 10/12 round, Wilcoxon p = 0.016
 - SHAP 78 vs Feature tho: chenh TB +0.132, hon o 11/12 round, Wilcoxon p = 0.016
 - SHAP day du vs SHAP 78: chenh TB +0.001, hon o 6/12 round, Wilcoxon p = 0.939
+
+**Paper (tab:res-novelty) — 10 round, bo song sinh:**
+
+| Khoa | AUROC | Detect@5% |
+|---|---|---|
+| SHAP day du | 0.965 | 0.926 |
+| SHAP 78 | 0.963 | 0.907 |
+| Feature tho | 0.942 | 0.860 |
+- AUROC SHAP day du vs Feature tho: Wilcoxon p = 0.064
+- Detect@5% SHAP day du vs Feature tho: Wilcoxon p = 0.031
+
 - End-to-end zero-day (ZS-Acc x Detect@5%, SHAP day du, 14 round, round khong hop le = 0): 0.4366 (bo song sinh: 0.4862)
 
 | Round | n unk | n known | ZS-Acc | Trung lap (unk) | AUROC SHAP day du | AUROC SHAP 78 | AUROC tho | Det@5% SHAP | Tactic (SHAP) | Tactic (tho) |
@@ -77,6 +94,17 @@ Thay the ket qua pool gioi han 2,000/loai trong R3_ZERODAY.md.
 - SHAP day du vs Feature tho: chenh TB +0.119, hon o 8/12 round, Wilcoxon p = 0.176
 - SHAP 78 vs Feature tho: chenh TB +0.120, hon o 8/12 round, Wilcoxon p = 0.110
 - SHAP day du vs SHAP 78: chenh TB -0.001, hon o 3/12 round, Wilcoxon p = 0.401
+
+**Paper (tab:res-novelty) — 10 round, bo song sinh:**
+
+| Khoa | AUROC | Detect@5% |
+|---|---|---|
+| SHAP day du | 0.947 | 0.869 |
+| SHAP 78 | 0.948 | 0.852 |
+| Feature tho | 0.940 | 0.853 |
+- AUROC SHAP day du vs Feature tho: Wilcoxon p = 0.557
+- Detect@5% SHAP day du vs Feature tho: Wilcoxon p = 0.398
+
 - End-to-end zero-day (ZS-Acc x Detect@5%, SHAP day du, 14 round, round khong hop le = 0): 0.4107 (bo song sinh: 0.4514)
 
 | Round | n unk | n known | ZS-Acc | Trung lap (unk) | AUROC SHAP day du | AUROC SHAP 78 | AUROC tho | Det@5% SHAP | Tactic (SHAP) | Tactic (tho) |
@@ -110,6 +138,17 @@ Thay the ket qua pool gioi han 2,000/loai trong R3_ZERODAY.md.
 - SHAP day du vs Feature tho: chenh TB +0.145, hon o 10/12 round, Wilcoxon p = 0.016
 - SHAP 78 vs Feature tho: chenh TB +0.145, hon o 10/12 round, Wilcoxon p = 0.016
 - SHAP day du vs SHAP 78: chenh TB +0.000, hon o 0/12 round, Wilcoxon p = 1.000
+
+**Paper (tab:res-novelty) — 10 round, bo song sinh:**
+
+| Khoa | AUROC | Detect@5% |
+|---|---|---|
+| SHAP day du | 0.973 | 0.906 |
+| SHAP 78 | 0.973 | 0.906 |
+| Feature tho | 0.951 | 0.845 |
+- AUROC SHAP day du vs Feature tho: Wilcoxon p = 0.064
+- Detect@5% SHAP day du vs Feature tho: Wilcoxon p = 0.016
+
 - End-to-end zero-day (ZS-Acc x Detect@5%, SHAP day du, 14 round, round khong hop le = 0): 0.4791 (bo song sinh: 0.5234)
 
 | Round | n unk | n known | ZS-Acc | Trung lap (unk) | AUROC SHAP day du | AUROC SHAP 78 | AUROC tho | Det@5% SHAP | Tactic (SHAP) | Tactic (tho) |
@@ -140,6 +179,17 @@ Thay the ket qua pool gioi han 2,000/loai trong R3_ZERODAY.md.
 - SHAP day du vs Feature tho: chenh TB +0.121, hon o 12/13 round, Wilcoxon p = 0.000
 - SHAP 78 vs Feature tho: chenh TB +0.122, hon o 12/13 round, Wilcoxon p = 0.002
 - SHAP day du vs SHAP 78: chenh TB -0.001, hon o 7/13 round, Wilcoxon p = 0.866
+
+**Paper (tab:res-novelty) — 11 round, bo song sinh:**
+
+| Khoa | AUROC | Detect@5% |
+|---|---|---|
+| SHAP day du | 0.984 | 0.960 |
+| SHAP 78 | 0.983 | 0.950 |
+| Feature tho | 0.962 | 0.888 |
+- AUROC SHAP day du vs Feature tho: Wilcoxon p = 0.002
+- Detect@5% SHAP day du vs Feature tho: Wilcoxon p = 0.016
+
 - End-to-end zero-day (ZS-Acc x Detect@5%, SHAP day du, 14 round, round khong hop le = 0): 0.5204 (bo song sinh: 0.5870)
 
 | Round | n unk | n known | ZS-Acc | Trung lap (unk) | AUROC SHAP day du | AUROC SHAP 78 | AUROC tho | Det@5% SHAP | Tactic (SHAP) | Tactic (tho) |
@@ -170,6 +220,17 @@ Thay the ket qua pool gioi han 2,000/loai trong R3_ZERODAY.md.
 - SHAP day du vs Feature tho: chenh TB +0.112, hon o 9/13 round, Wilcoxon p = 0.146
 - SHAP 78 vs Feature tho: chenh TB +0.113, hon o 9/13 round, Wilcoxon p = 0.068
 - SHAP day du vs SHAP 78: chenh TB -0.001, hon o 8/13 round, Wilcoxon p = 0.946
+
+**Paper (tab:res-novelty) — 11 round, bo song sinh:**
+
+| Khoa | AUROC | Detect@5% |
+|---|---|---|
+| SHAP day du | 0.971 | 0.920 |
+| SHAP 78 | 0.971 | 0.907 |
+| Feature tho | 0.961 | 0.884 |
+- AUROC SHAP day du vs Feature tho: Wilcoxon p = 0.465
+- Detect@5% SHAP day du vs Feature tho: Wilcoxon p = 0.102
+
 - End-to-end zero-day (ZS-Acc x Detect@5%, SHAP day du, 14 round, round khong hop le = 0): 0.5058 (bo song sinh: 0.5684)
 
 | Round | n unk | n known | ZS-Acc | Trung lap (unk) | AUROC SHAP day du | AUROC SHAP 78 | AUROC tho | Det@5% SHAP | Tactic (SHAP) | Tactic (tho) |

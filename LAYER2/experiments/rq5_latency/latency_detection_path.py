@@ -62,6 +62,10 @@ def main():
     va = pd.read_csv(config.VAL_BINARY_CSV, nrows=20_000)
     idx = np.random.default_rng(0).choice(len(va), N_WARM + N_MEAS, replace=False)
     res = {"cpu": platform.processor(), "torch_threads": torch.get_num_threads()}
+    if platform.system() == "Windows":          # che do nguon anh huong latency CPU laptop
+        import subprocess
+        res["power_scheme"] = subprocess.run(["powercfg", "/getactivescheme"], capture_output=True,
+                                             text=True).stdout.strip()
 
     # --- Layer 1, Protocol B ---
     for v in ["ae_xgboost", "svdd_xgboost"]:

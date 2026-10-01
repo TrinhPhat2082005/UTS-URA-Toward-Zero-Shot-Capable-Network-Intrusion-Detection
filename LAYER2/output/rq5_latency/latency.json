@@ -1,0 +1,70 @@
+{
+ "cpu": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+ "torch_threads": 4,
+ "power_scheme": "Power Scheme GUID: 27fa6203-3987-4dcc-918d-748559d549ec  (Performance)",
+ "layer1/ae_xgboost/decision": {
+  "mean_ms": 1.232934999995147,
+  "p95_ms": 1.702730001306918,
+  "n": 300
+ },
+ "layer1/ae_xgboost/decision+treeshap": {
+  "mean_ms": 7.437245999814574,
+  "p95_ms": 8.607524997569271,
+  "n": 300
+ },
+ "layer1/svdd_xgboost/decision": {
+  "mean_ms": 5.934551666614425,
+  "p95_ms": 7.165289997101355,
+  "n": 300
+ },
+ "layer1/svdd_xgboost/decision+treeshap": {
+  "mean_ms": 11.785875333213577,
+  "p95_ms": 13.937225000154285,
+  "n": 300
+ },
+ "layer1/xgboost_only/decision": {
+  "mean_ms": 0.5294713334903159,
+  "p95_ms": 0.6379499976901571,
+  "n": 300
+ },
+ "layer1/xgboost_only/decision+treeshap": {
+  "mean_ms": 5.774041333340089,
+  "p95_ms": 6.27892999946198,
+  "n": 300
+ },
+ "layer1/ae_only/decision": {
+  "mean_ms": 0.4019996666102088,
+  "p95_ms": 0.5128550024892321,
+  "n": 300
+ },
+ "layer1/svdd_only/decision": {
+  "mean_ms": 4.113447000054293,
+  "p95_ms": 4.668120000133058,
+  "n": 300
+ },
+ "layer1/clad/decision": {
+  "mean_ms": 0.330629666641471,
+  "p95_ms": 0.3933100000722334,
+  "n": 300
+ },
+ "retrieval/ae_xgboost/shap": {
+  "mean_ms": 2.072213000028569,
+  "p95_ms": 2.3902049993921537,
+  "n": 300
+ },
+ "retrieval/ae_xgboost/raw": {
+  "mean_ms": 1.7343219998656423,
+  "p95_ms": 1.990520000072138,
+  "n": 300
+ },
+ "retrieval/svdd_xgboost/shap": {
+  "mean_ms": 1.9255606667138636,
+  "p95_ms": 2.2280200017121388,
+  "n": 300
+ },
+ "retrieval/svdd_xgboost/raw": {
+  "mean_ms": 1.7228153333053342,
+  "p95_ms": 1.9703149991983082,
+  "n": 300
+ }
+}
