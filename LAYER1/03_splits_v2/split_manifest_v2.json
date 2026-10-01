@@ -1,0 +1,209 @@
+{
+  "generated_at": "2026-09-09T03:36:03.529280",
+  "source_v1": "/kaggle/working/zeroshot_benchmark/03_splits",
+  "benign_cap": 700000,
+  "benign_train_fraction": 0.8,
+  "random_seed": 42,
+  "note": "v2: BENIGN_CAP 100K->700K de dat ty le Benign~83% (CIC-IDS-2018 goc); benign_train_pool/benign_val_pool tach CO DINH 1 lan, khong chong lap (fix leak cua v1, xem README.md).",
+  "splits": {
+    "Bot": {
+      "held_out_label": "Bot",
+      "n_train_benign_attack": 666090,
+      "n_benign_train": 560000,
+      "n_attack_train": 106090,
+      "benign_pct_train": 84.07,
+      "n_val_binary": 166523,
+      "n_test_zeroshot": 20000,
+      "checksums": {
+        "train_benign_attack.csv": "e16a5ce1593f9bb792a5904bc1a22dcf81fe4967e1835b4937599c8f0dc5867e",
+        "val_binary.csv": "0aefce5ee06de213e99bc16bcce8591a1fcf57d203cbc75295cd05ba41fceb22",
+        "test_zeroshot.csv": "27c2d2908c82b106f7a52b6bf127d60a20d79c91cdd696d85304b8692af8762b"
+      }
+    },
+    "Brute_Force_Web": {
+      "held_out_label": "Brute_Force_Web",
+      "n_train_benign_attack": 681646,
+      "n_benign_train": 560000,
+      "n_attack_train": 121646,
+      "benign_pct_train": 82.15,
+      "n_val_binary": 170412,
+      "n_test_zeroshot": 555,
+      "checksums": {
+        "train_benign_attack.csv": "ae35257359d7de9f961ec66139353417dc824a35b83526cb1d7dca2953634e7b",
+        "val_binary.csv": "1debe41642c4a5744f5e31896e653769079318e741760d3ca2cdd478daac25e2",
+        "test_zeroshot.csv": "e06d619fc0702e949ad9a12cc5bbb6ada9f2eb1a944205867b4db08ef9f7af15"
+      }
+    },
+    "Brute_Force_XSS": {
+      "held_out_label": "Brute_Force_XSS",
+      "n_train_benign_attack": 681908,
+      "n_benign_train": 560000,
+      "n_attack_train": 121908,
+      "benign_pct_train": 82.12,
+      "n_val_binary": 170477,
+      "n_test_zeroshot": 228,
+      "checksums": {
+        "train_benign_attack.csv": "ceafd78f67bdf3bed44756c69ab1f1221b55b5ef96c776ac1df05c2f521dde51",
+        "val_binary.csv": "dce8f7571535315f79503ef576804bae9a57990f304a28f559a07bfbf573b4f0",
+        "test_zeroshot.csv": "fc9c498caa2acd36823e587e2e5adc9134562ca79f451b153166e8a0ffec6f84"
+      }
+    },
+    "DDOS_attack_HOIC": {
+      "held_out_label": "DDOS_attack_HOIC",
+      "n_train_benign_attack": 666090,
+      "n_benign_train": 560000,
+      "n_attack_train": 106090,
+      "benign_pct_train": 84.07,
+      "n_val_binary": 166523,
+      "n_test_zeroshot": 20000,
+      "checksums": {
+        "train_benign_attack.csv": "cc860427b6e63c25f015cf45f3a65e600484747ff386dd461615c9c74d0c461b",
+        "val_binary.csv": "633067137d75b93bf180db3dea3363290e82d5e914bf6867b708882362432f79",
+        "test_zeroshot.csv": "b2e1986e084ee63a9d9e533bc7dbf9b241deca89541e9213d45e91c50d3081b9"
+      }
+    },
+    "DDOS_attack_LOIC_UDP": {
+      "held_out_label": "DDOS_attack_LOIC_UDP",
+      "n_train_benign_attack": 680706,
+      "n_benign_train": 560000,
+      "n_attack_train": 120706,
+      "benign_pct_train": 82.27,
+      "n_val_binary": 170177,
+      "n_test_zeroshot": 1730,
+      "checksums": {
+        "train_benign_attack.csv": "a49a4d16d876e15921c54296c520d239b0429d6aedebe8ad4d07cfab5753575a",
+        "val_binary.csv": "a84274304829ced04012ba46d908b1bd69be2f583b3255e620a33e9dcbb9a4b4",
+        "test_zeroshot.csv": "b8a37bbf0e70372fd1e22220d477877fc0c6c06c54597a1234d9da8d82c5f07e"
+      }
+    },
+    "DDoS_attacks_LOIC_HTTP": {
+      "held_out_label": "DDoS_attacks_LOIC_HTTP",
+      "n_train_benign_attack": 666090,
+      "n_benign_train": 560000,
+      "n_attack_train": 106090,
+      "benign_pct_train": 84.07,
+      "n_val_binary": 166523,
+      "n_test_zeroshot": 20000,
+      "checksums": {
+        "train_benign_attack.csv": "bf2c2bc2f7e4be031f5911e0215f28e04b404e230fdcf4da19453f2a63491511",
+        "val_binary.csv": "449a132a9ef64617116c8693e51cf62583f74ead714ecb330ab02fd66166a507",
+        "test_zeroshot.csv": "612d5d28c68860c856673e0716123102f853caa0d04facc137ae2ef24bab2be9"
+      }
+    },
+    "DoS_attacks_GoldenEye": {
+      "held_out_label": "DoS_attacks_GoldenEye",
+      "n_train_benign_attack": 666090,
+      "n_benign_train": 560000,
+      "n_attack_train": 106090,
+      "benign_pct_train": 84.07,
+      "n_val_binary": 166523,
+      "n_test_zeroshot": 20000,
+      "checksums": {
+        "train_benign_attack.csv": "188c4137612d68cac26e4bee735adea3fc6ed864befe694b6729319782e5b302",
+        "val_binary.csv": "738a9581d97f331d0972bd78d87eac4fe54bd93e63c13682ef07f53812c81a48",
+        "test_zeroshot.csv": "94cb1ce92899351d807574d1fd75c7f81148fbea0e86cdd90a00a13112a3b018"
+      }
+    },
+    "DoS_attacks_Hulk": {
+      "held_out_label": "DoS_attacks_Hulk",
+      "n_train_benign_attack": 666090,
+      "n_benign_train": 560000,
+      "n_attack_train": 106090,
+      "benign_pct_train": 84.07,
+      "n_val_binary": 166523,
+      "n_test_zeroshot": 20000,
+      "checksums": {
+        "train_benign_attack.csv": "fd5056dd08e223f88b969b63b1989fb95ae3c23a5c46f46d706dc63d271bcd85",
+        "val_binary.csv": "8bcef7e78b49917009566a3c1a85a0b770ead51025696112fd2d2a411d32de49",
+        "test_zeroshot.csv": "c47567e431a91743c5b6069c785609e6198330b4f2332b349c24d0d0e94f8ef9"
+      }
+    },
+    "DoS_attacks_SlowHTTPTest": {
+      "held_out_label": "DoS_attacks_SlowHTTPTest",
+      "n_train_benign_attack": 682046,
+      "n_benign_train": 560000,
+      "n_attack_train": 122046,
+      "benign_pct_train": 82.11,
+      "n_val_binary": 170512,
+      "n_test_zeroshot": 55,
+      "checksums": {
+        "train_benign_attack.csv": "d172d8e8424744b4ff8fb907426e3417aae00e02637b3830fa83c245cbf167b4",
+        "val_binary.csv": "f40868d1c9db6ca0d8baaa59cff54ade58b9b798c8776e2107f9363958b0b4c2",
+        "test_zeroshot.csv": "16ae6cc819a170fa3c701d9bd7f58d01bcc53b721fe0b9c9c808ef22bd15c86b"
+      }
+    },
+    "DoS_attacks_Slowloris": {
+      "held_out_label": "DoS_attacks_Slowloris",
+      "n_train_benign_attack": 674164,
+      "n_benign_train": 560000,
+      "n_attack_train": 114164,
+      "benign_pct_train": 83.07,
+      "n_val_binary": 168541,
+      "n_test_zeroshot": 9908,
+      "checksums": {
+        "train_benign_attack.csv": "cc28fcbefe0f1ae88d26550d167bd1e8e937d678b3d33eb814a06d7a1501f9f2",
+        "val_binary.csv": "416914cfe5e55a1d81eea5de532ca33cadeaaa14c53630bfa85379bff593184d",
+        "test_zeroshot.csv": "ca91bd1afd54f2f9082832c1e07f5b536e583b36b5639ff0af8b541b75f416b5"
+      }
+    },
+    "FTP_BruteForce": {
+      "held_out_label": "FTP_BruteForce",
+      "n_train_benign_attack": 682048,
+      "n_benign_train": 560000,
+      "n_attack_train": 122048,
+      "benign_pct_train": 82.11,
+      "n_val_binary": 170512,
+      "n_test_zeroshot": 53,
+      "checksums": {
+        "train_benign_attack.csv": "d3113d6d409ebe816ad21976fa3a9e5b1c53e472bf889e30995fc77f31e50945",
+        "val_binary.csv": "4e1ca13b87220fef9b52a84c125d06b58b2c22a34b6331a69abc09ba90caf1f8",
+        "test_zeroshot.csv": "f01bbc26cee6a4e3c216e2ca540f9bbbdfa73762db8755c1ae599c6a08b12889"
+      }
+    },
+    "Infiltration": {
+      "held_out_label": "Infiltration",
+      "n_train_benign_attack": 666090,
+      "n_benign_train": 560000,
+      "n_attack_train": 106090,
+      "benign_pct_train": 84.07,
+      "n_val_binary": 166523,
+      "n_test_zeroshot": 20000,
+      "checksums": {
+        "train_benign_attack.csv": "d8b1fea8b878df1721d44b1a5de7fe3226b401e2522bf8682789c6bcc122c6fe",
+        "val_binary.csv": "1ec940d6633562bba80b8e87c16843c69ecc5e44268009b78ccf3bd357bfeaff",
+        "test_zeroshot.csv": "87cbfc7f7aeb0621db8e6414207ba028329787a475f403673fd5353501933769"
+      }
+    },
+    "SQL_Injection": {
+      "held_out_label": "SQL_Injection",
+      "n_train_benign_attack": 682023,
+      "n_benign_train": 560000,
+      "n_attack_train": 122023,
+      "benign_pct_train": 82.11,
+      "n_val_binary": 170506,
+      "n_test_zeroshot": 84,
+      "checksums": {
+        "train_benign_attack.csv": "a16ec70b921470e4b307a54a9c36146a92f2b19ddbb284714a737a285977095b",
+        "val_binary.csv": "ba15033d7567302a6fcfb814407311478af75b60ad28af13413c3f955b32cdc5",
+        "test_zeroshot.csv": "15b723cefdb4d7f9c499c6fd3e417a158b34c8e3a1459c9016452a51d22aab88"
+      }
+    },
+    "SSH_Bruteforce": {
+      "held_out_label": "SSH_Bruteforce",
+      "n_train_benign_attack": 666090,
+      "n_benign_train": 560000,
+      "n_attack_train": 106090,
+      "benign_pct_train": 84.07,
+      "n_val_binary": 166523,
+      "n_test_zeroshot": 20000,
+      "checksums": {
+        "train_benign_attack.csv": "500114d14682d02c15165684f03dd6a66233a37b8142a9abddfdf51dc7ecaf3c",
+        "val_binary.csv": "4b84380a0a74a8b7332dc6fd9546e8fbe30be1de69410014b902f87ec7cb48af",
+        "test_zeroshot.csv": "f704b4c645732b494694931a939dcddec5e6fce8691891d2403c93466d04c1f0"
+      }
+    }
+  },
+  "benign_before_cap": 10564771,
+  "benign_train_pool_size": 560000,
+  "benign_val_pool_size": 140000
+}

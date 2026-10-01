@@ -1,0 +1,37 @@
+{
+  "_comment": "Mapping: nhan goc xuat hien that trong CSV CIC-IDS-2018 (S3) -> ten chuan hoa dung lam ten thu muc split. Nhan goc dua tren quan sat truc tiep tu file da tai (Bot, Infilteration) va danh sach 15 label da biet tu RAG_SHAP/data/Label_Flow/. clean_and_relabel.ipynb PHAI bao loi neu gap nhan khong co trong danh sach nay, khong duoc tu y bo qua.",
+  "label_map": {
+    "Benign": "Benign",
+    "Bot": "Bot",
+    "Brute Force -Web": "Brute_Force_Web",
+    "Brute Force -XSS": "Brute_Force_XSS",
+    "DDOS attack-HOIC": "DDOS_attack_HOIC",
+    "DDOS attack-LOIC-UDP": "DDOS_attack_LOIC_UDP",
+    "DDoS attacks-LOIC-HTTP": "DDoS_attacks_LOIC_HTTP",
+    "DoS attacks-GoldenEye": "DoS_attacks_GoldenEye",
+    "DoS attacks-Hulk": "DoS_attacks_Hulk",
+    "DoS attacks-SlowHTTPTest": "DoS_attacks_SlowHTTPTest",
+    "DoS attacks-Slowloris": "DoS_attacks_Slowloris",
+    "FTP-BruteForce": "FTP_BruteForce",
+    "Infilteration": "Infiltration",
+    "SQL Injection": "SQL_Injection",
+    "SSH-Bruteforce": "SSH_Bruteforce"
+  },
+  "attack_labels": [
+    "Bot",
+    "Brute_Force_Web",
+    "Brute_Force_XSS",
+    "DDOS_attack_HOIC",
+    "DDOS_attack_LOIC_UDP",
+    "DDoS_attacks_LOIC_HTTP",
+    "DoS_attacks_GoldenEye",
+    "DoS_attacks_Hulk",
+    "DoS_attacks_SlowHTTPTest",
+    "DoS_attacks_Slowloris",
+    "FTP_BruteForce",
+    "Infiltration",
+    "SQL_Injection",
+    "SSH_Bruteforce"
+  ],
+  "benign_label": "Benign"
+}

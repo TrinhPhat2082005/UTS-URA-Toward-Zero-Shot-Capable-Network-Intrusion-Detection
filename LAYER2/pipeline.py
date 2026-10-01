@@ -180,7 +180,8 @@ class EvidenceBuilder:
             retriever = SHAPKNNRetriever(
                 npz_path=config.SHAP_POOL_NPZ,
                 profiles_dir=config.ATTACK_PROFILES_DIR,
-                threshold=config.RAG_ZERODAY_THRESHOLD,
+                tau_zd=config.RAG_ZERODAY_THRESHOLD,
+                k=config.RAG_NOVELTY_K,
                 exclude_labels=config.RAG_EXCLUDE_LABELS,
             )
         self.retriever = retriever
@@ -494,7 +495,9 @@ def analyze_sample(row, l1, ev, vlm, feature_names, prompt_variant="neutral",
         rag, ctx, t_rag = ev.retrieve(shap_vec)
         rec["rag_predicted_label"] = rag["predicted_label"]
         rec["rag_is_potential_zero_day"] = bool(rag["is_potential_zero_day"])
-        rec["rag_top_sim"] = float(rag["matches"][0]["confidence"])
+        rec["rag_candidates"] = [m["matched_label"] for m in rag["matches"]]
+        rec["rag_top_distance"] = float(rag["matches"][0]["distance"])
+        rec["rag_novelty_score"] = float(rag["novelty_score"])
         rec["rag_context"] = ctx
         rec["t_rag_s"] = t_rag
 

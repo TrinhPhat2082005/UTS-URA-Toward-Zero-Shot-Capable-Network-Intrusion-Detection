@@ -227,7 +227,7 @@ rec = pipeline.analyze_sample(
 print("run_error   :", rec.get("run_error"))
 print("SU THAT     :", rec.get("Label_Text"), "| L1 proba", round(rec.get("xgb_proba", 0), 4))
 print("RAG doan    :", rec.get("rag_predicted_label"),
-      f"(sim={rec.get('rag_top_sim', 0):.3f}, zero_day={rec.get('rag_is_potential_zero_day')})")
+      f"(novelty={rec.get('rag_novelty_score', 0):.3f}, zero_day={rec.get('rag_is_potential_zero_day')})")
 print("VLM doan    :", rec.get("predicted_class"), "<-- M1 cham diem cai nay")
 print("-" * 70)
 print("severity    :", rec.get("severity"), "| MITRE:", rec.get("mitre_id"))
@@ -348,7 +348,7 @@ d = metrics.usable(df)
 bad = d[~d.apply(lambda r: metrics._match(r["predicted_class"], r.get("Label_Text")), axis=1)]
 print(f"{len(bad)}/{len(d)} ca sai")
 display(bad[["Label_Text", "rag_predicted_label", "predicted_class",
-             "rag_top_sim", "confidence_logprob"]].head(20))""")
+             "rag_novelty_score", "confidence_logprob"]].head(20))""")
 
 # --------------------------------------------------------------------------
 md("""## 14. Do do nhay voi prompt (tuy chon)

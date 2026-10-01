@@ -58,9 +58,10 @@ LAYER1_ARTIFACTS = {
 # Gia tri clip cua RobustScaler - phai khop train_layer1.py.
 CLIP_VAL = 20.0
 
-# Nguong Layer 1: None = doc threshold da tune F1-max tren TRAIN tu metrics.json
-# (khong tune tren val, vi val la tap bao cao TP/FP cho Layer 2).
-# Dat mot so cu the de ghi de.
+# Nguong Layer 1: None = doc "threshold" tu metrics.json, la nguong theo ngan sach
+# FPR alpha = 0.4% tren benign cua TRAIN (train_layer1.py; metrics.json con luu
+# thresholds_by_alpha cho cac alpha khac). Khong tune tren val, vi val la tap bao
+# cao TP/FP cho Layer 2. Dat mot so cu the de ghi de.
 LAYER1_THRESHOLD = None
 
 # --------------------------------------------------------------------------
@@ -93,8 +94,11 @@ ATTACK_PROFILES_DIR = os.path.join(
     LAYER2_DIR, "knowledge_base", "attack_profiles"
 )
 
-RAG_TOP_K = 3
-RAG_ZERODAY_THRESHOLD = 0.8       # cosine duoi nguong nay o MOI label -> nghi zero-day
+RAG_TOP_K = 3                     # 3 loai co khoang cach L2 toi flow gan nhat nho nhat
+RAG_NOVELTY_K = 10                # s(q) = trung binh L2 toi 10 lang gieng gan nhat
+# tau_zd: None -> doc tu shap_pool_<variant>.meta.json ("novelty" -> "tau_zd"),
+# hieu chinh boi experiments/rq3_retrieval/02_calibrate_novelty.py (Q_0.95 tren alert da biet).
+RAG_ZERODAY_THRESHOLD = None
 
 # Khong loai nhan nao: tap Layer 2 co du 14 loai tan cong, Infiltration gio la
 # nhan binh thuong chu khong con bi giu lam zero-shot.
@@ -149,8 +153,8 @@ RESULTS_JSONL = os.path.join(OUT_DIR, "results.jsonl")
 def layer1_threshold(variant=None):
     """Nguong quyet dinh cua Layer 1.
 
-    Uu tien LAYER1_THRESHOLD neu duoc dat tay; neu khong thi doc threshold da
-    tune F1-max tren TRAIN tu metrics.json cua variant.
+    Uu tien LAYER1_THRESHOLD neu duoc dat tay; neu khong thi doc "threshold" tu
+    metrics.json cua variant (nguong theo ngan sach FPR tren benign cua TRAIN).
     """
     if LAYER1_THRESHOLD is not None:
         return float(LAYER1_THRESHOLD)

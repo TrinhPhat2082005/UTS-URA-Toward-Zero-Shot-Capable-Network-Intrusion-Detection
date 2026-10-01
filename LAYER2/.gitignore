@@ -5,3 +5,8 @@ evidence_cache/
 __pycache__/
 *.pyc
 dataset-metadata.json
+
+# Cache trung gian cua thi nghiem (tai tao bang script)
+output/**/cache_*.npz
+output/**/*_scores.npz
+output/rq3b_novelty/r3_full/

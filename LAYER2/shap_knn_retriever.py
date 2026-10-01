@@ -1,25 +1,24 @@
 """
-k-NN variant of shap_centroid_retriever.py: matches a flow's SHAP vector
-against the FULL per-label build pool (best/max cosine similarity across all
-build vectors for that label) instead of a single mean centroid. Same public
-interface (retrieve_batch, format_context_for_vlm) as SHAPCentroidRetriever
-so main.py / prepare_evidence_kaggle_variant.py can swap between them without
-touching downstream code.
+SHAP-vector retriever (paper Section 3.5). One Euclidean distance pass from the
+query attribution vector q to every vector of the reference set R gives both
+outputs of the retriever:
 
-Motivation (2026-08-24): RAG_SHAP/eval_retrieval_no_infilt.py measured k-NN
-beats centroid-mean on top1 accuracy for known-attack retrieval, at every
-Layer 1 variant (+7.2pp to +23.3pp), while trading off zero-day detection
-ability (see RAG_SHAP/artifacts/knn_vs_centroid_20k_summary.md). This module
-lets the VLM pipeline actually use k-NN retrieval for a real end-to-end
-comparison against the production centroid retriever, on the same evidence-
-building/VLM-prompting path — instead of the offline-only eval scripts used
-so far.
+  Identification  d_l(q) = min_{r in R_l} ||q - r||_2 for every attack type l;
+                  the three types with the smallest d_l form the candidate set
+                  C_3(q), ranked; the first one is the retriever's prediction.
+  Novelty         s(q) = mean distance to the k = 10 nearest vectors of R;
+                  flag_zd = s(q) > tau_zd, tau_zd = 95th percentile of s over
+                  known alerts held out from R (experiments/rq3_retrieval/02_calibrate_novelty.py).
 
-Build pool source: reuses the ALREADY-COMPUTED shap_full_{variant}.npz files
-from RAG_SHAP/kaggle_build_all_variants_shap.py (20K-cap per label, seed=42)
-— no retraining, no new TreeExplainer pass. Each variant's build pool is the
-SAME data the centroid was averaged from, so centroid vs. k-NN comparisons
-on identical evidence are apples-to-apples.
+All three candidates come from the same rule, so the VLM always receives three
+profiles of the same kind, each with its distance. When the flag is raised the
+unknown_anomaly profile is added and the candidates are presented only as the
+known behaviors the alert is closest to.
+
+Reference set: shap_pool_<variant>.npz (label__<type> -> n x d float32), built
+from ALL attack flows of the training split, no benign, no cap
+(build_shap_pool.py for Protocol B, experiments/rq3_retrieval/01_build_loao_pools.py per fold).
+tau_zd is read from the pool's .meta.json ("novelty" -> "tau_zd") unless given.
 """
 import os
 import json
@@ -27,57 +26,66 @@ import time
 
 import numpy as np
 
-from shap_centroid_retriever import LABEL_TO_PROFILE_ID  # noqa: E402 - reuse the same mapping
+
+# Label_Text (ten nhan trong LAYER2/data/*.csv va khoa label__<nhan> cua pool)
+# -> id cua profile trong knowledge_base/attack_profiles/*.json.
+LABEL_TO_PROFILE_ID = {
+    "Bot": "bot",
+    "Brute_Force_Web": "brute_force_web",
+    "Brute_Force_XSS": "web_attack_xss",
+    "DDOS_attack_HOIC": "ddos_hoic",
+    "DDOS_attack_LOIC_UDP": "ddos_udp_flood",
+    "DDoS_attacks_LOIC_HTTP": "ddos_loic_http",
+    "DoS_attacks_GoldenEye": "dos_goldeneye",
+    "DoS_attacks_Hulk": "dos_hulk",
+    "DoS_attacks_SlowHTTPTest": "dos_slowhttptest",
+    "DoS_attacks_Slowloris": "dos_slowloris",
+    "FTP_BruteForce": "ftp_bruteforce",
+    "Infiltration": "infiltration",
+    "SQL_Injection": "web_attack_sql_injection",
+    "SSH_Bruteforce": "ssh_bruteforce",
+}
 
 
 class SHAPKNNRetriever:
-    """Same public shape as SHAPCentroidRetriever, but retrieve_batch() scores
-    each candidate label by its BEST (max) cosine similarity across the
-    label's full build pool, not a single mean vector.
-    """
+    """Per-type nearest-L2 identification + kNN-10 L2 novelty in one pass."""
 
-    def __init__(self, npz_path, profiles_dir, threshold=0.8, exclude_labels=None):
+    def __init__(self, npz_path, profiles_dir, tau_zd=None, k=10, exclude_labels=None):
         """
         Args:
-            npz_path: path to shap_full_{variant}.npz (full per-flow SHAP
-                      vectors per label, produced by
-                      RAG_SHAP/kaggle_build_all_variants_shap.py).
-            profiles_dir: attack_profiles/ dir to load full MITRE context from.
-            threshold: cosine similarity match threshold. Below this for every
-                       label -> flagged as a potential zero-day.
-            exclude_labels: iterable of label names to drop from the build
-                             pool entirely (e.g. ["Infilteration"]), same
-                             semantics as prepare_evidence_kaggle_variant.py's
-                             --exclude_labels.
+            npz_path: shap_pool_<variant>.npz.
+            profiles_dir: attack_profiles/ dir (one JSON per attack type +
+                unknown_anomaly.json).
+            tau_zd: novelty threshold. None -> read from <npz>.meta.json; if the
+                meta has no calibrated value, the flag is never raised.
+            k: neighbors averaged by the novelty score (paper: 10).
+            exclude_labels: label names dropped from the reference set.
         """
         print("Loading SHAP-kNN components...")
-        self.threshold = threshold
+        self.k = k
         exclude_labels = set(exclude_labels or [])
 
         data = np.load(npz_path, allow_pickle=True)
-        label_keys = [k for k in data.keys() if k.startswith("label__")]
-        # Pool cu luu ten co dau cach duoi dang underscore ("DoS attacks-Hulk"
-        # -> "DoS_attacks-Hulk") nen phai doi nguoc lai. Pool moi
-        # (LAYER2/build_shap_pool.py) luu dung Label_Text, doi se lam hong.
-        # Chi doi khi ten goc KHONG co trong LABEL_TO_PROFILE_ID.
-        def _restore(k):
-            raw = k[len("label__"):]
-            return raw if raw in LABEL_TO_PROFILE_ID else raw.replace("_", " ")
+        label_keys = [key for key in data.keys() if key.startswith("label__")]
 
-        label_map = {k: _restore(k) for k in label_keys}
-
-        self.build_pools = {}
+        labels, blocks = [], []
         for key in label_keys:
-            label = label_map[key]
+            label = key[len("label__"):]
             if label in exclude_labels:
                 continue
-            self.build_pools[label] = np.asarray(data[key], dtype="float32")
+            labels.append(label)
+            blocks.append(np.asarray(data[key], dtype="float32"))
 
-        # pre-normalize once so retrieve_batch only needs dot products
-        self._norm_pools = {
-            label: vecs / (np.linalg.norm(vecs, axis=1, keepdims=True) + 1e-12)
-            for label, vecs in self.build_pools.items()
-        }
+        # Xep R thanh tung khoi lien tiep theo nhan: min theo loai = reduceat
+        self.labels = np.array(labels)
+        self.sizes = np.array([len(b) for b in blocks])
+        self.starts = np.concatenate([[0], np.cumsum(self.sizes)[:-1]])
+        self.pool = np.vstack(blocks)
+        self.pool_sq = (self.pool ** 2).sum(axis=1)
+
+        if tau_zd is None:
+            tau_zd = self._tau_from_meta(npz_path)
+        self.tau_zd = tau_zd
 
         self.profiles = {}
         for filename in os.listdir(profiles_dir):
@@ -87,76 +95,108 @@ class SHAPKNNRetriever:
                     self.profiles[doc["id"]] = doc
         self.unknown_profile = self.profiles.get("unknown_anomaly")
 
-        print(f"SHAP-kNN Retriever ready: {len(self.build_pools)} label pools "
-              f"(sizes: {[len(v) for v in self.build_pools.values()]}), "
-              f"{len(self.profiles)} attack profiles, threshold={self.threshold}")
+        print(f"SHAP-kNN Retriever ready: {len(self.labels)} types, "
+              f"{len(self.pool):,} reference vectors, {len(self.profiles)} profiles, "
+              f"k={self.k}, tau_zd={self.tau_zd}")
+
+    @staticmethod
+    def _tau_from_meta(npz_path):
+        meta_path = os.path.splitext(npz_path)[0] + ".meta.json"
+        if not os.path.exists(meta_path):
+            return None
+        with open(meta_path, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+        return (meta.get("novelty") or {}).get("tau_zd")
+
+    def _sq_distances(self, Q):
+        """Squared L2 distances, shape (len(Q), len(pool))."""
+        d = self.pool_sq[None, :] - 2.0 * (Q @ self.pool.T) + (Q ** 2).sum(axis=1)[:, None]
+        return np.maximum(d, 0.0)
+
+    def score(self, Q, top_k=3, chunk=64):
+        """Raw retrieval output for a batch of query vectors.
+
+        Returns:
+            cand_idx: (n, top_k) indices into self.labels, nearest type first.
+            cand_dist: (n, top_k) per-type nearest L2 distance d_l(q).
+            novelty: (n,) mean L2 distance to the k nearest reference vectors.
+        """
+        Q = np.atleast_2d(np.asarray(Q, dtype="float32"))
+        cand_idx, cand_dist, novelty = [], [], []
+        for i in range(0, len(Q), chunk):
+            d = self._sq_distances(Q[i:i + chunk])
+            per_type = np.minimum.reduceat(d, self.starts, axis=1)
+            order = np.argsort(per_type, axis=1)[:, :top_k]
+            cand_idx.append(order)
+            cand_dist.append(np.sqrt(np.take_along_axis(per_type, order, axis=1)))
+            nn = np.partition(d, self.k - 1, axis=1)[:, :self.k]
+            novelty.append(np.sqrt(nn).mean(axis=1))
+        return np.vstack(cand_idx), np.vstack(cand_dist), np.concatenate(novelty)
+
+    def novelty_scores(self, Q, chunk=64):
+        """s(q) only; used to calibrate tau_zd on held-out known alerts."""
+        return self.score(Q, top_k=1, chunk=chunk)[2]
+
+    def _doc_for(self, label):
+        profile_id = LABEL_TO_PROFILE_ID.get(label)
+        doc = self.profiles.get(profile_id) if profile_id else None
+        return doc if doc is not None else self.unknown_profile
 
     def retrieve_batch(self, full_shap_vectors, top_k=3):
-        """Match each flow's already-computed SHAP vector against every
-        label's full build pool, returning one retrieval result per flow.
-        Same return shape as SHAPCentroidRetriever.retrieve_batch().
-        """
-        start_time = time.time()
-        n = len(full_shap_vectors)
+        """One retrieval result per query vector."""
+        start_time = time.perf_counter()
+        cand_idx, cand_dist, novelty = self.score(full_shap_vectors, top_k=top_k)
+        n = len(novelty)
+        latency_ms = (time.perf_counter() - start_time) * 1000 / max(n, 1)
 
         results = []
         for i in range(n):
-            values = np.asarray(full_shap_vectors[i], dtype="float32")
-            v_norm = values / (np.linalg.norm(values) + 1e-12)
-
-            scores = {}
-            for label, pool_norm in self._norm_pools.items():
-                sims = pool_norm @ v_norm
-                scores[label] = float(sims.max())
-
-            ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:top_k]
-
-            best_label, best_score = ranked[0]
-            is_potential_zero_day = best_score < self.threshold
-
             matches = []
-            for label, score in ranked:
-                profile_id = LABEL_TO_PROFILE_ID.get(label)
-                doc = self.profiles.get(profile_id) if profile_id else None
-                if doc is None:
-                    doc = self.unknown_profile
-                matches.append({
-                    "doc": doc,
-                    "confidence": score,
-                    "matched_label": label,
-                })
-
+            for j, dist in zip(cand_idx[i], cand_dist[i]):
+                label = str(self.labels[j])
+                matches.append({"doc": self._doc_for(label), "distance": float(dist),
+                                "matched_label": label})
+            s = float(novelty[i])
             results.append({
-                "predicted_label": best_label,
+                "predicted_label": matches[0]["matched_label"],
                 "matches": matches,
-                "is_potential_zero_day": is_potential_zero_day,
-                "latency_ms": (time.time() - start_time) * 1000 / max(n, 1),
+                "novelty_score": s,
+                "tau_zd": self.tau_zd,
+                "is_potential_zero_day": bool(self.tau_zd is not None and s > self.tau_zd),
+                "latency_ms": latency_ms,
             })
-
         return results
 
     def format_context_for_vlm(self, retrieval_result: dict) -> str:
-        """Identical formatting to SHAPCentroidRetriever.format_context_for_vlm()."""
-        context = "### RETRIEVED CONTEXT (MITRE ATT&CK / BENIGN PROFILES)\n"
+        """Context block: always three candidate profiles with their distances;
+        when the novelty flag is raised, the unknown_anomaly profile first and
+        the candidates labelled as nearest known behaviors only."""
+        flagged = retrieval_result["is_potential_zero_day"]
+        context = "### RETRIEVED CONTEXT (MITRE ATT&CK PROFILES)\n"
+        context += (f"Novelty: mean L2 distance to the {self.k} nearest known attack flows = "
+                    f"{retrieval_result['novelty_score']:.3f}"
+                    + (f" (threshold {self.tau_zd:.3f})" if self.tau_zd is not None else "")
+                    + "\n\n")
 
-        if retrieval_result["is_potential_zero_day"]:
+        if flagged:
+            doc = self.unknown_profile
             context += "> [!WARNING]\n"
-            context += "> The observed behavior has LOW similarity to known attack patterns. "
-            context += "This may be a NOVEL ATTACK or ZERO-DAY exploit.\n\n"
+            context += ("> The attribution vector lies outside the region occupied by known attack "
+                        "types. Treat the alert as a potentially novel attack. The candidates below "
+                        "are the known behaviors it is closest to, not its identity.\n\n")
+            context += f"#### Profile: {doc['title']}\n"
+            context += f"- **Description:** {doc['description']}\n"
+            context += f"- **Mitigation:** {', '.join([m['name'] for m in doc['mitigation']])}\n\n"
 
+        heading = "Nearest known behavior" if flagged else "Candidate"
         for i, match in enumerate(retrieval_result["matches"]):
             doc = match["doc"]
-            conf = match["confidence"]
-            is_benign = doc.get("id") == "benign"
-            label = "Benign Pattern" if is_benign else "Technique"
-
-            context += f"#### Match {i+1} (Confidence: {conf:.2f})\n"
-            context += f"- **{label}:** {doc['title']} ({doc['mitre_id']})\n"
+            context += f"#### {heading} {i+1} (distance to nearest known flow: {match['distance']:.3f})\n"
+            context += f"- **Technique:** {doc['title']} ({doc['mitre_id']})\n"
             context += f"- **Tactic:** {doc['mitre_tactic']}\n"
             context += f"- **Description:** {doc['description']}\n"
             context += f"- **Typical Pattern:** {doc['network_indicators']['traffic_pattern']}\n"
-            if not is_benign:
-                context += f"- **Mitigation:** {', '.join([m['name'] for m in doc['mitigation']])}\n"
+            context += f"- **Mitigation:** {', '.join([m['name'] for m in doc['mitigation']])}\n"
             if doc.get("mitre_url") and doc["mitre_url"] != "N/A":
                 context += f"- **Reference:** {doc['mitre_url']}\n"
             context += "\n"

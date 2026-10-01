@@ -1,0 +1,11 @@
+# Du lieu va checkpoint nam o workspace (zeroshot_benchmark/), khong commit
+01_raw_data/
+02_cleaning/clean_data/
+03_splits/by_label/
+03_splits/*.csv
+03_splits_v2/by_label/
+03_splits_v2/*.csv
+03_splits_v2/*.zip
+04_training_v2/artifacts/
+__pycache__/
+*.pyc

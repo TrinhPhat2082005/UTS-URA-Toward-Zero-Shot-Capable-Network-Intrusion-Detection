@@ -12,11 +12,17 @@ CHUOI 4 BUOC
   3. Dung AE/SVDD sinh feature tang cuong.
   4. Train XGBoost tren [78 feature goc | feature tang cuong] (GPU).
 
-Kien truc + hyperparameter lay nguyen tu
-zeroshot_benchmark/04_training_v2/ (models/autoencoder.py, models/svdd.py,
-train_ae_only.py, train_svdd_only.py, common/xgb_config_v4_new_data.py).
-Khac biet duy nhat: train mot lan tren tap full-label thay vi 14 fold, va ep
-chay GPU.
+Kien truc encoder lay tu zeroshot_benchmark/04_training_v2/ (models/autoencoder.py,
+models/svdd.py). Config XGBoost lay TRUC TIEP tu LAYER1/common/xgb_config_v5_mono.py
+(ban Layer 1 cuoi cung): cung tham so cay + rang buoc DON DIEU TANG tren feature
+augmented co ngu nghia "cang lon cang bat thuong" (AE: ae_recon_error; SVDD: K
+sphere dist + d_min). Bo cuc rang buoc giong het LAYER1/train_{ae,svdd}_xgboost.py.
+Khac biet voi LAYER1: train mot lan tren tap full-label thay vi 14 fold, ep chay GPU,
+va KHONG early stopping (co dinh 500 cay) vi val_full la tap danh gia RAG/VLM
+(tren 42 checkpoint LOAO, early stopping cung khong bao gio cat qua 5 cay).
+
+Encoder (AE/SVDD) mac dinh DUNG LAI ban da train trong thu muc artifact (rang buoc
+don dieu chi doi XGBoost). --retrain-encoders de train lai tu dau.
 
 MOT SCALER DUY NHAT
 -------------------
@@ -26,8 +32,11 @@ cho cung mot tap) — xem docstring train_ae_xgboost.py. Giu dung mot scaler.
 
 THRESHOLD
 ---------
-Tune F1-max tren TRAIN, khong phai val. Val la tap dung de bao cao TP/FP cho
-Layer 2; tune nguong tren chinh no roi bao cao lai tren no la leak.
+Theo NGAN SACH FPR tren benign cua TRAIN: tau = Q_{1-alpha}(p(x), x benign train),
+alpha = OPERATING_ALPHA (0.4%). Giong quy trinh danh gia Layer 1 cua paper (§4.4).
+Val khong tham gia chon nguong (val la tap bao cao TP/FP cho Layer 2). metrics.json
+luu them nguong cho moi alpha trong ALPHAS va nguong F1-max tren train de tham chieu;
+key "threshold" (pipeline doc key nay) = nguong tai OPERATING_ALPHA.
 """
 from __future__ import annotations
 
@@ -58,8 +67,37 @@ BENCH = WS / "zeroshot_benchmark" / "04_training_v2"
 sys.path.insert(0, str(BENCH))
 from models.autoencoder import BenignAutoencoder            # noqa: E402
 from models.svdd import MixtureSVDD                          # noqa: E402
-from common.xgb_config_v4_new_data import (                  # noqa: E402
-    XGB_PARAMS, XGB_SCALE_POS_DIVISOR)
+
+
+def _load_layer1_config():
+    """Nap common/xgb_config_v5_mono.py cua Layer 1 (cung config da train 14 fold
+    LOAO) theo duong dan file.
+
+    Khong import kieu `common.xxx` vi zeroshot_benchmark/04_training_v2 cung co
+    package ten `common` (da nam tren sys.path) -> trung ten.
+    Tim theo thu tu: UTS_LAYER1_CODE, repo (UTS_URA/LAYER1/04_training_v2),
+    workspace (zeroshot_benchmark/04_training_v2, LAYER1).
+    """
+    import importlib.util
+    import os
+    roots = [os.environ.get("UTS_LAYER1_CODE"), WS / "LAYER1" / "04_training_v2",
+             WS / "zeroshot_benchmark" / "04_training_v2", WS / "LAYER1"]
+    path = next(Path(r) / "common" / "xgb_config_v5_mono.py" for r in roots
+                if r and (Path(r) / "common" / "xgb_config_v5_mono.py").exists())
+    spec = importlib.util.spec_from_file_location("layer1_xgb_config_v5_mono", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_L1CFG = _load_layer1_config()
+XGB_PARAMS = _L1CFG.XGB_PARAMS
+XGB_SCALE_POS_DIVISOR = _L1CFG.XGB_SCALE_POS_DIVISOR
+build_monotone_constraints = _L1CFG.build_monotone_constraints
+
+# Nguong theo ngan sach FPR tren benign cua train
+ALPHAS = [0.001, 0.002, 0.004, 0.008, 0.010, 0.015, 0.020, 0.030]
+OPERATING_ALPHA = 0.004
 
 # --------------------------------------------------------------------------
 TRAIN_CSV = HERE / "data" / "train_full.csv"
@@ -279,49 +317,72 @@ def svdd_features(svdd, X_s):
 # ==========================================================================
 # BUOC 4: XGBoost tang cuong
 # ==========================================================================
-def train_xgb(Xtr, ytr, Xva, yva, names, tag, out_dir):
+def _val_metrics(yva, p_va, thr):
+    yh = (p_va >= thr).astype(int)
+    tn, fp, fn, tp = confusion_matrix(yva, yh, labels=[0, 1]).ravel()
+    return {
+        "f1": float(f1_score(yva, yh, zero_division=0)),
+        "precision": float(precision_score(yva, yh, zero_division=0)),
+        "recall": float(recall_score(yva, yh, zero_division=0)),
+        "fpr": float(fp / (fp + tn)),
+        "tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp),
+    }
+
+
+def train_xgb(Xtr, ytr, Xva, yva, names, tag, out_dir, mono):
     print(f"\n{'='*66}\n  XGBoost [{tag}] — {Xtr.shape[1]} feature\n{'='*66}")
+    assert mono is not None and len(mono) == Xtr.shape[1], (
+        f"monotone_constraints dai {None if mono is None else len(mono)} != {Xtr.shape[1]} cot")
+    print(f"  monotone +1 tren {sum(mono)} cot: {[n for n, c in zip(names, mono) if c]}")
     pos = int(ytr.sum())
     spw = ((len(ytr) - pos) / pos) / XGB_SCALE_POS_DIVISOR
     print(f"  scale_pos_weight = {spw:.3f}  (chia {XGB_SCALE_POS_DIVISOR})")
 
     params = dict(XGB_PARAMS)
+    params.pop("early_stopping_rounds", None)     # co dinh so cay, val_full chi de log
     params.update(device="cuda", tree_method="hist")
 
     t0 = time.time()
-    clf = xgb.XGBClassifier(**params, scale_pos_weight=spw)
-    clf.fit(Xtr, ytr, eval_set=[(Xva, yva)], verbose=50)
+    clf = xgb.XGBClassifier(**params, scale_pos_weight=spw, monotone_constraints=mono)
+    clf.fit(Xtr, ytr, eval_set=[(Xva, yva)], verbose=100)
     dt = time.time() - t0
-    print(f"  train {dt:.0f}s, {clf.best_iteration + 1} cay")
+    n_trees = clf.get_booster().num_boosted_rounds()
+    print(f"  train {dt:.0f}s, {n_trees} cay")
 
-    # Threshold tune tren TRAIN (khong phai val — val la tap bao cao TP/FP)
+    # Nguong theo ngan sach FPR tren benign cua TRAIN (val khong tham gia)
     p_tr = clf.predict_proba(Xtr)[:, 1]
-    thr, f1_tr = best_f1_threshold(ytr, p_tr)
-    print(f"  threshold (F1-max tren TRAIN) = {thr:.4f}  (F1_train={f1_tr:.4f})")
+    p_ben = p_tr[ytr == 0]
+    thr_by_alpha = {f"{a:.3f}": float(np.quantile(p_ben, 1 - a, method="higher")) for a in ALPHAS}
+    thr = thr_by_alpha[f"{OPERATING_ALPHA:.3f}"]
+    thr_f1, f1_tr = best_f1_threshold(ytr, p_tr)
+    print(f"  threshold (FPR {OPERATING_ALPHA:.1%} tren benign TRAIN) = {thr:.4f}   "
+          f"[tham chieu F1-max tren TRAIN = {thr_f1:.4f}]")
 
     p_va = clf.predict_proba(Xva)[:, 1]
-    yh = (p_va >= thr).astype(int)
-    tn, fp, fn, tp = confusion_matrix(yva, yh).ravel()
+    val_by_alpha = {k: _val_metrics(yva, p_va, t) for k, t in thr_by_alpha.items()}
     m = {
         "n_features": int(Xtr.shape[1]),
         "threshold": thr,
-        "best_iteration": int(clf.best_iteration),
+        "threshold_rule": "fpr_budget_on_train_benign",
+        "operating_alpha": OPERATING_ALPHA,
+        "thresholds_by_alpha": thr_by_alpha,
+        "threshold_f1max_train": thr_f1,
+        "n_trees": int(n_trees),
+        "early_stopping": False,
+        "monotone_constraints": list(mono),
+        "xgb_config": "LAYER1/common/xgb_config_v5_mono.py",
         "train_seconds": round(dt, 1),
         "scale_pos_weight": round(spw, 4),
-        "val": {
-            "f1": float(f1_score(yva, yh)),
-            "precision": float(precision_score(yva, yh, zero_division=0)),
-            "recall": float(recall_score(yva, yh)),
-            "fpr": float(fp / (fp + tn)),
-            "auroc": float(roc_auc_score(yva, p_va)),
-            "auprc": float(average_precision_score(yva, p_va)),
-            "tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp),
-        },
+        "val": {**val_by_alpha[f"{OPERATING_ALPHA:.3f}"],
+                "auroc": float(roc_auc_score(yva, p_va)),
+                "auprc": float(average_precision_score(yva, p_va))},
+        "val_by_alpha": val_by_alpha,
     }
-    print(f"  VAL  F1={m['val']['f1']:.4f}  P={m['val']['precision']:.4f}  "
-          f"R={m['val']['recall']:.4f}  FPR={m['val']['fpr']:.5f}  "
-          f"AUROC={m['val']['auroc']:.4f}")
-    print(f"       TP={tp:,}  FP={fp:,}  FN={fn:,}  TN={tn:,}")
+    print(f"  {'alpha':>6} {'thr':>7} {'F1':>7} {'P':>7} {'R':>7} {'FPR':>8} {'TP':>7} {'FP':>6}")
+    for k, v in val_by_alpha.items():
+        print(f"  {float(k):>6.1%} {thr_by_alpha[k]:>7.4f} {v['f1']:>7.4f} {v['precision']:>7.4f} "
+              f"{v['recall']:>7.4f} {v['fpr']:>8.5f} {v['tp']:>7,} {v['fp']:>6,}")
+    print(f"  VAL AUROC={m['val']['auroc']:.4f}  AUPRC={m['val']['auprc']:.4f}")
 
     joblib.dump(clf, out_dir / "model.pkl")
     with open(out_dir / "feature_names.json", "w", encoding="utf-8") as f:
@@ -333,6 +394,8 @@ def train_xgb(Xtr, ytr, Xva, yva, names, tag, out_dir):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", choices=["ae", "svdd"], default=None)
+    ap.add_argument("--retrain-encoders", action="store_true",
+                    help="train lai AE/SVDD thay vi dung ban da co trong thu muc artifact")
     args = ap.parse_args()
     want_ae = args.only in (None, "ae")
     want_svdd = args.only in (None, "svdd")
@@ -362,18 +425,35 @@ def main():
     if want_ae:
         d = OUT / "ae_xgboost"
         d.mkdir(parents=True, exist_ok=True)
-        sc = fit_scaler(Xben_raw, d / "scaler.pkl")
+        reuse = (not args.retrain_encoders and (d / "ae_model.pt").exists()
+                 and (d / "scaler.pkl").exists())
+        if reuse:
+            print(f"\n  Dung lai scaler + AE da train trong {d}")
+            sc = joblib.load(d / "scaler.pkl")
+        else:
+            sc = fit_scaler(Xben_raw, d / "scaler.pkl")
         Xben_s, Xtr_s, Xva_s = scale(sc, Xben_raw), scale(sc, Xtr_raw), scale(sc, Xva_raw)
 
-        ae, hist, best = train_ae(Xben_s, d)
-        with open(d / "ae_history.json", "w", encoding="utf-8") as f:
-            json.dump({"best_val_loss": best, "history": hist}, f, indent=1)
+        if reuse:
+            ae = BenignAutoencoder(input_dim=len(feats), bottleneck_dim=AE_BOTTLENECK).to(DEVICE)
+            ae.load_state_dict(torch.load(d / "ae_model.pt", map_location=DEVICE))
+            ae.eval()
+            with open(d / "ae_history.json", encoding="utf-8") as f:
+                best = json.load(f)["best_val_loss"]
+        else:
+            ae, hist, best = train_ae(Xben_s, d)
+            with open(d / "ae_history.json", "w", encoding="utf-8") as f:
+                json.dump({"best_val_loss": best, "history": hist}, f, indent=1)
 
         print("  sinh feature AE ...")
         Atr, Ava = ae_features(ae, Xtr_s), ae_features(ae, Xva_s)
         names = feats + [f"ae_latent_{i}" for i in range(AE_BOTTLENECK)] + ["ae_recon_error"]
+        # [78 goc | 16 latent (tu do) | 1 recon_error (+1)] — nhu LAYER1/train_ae_xgboost.py
+        mono = build_monotone_constraints(n_base=len(feats), n_augmented_monotone=1,
+                                          n_augmented_free=AE_BOTTLENECK)
         m = train_xgb(np.hstack([Xtr_s, Atr]), ytr,
-                      np.hstack([Xva_s, Ava]), yva, names, "AE-augmented", d)
+                      np.hstack([Xva_s, Ava]), yva, names, "AE-augmented", d, mono)
+        m["encoder_reused"] = reuse
         m["ae_best_val_loss"] = best
         m["ae_bottleneck"] = AE_BOTTLENECK
         summary["variants"]["ae_xgboost"] = m
@@ -384,16 +464,34 @@ def main():
     if want_svdd:
         d = OUT / "svdd_xgboost"
         d.mkdir(parents=True, exist_ok=True)
-        sc = fit_scaler(Xben_raw, d / "scaler.pkl")
+        old_m = {}
+        if (d / "metrics.json").exists():
+            with open(d / "metrics.json", encoding="utf-8") as f:
+                old_m = json.load(f)
+        reuse = (not args.retrain_encoders and (d / "svdd").is_dir()
+                 and (d / "scaler.pkl").exists() and "svdd_K_total" in old_m)
+        if reuse:
+            print(f"\n  Dung lai scaler + Mixture SVDD da train trong {d}")
+            sc = joblib.load(d / "scaler.pkl")
+        else:
+            sc = fit_scaler(Xben_raw, d / "scaler.pkl")
         Xben_s, Xtr_s, Xva_s = scale(sc, Xben_raw), scale(sc, Xtr_raw), scale(sc, Xva_raw)
 
-        svdd, K, k_chosen = train_svdd(Xben_s, d)
+        if reuse:
+            K, k_chosen = int(old_m["svdd_K_total"]), int(old_m["svdd_k_chosen"])
+            svdd = MixtureSVDD(K=K, input_dim=len(feats), embed_dim=SVDD_EMBED, device=str(DEVICE))
+            svdd.load(str(d / "svdd"))
+        else:
+            svdd, K, k_chosen = train_svdd(Xben_s, d)
 
         print("  sinh feature SVDD ...")
         Str, Sva = svdd_features(svdd, Xtr_s), svdd_features(svdd, Xva_s)
         names = feats + [f"svdd_sphere_{i}" for i in range(K)] + ["svdd_d_min"]
+        # [78 goc | K sphere dist (+1) | d_min (+1)] — nhu LAYER1/train_svdd_xgboost.py
+        mono = build_monotone_constraints(n_base=len(feats), n_augmented_monotone=K + 1)
         m = train_xgb(np.hstack([Xtr_s, Str]), ytr,
-                      np.hstack([Xva_s, Sva]), yva, names, "SVDD-augmented", d)
+                      np.hstack([Xva_s, Sva]), yva, names, "SVDD-augmented", d, mono)
+        m["encoder_reused"] = reuse
         m["svdd_K_total"] = K
         m["svdd_k_chosen"] = k_chosen
         summary["variants"]["svdd_xgboost"] = m
