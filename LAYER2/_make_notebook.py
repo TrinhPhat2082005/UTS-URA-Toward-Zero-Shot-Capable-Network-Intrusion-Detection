@@ -265,7 +265,7 @@ lam lai tu dau.""")
 
 code("""PROMPT_VARIANT = "neutral"
 # Ten file rieng cho lan chay voi retriever L2, khong ghi de len ket qua pilot cu
-OUT = os.path.join(config.OUT_DIR, f"results_{config.VARIANT}_{PROMPT_VARIANT}_l2rag.jsonl")
+OUT = os.path.join(config.OUT_DIR, f"results_{config.VARIANT}_{PROMPT_VARIANT}_l2rag_v2.jsonl")
 
 # Bo qua cac sample da chay xong (cho phep chay tiep sau khi dut)
 done = set()
@@ -353,7 +353,24 @@ for name, keep in (("14 loai", lambda y: True), ("12 loai (bo song sinh)", lambd
 display(pd.DataFrame(rows))
 
 # Zero-day: so alert bi gan co (alert TP cua loai DA BIET -> ky vong ~5%)
-print(f"co zero-day: {ok['rag_is_potential_zero_day'].mean():.1%} cua {len(ok)} alert")""")
+print(f"co zero-day: {ok['rag_is_potential_zero_day'].mean():.1%} cua {len(ok)} alert")
+
+# Dau ra: dung / UNKNOWN / sai nhung la ten lop hop le / khong hop le, tach co / khong co.
+# Moi alert o day thuoc loai DA BIET nen UNKNOWN tinh la sai (tu choi nham).
+CLASSES = sorted(TW | {"Bot", "Brute_Force_Web", "Brute_Force_XSS", "DDOS_attack_HOIC", "DDOS_attack_LOIC_UDP",
+                       "DDoS_attacks_LOIC_HTTP", "DoS_attacks_GoldenEye", "DoS_attacks_Hulk",
+                       "DoS_attacks_Slowloris", "Infiltration", "SQL_Injection", "SSH_Bruteforce"})
+def kind(r):
+    v, y = (r.get("predicted_class") or "").strip(), r["Label_Text"]
+    if metrics._match(v, y):
+        return "dung"
+    if v.upper().startswith("UNKNOWN"):
+        return "UNKNOWN"
+    return "sai (lop hop le)" if any(metrics._match(v, c) for c in CLASSES) else "khong hop le"
+ok = ok.assign(kind=ok.apply(kind, axis=1),
+               nhom=ok["rag_is_potential_zero_day"].map({True: "co co", False: "khong co"}))
+display(pd.crosstab(ok["nhom"], ok["kind"], margins=True))
+print("Output khong hop le:", ok.loc[ok["kind"] == "khong hop le", "predicted_class"].tolist())""")
 
 # --------------------------------------------------------------------------
 md("## 11. Tung nhom rieng (neu can xem ky)")

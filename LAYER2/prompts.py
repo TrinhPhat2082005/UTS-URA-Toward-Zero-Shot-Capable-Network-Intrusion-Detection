@@ -65,22 +65,29 @@ identify WHICH attack this is and to write the forensic report an analyst would
 act on. Determine the class from the evidence below, not from the retrieved
 name alone.
 
-Weigh three sources. None of them is the default answer.
+Weigh three sources. None of them is the default answer. Exactly five images
+are attached (image 1 and images 2-5); the retrieved context is text, not an
+image.
 
   A. SHAP WATERFALL (image 1) - the per-feature attribution behind Layer 1's
      score. Values were computed for the malicious class: positive pushes
      toward attack, negative pushes toward benign. Judge bar MAGNITUDE, not
      only sign. Small or mixed bars are weak evidence in either direction.
+     Features named ae_latent_0 ... ae_latent_15 and ae_recon_error are not
+     traffic fields: they are the latent code and the reconstruction error of
+     an autoencoder trained on benign traffic. A large ae_recon_error means the
+     flow is unlike benign traffic; the latent dimensions have no named meaning.
 
   B. FLOW-STATISTIC CHARTS (images 2-5) - packet length profile, TCP flag
      composition, inter-arrival timing, directional balance.
 
   C. RETRIEVED CONTEXT (text below) - the three known attack types whose
-     reference flows lie nearest to this flow's SHAP vector (Euclidean
-     distance; smaller is closer), and a novelty score, the mean distance to
-     the ten nearest known attack flows. When the novelty score exceeds its
-     threshold, the context warns that this flow resembles no known attack
-     type and may be novel.
+     reference flows lie nearest to this flow's SHAP vector, each labelled with
+     its attack type and the distance to its nearest reference flow (Euclidean;
+     smaller is closer, near 0 means an almost identical known flow). If the
+     novelty flag is raised, the context also contains the UNKNOWN profile:
+     the flow lies outside the region occupied by known attack types and may be
+     a novel attack.
 
 Where the three disagree, say so in the report rather than resolving the
 conflict silently.\
@@ -101,7 +108,7 @@ Predicted class: <exactly one name from the list below>
 Confidence: <integer 0-100>
 Severity: <Low, Medium, High or Critical>
 Top indicators: <three feature names, copied verbatim from the SHAP chart>
-RAG match: <name of the nearest candidate and its distance>
+RAG match: <attack type of the nearest candidate and its distance>
 Endpoints: <destination port and protocol if the SHAP chart names them,
            otherwise "not available"; IP addresses are not in the evidence>
 
@@ -110,7 +117,8 @@ One bullet per evidence source (SHAP, flow charts, retrieved context). Close
 with one sentence stating explicitly whether the sources converge or conflict.
 
 ## 4. MITRE MAPPING
-Tactic and technique ID for the class named above.
+Tactic and technique ID for the class named above. For UNKNOWN: the tactic the
+observed behavior suggests, and "Technique: N/A".
 
 ## 5. MITIGATIONS
 Ranked recommendations for that technique.
@@ -119,9 +127,11 @@ Ranked recommendations for that technique.
 Data gaps, caveats, recommended next steps.
 
 Three rules:
-  - Predicted class must be exactly one of the 14 names listed below. Do not
-    invent a name, do not answer with a generic family such as "DoS attack",
-    and do not answer "Benign".
+  - Predicted class must be exactly one of the 15 names listed below, copied
+    as written: one of the 14 attack types, or UNKNOWN when the evidence
+    matches none of them. Do not write a profile title or a tactic there, do
+    not invent a name, do not answer with a generic family such as "DoS
+    attack", and do not answer "Benign".
   - Top indicators must be feature names that actually appear in the SHAP
     chart, copied as written. Do not name a feature you did not read there.
   - Confidence is your certainty in the class you chose. Use the full 0-100
@@ -132,7 +142,7 @@ ATTACK CLASSES (choose exactly one):
   DDOS_attack_HOIC          DDOS_attack_LOIC_UDP      DDoS_attacks_LOIC_HTTP
   DoS_attacks_GoldenEye     DoS_attacks_Hulk          DoS_attacks_SlowHTTPTest
   DoS_attacks_Slowloris     FTP_BruteForce            Infiltration
-  SQL_Injection             SSH_Bruteforce\
+  SQL_Injection             SSH_Bruteforce            UNKNOWN\
 """
 
 # --------------------------------------------------------------------------

@@ -168,30 +168,30 @@ class SHAPKNNRetriever:
         return results
 
     def format_context_for_vlm(self, retrieval_result: dict) -> str:
-        """Context block: always three candidate profiles with their distances;
-        when the novelty flag is raised, the unknown_anomaly profile first and
-        the candidates labelled as nearest known behaviors only."""
+        """Context block: three candidate profiles, each labelled with its attack type
+        and distance. When the novelty flag is raised, the unknown_anomaly profile is
+        added first under the attack type UNKNOWN, with the novelty score; unflagged
+        alerts get no novelty line."""
         flagged = retrieval_result["is_potential_zero_day"]
         context = "### RETRIEVED CONTEXT (MITRE ATT&CK PROFILES)\n"
-        context += (f"Novelty: mean L2 distance to the {self.k} nearest known attack flows = "
-                    f"{retrieval_result['novelty_score']:.3f}"
-                    + (f" (threshold {self.tau_zd:.3f})" if self.tau_zd is not None else "")
-                    + "\n\n")
 
         if flagged:
             doc = self.unknown_profile
-            context += "> [!WARNING]\n"
-            context += ("> The attribution vector lies outside the region occupied by known attack "
-                        "types. Treat the alert as a potentially novel attack. The candidates below "
-                        "are the known behaviors it is closest to, not its identity.\n\n")
-            context += f"#### Profile: {doc['title']}\n"
+            context += (f"NOVELTY FLAG RAISED: the mean L2 distance from this flow to its {self.k} "
+                        f"nearest known attack flows is {retrieval_result['novelty_score']:.3f}"
+                        + (f", above the threshold {self.tau_zd:.3f}" if self.tau_zd is not None else "")
+                        + ". The flow lies outside the region occupied by known attack types and "
+                        "may be a novel attack.\n\n")
+            context += "#### Attack type: UNKNOWN\n"
+            context += f"- **Profile:** {doc['title']}\n"
             context += f"- **Description:** {doc['description']}\n"
+            context += f"- **Typical Pattern:** {doc['network_indicators']['traffic_pattern']}\n"
             context += f"- **Mitigation:** {', '.join([m['name'] for m in doc['mitigation']])}\n\n"
 
-        heading = "Nearest known behavior" if flagged else "Candidate"
         for i, match in enumerate(retrieval_result["matches"]):
             doc = match["doc"]
-            context += f"#### {heading} {i+1} (distance to nearest known flow: {match['distance']:.3f})\n"
+            context += (f"#### Candidate {i+1} - Attack type: {match['matched_label']} "
+                        f"(distance to nearest known flow: {match['distance']:.3f})\n")
             context += f"- **Technique:** {doc['title']} ({doc['mitre_id']})\n"
             context += f"- **Tactic:** {doc['mitre_tactic']}\n"
             context += f"- **Description:** {doc['description']}\n"

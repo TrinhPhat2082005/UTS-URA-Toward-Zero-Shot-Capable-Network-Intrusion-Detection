@@ -191,7 +191,7 @@ def describe():
     except Exception:
         thr = "chua co metrics.json"
     print(f"\n  threshold={thr}  top_k={RAG_TOP_K}  "
-          f"zero_day_thr={RAG_ZERODAY_THRESHOLD}")
+          f"zero_day_thr={RAG_ZERODAY_THRESHOLD if RAG_ZERODAY_THRESHOLD is not None else 'doc tu shap_pool_*.meta.json'}")
     print(f"  mau: {PER_CLASS}/nhan x 14 nhan = {PER_CLASS * 14}  seed={SAMPLE_SEED}")
     print(f"  ghi ket qua vao: {OUT_DIR}")
     if missing:
