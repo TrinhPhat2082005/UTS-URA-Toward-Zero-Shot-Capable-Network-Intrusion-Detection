@@ -23,12 +23,14 @@ def code(s):
 
 
 # --------------------------------------------------------------------------
-md("""# Layer 2 - VLM forensic report
+md("""# Layer 2 - VLM forensic report (pilot, retriever L2 da chot)
 
-Moi sample di het chuoi ngay trong luc chay, khong build evidence truoc:
+Chay lai pilot (VLM tu chon 1 trong 14 nhan, 10 alert TP moi nhan) voi Layer 1 mono
+va SHAP-KNN Retriever da chot: mot lan tinh L2 -> top-3 loai gan nhat + diem novelty
+(trung binh L2 toi 10 lang gieng), co zero-day khi vuot tau_zd.
 
 ```
-row -> Layer 1 (proba + SHAP) -> RAG k-NN -> 5 anh -> VLM -> report
+row -> Layer 1 (proba + TreeSHAP) -> retriever L2 (top-3 + novelty) -> 5 anh -> VLM -> report
 ```
 
 Cac cell nap tuan tu. Chay tu tren xuong.
@@ -36,11 +38,12 @@ Cac cell nap tuan tu. Chay tu tren xuong.
 | Cell | Viec |
 |---|---|
 | 1-2 | Import, kiem tra duong dan |
-| 3-5 | Nap Layer 1, RAG, VLM |
-| 6-7 | Lay mau 50 TP + 50 FP tu val_binary |
+| 3-5 | Nap Layer 1, retriever, VLM |
+| 6-7 | Lay 10 alert TP moi nhan tu val_full (140 mau) |
 | 8 | **Mot sample -> mot report** (xem ky truoc khi chay ca lo) |
 | 9 | Chay ca lo |
-| 10-13 | Correction/retention, quet confidence, latency |
+| 10 | Bang so sanh voi pilot: theo loai, 14 va 12 loai, McNemar |
+| 11-13 | Cac chi so con lai, confidence, latency |
 | 14 | Do do nhay voi prompt (tuy chon) |""")
 
 # --------------------------------------------------------------------------
@@ -159,14 +162,23 @@ vector nay dung lam khoa truy hoi duoc.""")
 code("""l1 = pipeline.Layer1Engine(variant=config.VARIANT)""")
 
 # --------------------------------------------------------------------------
-md("""## 4. RAG - SHAP k-NN
+md("""## 4. SHAP-KNN Retriever (L2)
 
-Khop vector SHAP cua flow voi TOAN BO build pool cua tung label (cosine lon
-nhat), khong phai voi mot centroid trung binh.
+Mot lan tinh khoang cach L2 tu vector SHAP toi moi vector cua R (moi flow attack
+cua train_full, 14 nhan):
 
-`Infilteration` bi loai khoi pool vi no la lop zero-shot giu lai.""")
+- top-3 = 3 loai co flow gan nhat (d_l nho nhat), dung mot quy tac cho ca 3 ung vien;
+- novelty s(q) = trung binh L2 toi 10 lang gieng; co zero-day khi s(q) > tau_zd.
 
-code("""ev = pipeline.EvidenceBuilder()""")
+tau_zd doc tu `shap_pool_<variant>.meta.json` (khoa `novelty`). Neu dataset Kaggle
+con pool cu (chua hieu chinh) thi tau_zd = None va co zero-day khong bao gio bat -
+cell duoi se dung lai.""")
+
+code("""ev = pipeline.EvidenceBuilder()
+r = ev.retriever
+print(f"R = {len(r.pool):,} vector, {len(r.labels)} nhan, k = {r.k}, tau_zd = {r.tau_zd}")
+assert r.tau_zd is not None, "Pool tren dataset chua co tau_zd - upload lai shap_pool_*.meta.json moi"
+assert len(r.labels) == 14, "Pool phai co du 14 nhan" """)
 
 # --------------------------------------------------------------------------
 md("""## 5. VLM
@@ -252,7 +264,8 @@ da chay. Chay lai cell nay se GHI TIEP vao file cu; xoa file truoc neu muon
 lam lai tu dau.""")
 
 code("""PROMPT_VARIANT = "neutral"
-OUT = os.path.join(config.OUT_DIR, f"results_{config.VARIANT}_{PROMPT_VARIANT}.jsonl")
+# Ten file rieng cho lan chay voi retriever L2, khong ghi de len ket qua pilot cu
+OUT = os.path.join(config.OUT_DIR, f"results_{config.VARIANT}_{PROMPT_VARIANT}_l2rag.jsonl")
 
 # Bo qua cac sample da chay xong (cho phep chay tiep sau khi dut)
 done = set()
@@ -309,6 +322,38 @@ VLM cong them, chep lai, hay lam hong ket qua truy hoi.""")
 
 code("""df = metrics.load_results(OUT)
 metrics.report_all(df)""")
+
+md("""### So sanh voi pilot cu (cung cach doc nhu bang theo loai)
+
+Dung theo nhan goc CIC-IDS2018. "VLM pha RAG" = retriever dung, VLM sai.
+Hai loai song sinh (FTP-BruteForce, DoS-SlowHTTPTest) la tan cong that bai,
+flow trung nhau [Liu 2022] -> bao cao rieng, so chinh la 12 loai.""")
+
+code("""from collections import defaultdict
+from scipy.stats import binomtest
+
+TW = {"FTP_BruteForce", "DoS_attacks_SlowHTTPTest"}
+ok = df[df["run_error"].isna()]
+per = defaultdict(lambda: [0, 0, 0, 0, 0])          # n, rag dung, vlm dung, vlm pha rag, vlm sua rag
+for _, r in ok.iterrows():
+    y = r["Label_Text"]
+    a = metrics._match(r.get("rag_predicted_label") or "", y)
+    b = metrics._match(r.get("predicted_class") or "", y)
+    p = per[y]; p[0] += 1; p[1] += a; p[2] += b; p[3] += a and not b; p[4] += b and not a
+
+rows = [{"loai": y + (" (song sinh)" if y in TW else ""), "n": n, "RAG dung": a, "VLM dung": b,
+         "VLM pha RAG": c, "VLM sua RAG": d} for y, (n, a, b, c, d) in sorted(per.items())]
+for name, keep in (("14 loai", lambda y: True), ("12 loai (bo song sinh)", lambda y: y not in TW)):
+    ks = [y for y in per if keep(y)]
+    s = [sum(per[y][i] for y in ks) for i in range(5)]
+    p_mc = binomtest(s[3], s[3] + s[4], 0.5).pvalue if s[3] + s[4] else float("nan")
+    rows.append({"loai": name, "n": s[0], "RAG dung": f"{s[1]} ({s[1]/s[0]:.1%})",
+                 "VLM dung": f"{s[2]} ({s[2]/s[0]:.1%})", "VLM pha RAG": s[3],
+                 "VLM sua RAG": f"{s[4]}  (McNemar exact p = {p_mc:.2g})"})
+display(pd.DataFrame(rows))
+
+# Zero-day: so alert bi gan co (alert TP cua loai DA BIET -> ky vong ~5%)
+print(f"co zero-day: {ok['rag_is_potential_zero_day'].mean():.1%} cua {len(ok)} alert")""")
 
 # --------------------------------------------------------------------------
 md("## 11. Tung nhom rieng (neu can xem ky)")

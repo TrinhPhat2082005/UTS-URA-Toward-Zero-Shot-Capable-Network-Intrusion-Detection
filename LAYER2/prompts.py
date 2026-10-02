@@ -75,10 +75,12 @@ Weigh three sources. None of them is the default answer.
   B. FLOW-STATISTIC CHARTS (images 2-5) - packet length profile, TCP flag
      composition, inter-arrival timing, directional balance.
 
-  C. RETRIEVED CONTEXT (text below) - the nearest known profiles, matched by
-     cosine similarity on this flow's SHAP vector. A high-similarity match is
-     evidence; a low-similarity best match means this flow resembles nothing
-     in the reference set and may be novel.
+  C. RETRIEVED CONTEXT (text below) - the three known attack types whose
+     reference flows lie nearest to this flow's SHAP vector (Euclidean
+     distance; smaller is closer), and a novelty score, the mean distance to
+     the ten nearest known attack flows. When the novelty score exceeds its
+     threshold, the context warns that this flow resembles no known attack
+     type and may be novel.
 
 Where the three disagree, say so in the report rather than resolving the
 conflict silently.\
@@ -99,7 +101,7 @@ Predicted class: <exactly one name from the list below>
 Confidence: <integer 0-100>
 Severity: <Low, Medium, High or Critical>
 Top indicators: <three feature names, copied verbatim from the SHAP chart>
-RAG match: <name of the best-matching profile and its similarity>
+RAG match: <name of the nearest candidate and its distance>
 Endpoints: <destination port and protocol if the SHAP chart names them,
            otherwise "not available"; IP addresses are not in the evidence>
 
