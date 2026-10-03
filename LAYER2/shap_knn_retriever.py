@@ -168,12 +168,17 @@ class SHAPKNNRetriever:
         return results
 
     def format_context_for_vlm(self, retrieval_result: dict) -> str:
-        """Context block: three candidate profiles, each labelled with its attack type
-        and distance. When the novelty flag is raised, the unknown_anomaly profile is
-        added first under the attack type UNKNOWN, with the novelty score; unflagged
-        alerts get no novelty line."""
+        """Context block: three candidate profiles, nearest first, each labelled with its
+        attack type and distance. Every alert gets the novelty score as a distance
+        scale; when the flag is raised, the unknown_anomaly profile is added first
+        under the attack type UNKNOWN."""
         flagged = retrieval_result["is_potential_zero_day"]
         context = "### RETRIEVED CONTEXT (MITRE ATT&CK PROFILES)\n"
+
+        if not flagged:
+            context += (f"Novelty: mean L2 distance to the {self.k} nearest known attack flows = "
+                        f"{retrieval_result['novelty_score']:.3f}"
+                        + (f" (threshold {self.tau_zd:.3f})" if self.tau_zd is not None else "") + "\n\n")
 
         if flagged:
             doc = self.unknown_profile
@@ -188,6 +193,7 @@ class SHAPKNNRetriever:
             context += f"- **Typical Pattern:** {doc['network_indicators']['traffic_pattern']}\n"
             context += f"- **Mitigation:** {', '.join([m['name'] for m in doc['mitigation']])}\n\n"
 
+        context += "Candidates are listed nearest first.\n\n"
         for i, match in enumerate(retrieval_result["matches"]):
             doc = match["doc"]
             context += (f"#### Candidate {i+1} - Attack type: {match['matched_label']} "

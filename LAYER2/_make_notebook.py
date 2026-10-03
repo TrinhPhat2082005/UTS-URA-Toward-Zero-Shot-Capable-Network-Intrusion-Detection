@@ -265,7 +265,7 @@ lam lai tu dau.""")
 
 code("""PROMPT_VARIANT = "neutral"
 # Ten file rieng cho lan chay voi retriever L2, khong ghi de len ket qua pilot cu
-OUT = os.path.join(config.OUT_DIR, f"results_{config.VARIANT}_{PROMPT_VARIANT}_l2rag_v2.jsonl")
+OUT = os.path.join(config.OUT_DIR, f"results_{config.VARIANT}_{PROMPT_VARIANT}_l2rag_v3.jsonl")
 
 # Bo qua cac sample da chay xong (cho phep chay tiep sau khi dut)
 done = set()

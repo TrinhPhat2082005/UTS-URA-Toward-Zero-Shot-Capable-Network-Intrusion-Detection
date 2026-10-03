@@ -82,7 +82,8 @@ image.
      composition, inter-arrival timing, directional balance.
 
   C. RETRIEVED CONTEXT (text below) - the three known attack types whose
-     reference flows lie nearest to this flow's SHAP vector, each labelled with
+     reference flows lie nearest to this flow's SHAP vector, listed nearest
+     first, each labelled with
      its attack type and the distance to its nearest reference flow (Euclidean;
      smaller is closer, near 0 means an almost identical known flow). If the
      novelty flag is raised, the context also contains the UNKNOWN profile:
@@ -108,7 +109,7 @@ Predicted class: <exactly one name from the list below>
 Confidence: <integer 0-100>
 Severity: <Low, Medium, High or Critical>
 Top indicators: <three feature names, copied verbatim from the SHAP chart>
-RAG match: <attack type of the nearest candidate and its distance>
+RAG match: <attack type and distance of Candidate 1, copied from the context>
 Endpoints: <destination port and protocol if the SHAP chart names them,
            otherwise "not available"; IP addresses are not in the evidence>
 
