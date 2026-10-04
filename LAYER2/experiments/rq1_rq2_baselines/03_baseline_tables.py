@@ -143,7 +143,7 @@ def main(alphas):
     md, run_tag = [], "_".join(f"alpha{pct(a)}" for a in alphas)
     for a in alphas:
         md.append(f"## Known-attack detection and zero-shot accuracy at alpha = {pct(a)}% "
-                  f"(quantile {1 - a:.3f} of benign-train scores, per fold; macro over {len(FOLDS)} folds)\n")
+                  f"(quantile {1 - a:.6g} of benign-train scores, per fold; macro over {len(FOLDS)} folds)\n")
         table, thresholds = [], []
         for title, group in (("Methods", NEW),
                              ("Re-training variance (baseline-study run of the paper's models)", RETRAIN)):
