@@ -104,12 +104,97 @@ def _svdd():
     return _ENC["svdd"]
 
 
+def _vae_net(d_in=N_FEATURES, hidden=(512, 256), latent=32, slope=0.2, p=0.1):
+    """Benign VAE of the baseline study. Rebuilt from vae_best.pt (parameter names and shapes)
+    and vae_params in vae_only/metrics.json: Linear -> LayerNorm -> LeakyReLU -> Dropout blocks."""
+    import torch.nn as nn
+
+    def block(i, o):
+        return [nn.Linear(i, o), nn.LayerNorm(o), nn.LeakyReLU(slope), nn.Dropout(p)]
+
+    class VAE(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.encoder_backbone = nn.Sequential(*block(d_in, hidden[0]), *block(hidden[0], hidden[1]))
+            self.fc_mu = nn.Linear(hidden[1], latent)
+            self.fc_logvar = nn.Linear(hidden[1], latent)
+            self.decoder = nn.Sequential(*block(latent, hidden[1]), *block(hidden[1], hidden[0]),
+                                         nn.Linear(hidden[0], d_in))
+    return VAE()
+
+
+# Anomaly score of the VAE: the per-feature VAE loss (SSE + beta * KL) / 78, i.e. reconstruction
+# MSE (decoded from mu) + (beta / 78) * KL summed over latent dimensions, beta = 0.1 (vae_params).
+# This form reproduces the trainer's reported metrics exactly (step 2); MSE alone or
+# beta * KL / 32 do not.
+VAE_KL_WEIGHT = 0.1 / N_FEATURES
+
+
+def _vae():
+    """X -> (X_scaled, mu, anomaly score)."""
+    if "vae" not in _ENC:
+        torch, dev = _torch()
+        d = paths.BASE_ART / "vae_only" / "checkpoint"
+        sc = joblib.load(d / "scaler.pkl")
+        net = _vae_net().to(dev)
+        net.load_state_dict(torch.load(d / "vae_best.pt", map_location=dev))
+        net.eval()
+
+        def forward(X):
+            Xs = np.clip(sc.transform(X), -CLIP, CLIP).astype("float32")
+            mus, scores = [], []
+            with torch.no_grad():
+                for i in range(0, len(Xs), 8192):
+                    xb = torch.tensor(Xs[i:i + 8192], device=dev)
+                    h = net.encoder_backbone(xb)
+                    mu, lv = net.fc_mu(h), net.fc_logvar(h)
+                    mse = ((xb - net.decoder(mu)) ** 2).mean(1)
+                    kl = (-0.5 * (1 + lv - mu ** 2 - lv.exp())).sum(1)
+                    mus.append(mu.cpu().numpy())
+                    scores.append((mse + VAE_KL_WEIGHT * kl).cpu().numpy())
+            return Xs, np.concatenate(mus), np.concatenate(scores)
+        _ENC["vae"] = forward
+    return _ENC["vae"]
+
+
 # ------------------------------------------------------------------ loaders
 def _scaled_model(name):
     def load(fold):
         m, s = joblib.load(_ck(name, fold) / "model.pkl"), joblib.load(_ck(name, fold) / "scaler.pkl")
         return lambda X: _proba(m, s.transform(X))
     return load
+
+
+class PyTorchKNNClassifier:
+    """Stand-in for the baseline study's k-NN class, which was pickled under `__main__`.
+
+    Rebuilt from the attributes the pickle stores: X_train_cpu (50K scaled training flows),
+    y_train_cpu, n_neighbors = 5, weights = "distance". P(attack) is the inverse-distance
+    weighted vote of the k nearest training flows (Euclidean); 02_verify_reproduction.py
+    checks it against the trainer's metrics.
+    """
+
+    def predict_proba(self, X, batch=1024):   # 1024 x 50K distances ~ 200 MB per batch
+        import torch
+        Xt = torch.from_numpy(np.ascontiguousarray(self.X_train_cpu, dtype=np.float32))
+        yt = torch.from_numpy(np.asarray(self.y_train_cpu, dtype=np.float32))
+        p1 = np.empty(len(X), dtype=np.float32)
+        for i in range(0, len(X), batch):
+            q = torch.from_numpy(np.ascontiguousarray(X[i:i + batch], dtype=np.float32))
+            dk, ik = torch.cdist(q, Xt).topk(self.n_neighbors, largest=False)
+            if self.weights == "distance":
+                w = 1.0 / dk.clamp_min(1e-12)
+            else:
+                w = torch.ones_like(dk)
+            p1[i:i + batch] = ((w * yt[ik]).sum(1) / w.sum(1)).numpy()
+        return np.stack([1 - p1, p1], axis=1)
+
+
+def _knn(fold):
+    sys.modules["__main__"].PyTorchKNNClassifier = PyTorchKNNClassifier   # class named in the pickle
+    m = joblib.load(_ck("knn", fold) / "model.pkl")
+    s = joblib.load(_ck("knn", fold) / "scaler.pkl")
+    return lambda X: m.predict_proba(s.transform(X))[:, 1]
 
 
 def _random_forest(fold):
@@ -176,27 +261,34 @@ def _svdd_only(fold):
     return lambda X: fwd(X)[1].min(1)
 
 
-def _needs_code(name):
-    def load(fold):
-        raise NotImplementedError(
-            f"{name}: the model class is defined in the baseline training code (src/train_{name}.py), "
-            "which is not available yet; add it before scoring.")
-    return load
+def _vae_only(fold):
+    fwd = _vae()
+    return lambda X: fwd(X)[2]
+
+
+def _vae_xgboost(fold):
+    m = joblib.load(_ck("vae_xgboost", fold) / "model.pkl")
+    fwd = _vae()
+
+    def score(X):
+        Xs, mu, s = fwd(X)
+        return _proba(m, np.concatenate([Xs, mu, s[:, None]], 1))   # [78 | 32 latent | score], 111 columns
+    return score
 
 
 REGISTRY = {
     "xgboost_only":  Spec("XGBoost-only", "Supervised", True, _scaled_model("xgboost_only"), tree=True),
     "lgbm":          Spec("LightGBM", "Supervised", True, _scaled_model("lgbm"), tree=True),
     "random_forest": Spec("Random Forest", "Supervised", True, _random_forest, tree=True),
-    "knn":           Spec("KNN", "Supervised", True, _scaled_model("knn")),
+    "knn":           Spec("KNN", "Supervised", True, _knn),
     "svm_only":      Spec("SVM (linear)", "Supervised", True, _svm),
     "ae_only":       Spec("AE-only", "One-class", False, _ae_only),
     "svdd_only":     Spec("Mixture Deep SVDD", "One-class", False, _svdd_only),
-    "vae_only":      Spec("VAE-only", "One-class", False, _needs_code("vae_only")),
+    "vae_only":      Spec("VAE-only", "One-class", False, _vae_only),
     "clad":          Spec("CLAD", "Contrastive", True, _clad),
     "ae_xgboost":    Spec("AE-XGBoost", "Hybrid", True, _ae_xgboost, tree=True),
     "svdd_xgboost":  Spec("SVDD-XGBoost", "Hybrid", True, _svdd_xgboost, tree=True),
-    "vae_xgboost":   Spec("VAE-XGBoost", "Hybrid", True, _needs_code("vae_xgboost"), tree=True),
+    "vae_xgboost":   Spec("VAE-XGBoost", "Hybrid", True, _vae_xgboost, tree=True),
 }
 
 
@@ -244,7 +336,7 @@ def own_threshold(name, metrics, fold):
     for k in ("threshold_per_label_from_benign_train", "threshold_per_label"):
         if k in metrics:
             return metrics[k][fold], True
-    for k in ("ae_threshold", "threshold_benign_train", "svdd_threshold"):
+    for k in ("ae_threshold", "vae_threshold", "threshold_benign_train", "svdd_threshold"):
         if k in metrics:
             return metrics[k], True
     raise KeyError(f"{name}: no threshold field in metrics.json")

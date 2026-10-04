@@ -46,7 +46,16 @@ for name in REGISTRY:
         rows.append(("base", name, REGISTRY[name].label, REGISTRY[name].family))
 FOLDS = sorted({k.split("|")[1] for k in S})
 NEW = [r for r in rows if r[0] == "paper" or r[1] not in RETRAIN_OF]
-RETRAIN = [r for r in rows if r[0] == "base" and r[1] in RETRAIN_OF]
+
+
+def same_scores(name):
+    """True if a baseline-study checkpoint scores exactly like the paper's model (same file)."""
+    return all(np.allclose(S[f"base:{name}|{f}|{p}"], S[f"paper:{RETRAIN_OF[name]}|{f}|{p}"], rtol=0, atol=1e-6)
+               for f in FOLDS for p in ("tb", "vb", "va", "zs"))
+
+
+IDENTICAL = [r for r in rows if r[0] == "base" and r[1] in RETRAIN_OF and same_scores(r[1])]
+RETRAIN = [r for r in rows if r[0] == "base" and r[1] in RETRAIN_OF and r not in IDENTICAL]
 
 
 def get(src, name, fold, part):
@@ -106,12 +115,15 @@ def main():
                 r, p = macro(src, name, a), pauc(src, name)
                 md.append(f"| {lab} | {fam} | {r['acc']:.4f} | {r['precision']:.4f} | {r['recall']:.4f} | "
                           f"{r['f1']:.4f} | {100 * r['fpr']:.2f}% | {r['zs_acc']:.4f} | {p:.4f} |")
-                csv_rows.append({"alpha": a, "model": lab,
+                csv_rows.append({"alpha": a, "key": name, "model": lab,
                                  "source": "paper" if src == "paper" else "baseline-study",
                                  "retrain_of": RETRAIN_OF.get(name, "") if src == "base" else "",
                                  "family": fam, **{k: round(v, 6) for k, v in r.items()},
                                  "pauc": round(p, 6)})
             md.append("")
+        if IDENTICAL:
+            md.append("Identical checkpoints (scores equal to the paper's model on every fold, so not a "
+                      "re-training): " + ", ".join(lab for _, _, lab, _ in IDENTICAL) + ".\n")
     md.append("## ZS-Acc vs alpha (realized val FPR in brackets)\n")
     md.append("| Model | " + " | ".join(f"{100 * a:.1f}%" for a in ALPHAS_SWEEP) + " |")
     md.append("|---|" + "---|" * len(ALPHAS_SWEEP))

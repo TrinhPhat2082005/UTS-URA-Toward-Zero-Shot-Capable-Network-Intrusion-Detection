@@ -28,7 +28,8 @@ models are read from that study's `sweep_all_scores.npz` and listed alongside.
 python 01_score_baselines.py            # scores of every available model -> scores_<model>.npz
 python 02_verify_reproduction.py        # each trainer's own threshold vs its metrics.json -> verify.md
 python 03_baseline_tables.py            # common-budget tables -> baseline_tables.md, baseline_table.csv
-python 04_baseline_latency.py           # per-flow latency, CPU, 20 warm-up + 300 calls -> baseline_latency.json
+python 04_baseline_latency.py [model]   # per-flow latency, CPU, 20 warm-up + 300 calls -> baseline_latency.json
+                                        # (with model names: measure only those and merge into the file)
 ```
 
 `01` accepts model names (`python 01_score_baselines.py lgbm knn`) and skips models whose
@@ -46,9 +47,16 @@ On a 16 GB machine set `OPENBLAS_NUM_THREADS=2`.
 | `svm_only` | Linear SVM | Supervised | signed margin |
 | `ae_only` | Benign autoencoder | One-class | reconstruction error |
 | `svdd_only` | Mixture Deep SVDD | One-class | distance to nearest centre |
-| `vae_only` | Benign VAE | One-class | needs the VAE class (not yet added) |
+| `vae_only` | Benign VAE, latent 32 | One-class | reconstruction MSE (+ weighted KL, see `VAE_KL_WEIGHT`) |
 | `clad` | CLAD | Contrastive | −cos(z, benign centroid) |
 | `ae_xgboost`, `svdd_xgboost`, `vae_xgboost` | XGBoost on features + encoder signals | Hybrid | P(attack) |
+
+Two model classes are not in the training code shipped with the checkpoints and are rebuilt
+in `baselines.py` from what the checkpoints store: the k-NN (`PyTorchKNNClassifier`, pickled
+under `__main__`: 50K scaled training flows, k = 5, inverse-distance vote) and the VAE
+(architecture from the parameter names and shapes of `vae_best.pt` and `vae_params` in
+`metrics.json`). Step 2 confirms both against the trainer's reported metrics.
+OptiForest needs its own library and is not re-scored.
 
 `ae_xgboost`, `svdd_xgboost`, `xgboost_only`, `clad`, `ae_only` and `svdd_only` re-train
 models the paper already reports; the tables list them as re-training variance.

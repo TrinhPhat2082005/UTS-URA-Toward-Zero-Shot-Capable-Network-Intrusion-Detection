@@ -65,23 +65,32 @@ def tree_parts(name):
             Xs, d = fwd(X)
             return np.concatenate([Xs, d, d.min(1, keepdims=True)], 1)
         return joblib.load(ck / "model.pkl"), svdd_feats
+    if name == "vae_xgboost":
+        fwd = B._vae()
+
+        def vae_feats(X):
+            Xs, mu, s = fwd(X)
+            return np.concatenate([Xs, mu, s[:, None]], 1)
+        return joblib.load(ck / "model.pkl"), vae_feats
     return None, None
 
 
-def main():
+def main(names):
     va = pd.read_csv(paths.SPLITS / FOLD / "val_binary.csv")
     feats = [c for c in va.columns if c not in ("Label", "Label_Text")]
     idx = np.random.default_rng(0).choice(len(va), N_WARM + N_MEAS, replace=False)
     X = va[feats].to_numpy("float32")[idx]
     rows = [X[i:i + 1] for i in range(len(X))]
-    res = {"cpu": platform.processor(), "torch_threads": torch.get_num_threads(), "fold": FOLD,
-           "n_warmup": N_WARM, "n_measured": N_MEAS}
+    out_f = OUT / "baseline_latency.json"
+    res = json.loads(out_f.read_text(encoding="utf-8")) if names and out_f.exists() else {}
+    res.update({"cpu": platform.processor(), "torch_threads": torch.get_num_threads(), "fold": FOLD,
+                "n_warmup": N_WARM, "n_measured": N_MEAS})
     if platform.system() == "Windows":
         import subprocess
         res["power_scheme"] = subprocess.run(["powercfg", "/getactivescheme"], capture_output=True,
                                              text=True).stdout.strip()
     for name, spec in B.REGISTRY.items():
-        if not B.available(name):
+        if (names and name not in names) or not B.available(name):
             continue
         try:
             score = spec.loader(FOLD)
@@ -99,9 +108,9 @@ def main():
         for k in (f"{name}/decision", f"{name}/decision+treeshap"):
             if k in res:
                 print(f"  {k:<36} {res[k]['mean_ms']:8.2f} ms  (p95 {res[k]['p95_ms']:7.2f})", flush=True)
-    (OUT / "baseline_latency.json").write_text(json.dumps(res, indent=1), encoding="utf-8")
-    print(f"-> {OUT / 'baseline_latency.json'}")
+    out_f.write_text(json.dumps(res, indent=1), encoding="utf-8")
+    print(f"-> {out_f}")
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])   # no argument: every available model; names: measure those and merge
