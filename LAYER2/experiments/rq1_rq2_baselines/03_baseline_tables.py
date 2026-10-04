@@ -15,6 +15,7 @@ Usage:  python 03_baseline_tables.py [--alphas 0.005 0.004]
 Outputs (OUT_BASE), <a> = alpha in percent, <tag> = the alphas joined by "_":
     baseline_tables_<tag>.md        tables at each alpha, alpha sweep, per-type zero-shot
     table_alpha<a>.csv              one row per model at that alpha (read by the slides)
+    table_<tag>.csv                 the same rows for every alpha in one file (for plots)
     thresholds_alpha<a>.csv         threshold of every model and fold, with its realized metrics
     manifest_<tag>.json             code version, input checksums, rule, alphas
 """
@@ -140,7 +141,7 @@ def code_version():
 
 
 def main(alphas):
-    md, run_tag = [], "_".join(f"alpha{pct(a)}" for a in alphas)
+    md, run_tag, all_rows = [], "_".join(f"alpha{pct(a)}" for a in alphas), []
     for a in alphas:
         md.append(f"## Known-attack detection and zero-shot accuracy at alpha = {pct(a)}% "
                   f"(quantile {1 - a:.6g} of benign-train scores, per fold; macro over {len(FOLDS)} folds)\n")
@@ -172,6 +173,7 @@ def main(alphas):
             md.append("Identical checkpoints (scores equal to the paper's model on every fold, so not a "
                       "re-training): " + ", ".join(lab for _, _, lab, _ in IDENTICAL) + ".\n")
         write_csv(OUT / f"table_alpha{pct(a)}.csv", table)
+        all_rows += table
         write_csv(OUT / f"thresholds_alpha{pct(a)}.csv", thresholds)
 
     md.append("## ZS-Acc vs alpha (realized val FPR in brackets)\n")
@@ -189,6 +191,8 @@ def main(alphas):
             md.append(f"| {f} | " + " | ".join(f"{fold_metrics(s, n, f, thr(s, n, f, a))['zs_acc']:.3f}"
                                                for s, n, _, _ in group) + " |")
     (OUT / f"baseline_tables_{run_tag}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    if len(alphas) > 1:
+        write_csv(OUT / f"table_{run_tag}.csv", all_rows)   # long format: one row per model and alpha
 
     manifest = {"created": datetime.now().isoformat(timespec="seconds"), "code_version": code_version(),
                 "alphas": list(alphas), "threshold_rule": RULE, "folds": FOLDS,
