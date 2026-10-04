@@ -27,7 +27,10 @@ models are read from that study's `sweep_all_scores.npz` and listed alongside.
 ```bash
 python 01_score_baselines.py            # scores of every available model -> scores_<model>.npz
 python 02_verify_reproduction.py        # each trainer's own threshold vs its metrics.json -> verify.md
-python 03_baseline_tables.py            # common-budget tables -> baseline_tables.md, baseline_table.csv
+python 03_baseline_tables.py [--alphas 0.005 0.004]
+                                        # common-budget tables; per alpha: table_alpha<a>.csv,
+                                        # thresholds_alpha<a>.csv (every model x fold threshold),
+                                        # plus baseline_tables_<tag>.md and manifest_<tag>.json
 python 04_baseline_latency.py [model]   # per-flow latency, CPU, 20 warm-up + 300 calls -> baseline_latency.json
                                         # (with model names: measure only those and merge into the file)
 ```
@@ -64,3 +67,10 @@ models the paper already reports; the tables list them as re-training variance.
 **Verification.** `02` must report `yes` for every model before the tables are used: it
 means the checkpoint, its scaler and its feature construction reproduce the trainer's
 own reported metrics, so the common-budget numbers describe the same trained models.
+
+## Reproducing a reported number
+
+`thresholds_alpha<a>.csv` stores the exact threshold (`repr` of the float) of every model and
+fold with its realized validation FPR, recall and zero-shot accuracy; `manifest_<tag>.json`
+records the code version and the MD5 of every score file used. Re-running `03` with the same
+`--alphas` on the same score files reproduces the tables to the last digit.
