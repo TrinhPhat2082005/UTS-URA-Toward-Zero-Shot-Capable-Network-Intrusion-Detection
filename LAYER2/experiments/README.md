@@ -7,6 +7,7 @@ chạy theo thứ tự; file trung gian và kết quả ghi vào `output/<thư m
 | Bảng / số liệu trong paper | Script | Output |
 |---|---|---|
 | `tab:res-known`, `tab:res-zs`, `tab:res-zs-type`, pAUC (RQ1, RQ2) | `rq1_rq2_layer1/01_score_val_test.py` → `02_score_train_benign.py` → `03_score_oneclass.py` → `04_layer1_tables.py` | `rq1_rq2_layer1/layer1_tables.md` |
+| Bảng baseline mở rộng (RQ1, RQ2) ở cùng ngân sách FPR, latency từng baseline | `rq1_rq2_baselines/01_score_baselines.py` → `02_verify_reproduction.py` → `03_baseline_tables.py`; `04_baseline_latency.py` | `rq1_rq2_baselines/baseline_tables.md`, `baseline_table.csv`, `verify.md`, `baseline_latency.json` |
 | Cột latency của `tab:res-known`, `tab:res-ident`; `tab:res-latency` (RQ5) | `rq5_latency/latency_detection_path.py` | `rq5_latency/latency.json` |
 | `tab:res-ident` (RQ3a) | `rq3_retrieval/rq3a_identify.py <variant>` (chạy 2 lần) | `rq3a_identify/rq3a_<variant>.json` |
 | `tab:res-novelty`, tỉ lệ end-to-end zero-day (RQ3b) | `rq3_retrieval/rq3b_novelty_build.py` → `rq3b_novelty_score.py` (cần output của RQ1/RQ2 bước 02, 03) | `rq3b_novelty/R3_full_tables.md` |
@@ -33,6 +34,7 @@ chạy theo thứ tự; file trung gian và kết quả ghi vào `output/<thư m
 | `UTS_LAYER1_CODE` | `$UTS_BENCH/04_training_v2` | `models/`, `common/` của Layer 1 (repo: `UTS_URA/LAYER1`) |
 | `UTS_LAYER1_ART` | `$UTS_BENCH/04_training_v2/artifacts` | checkpoint 14 fold |
 | `UTS_DATA` | `LAYER2/` | `data/` và `artifacts/` của Protocol B |
+| `UTS_BASELINE_ART` | `<workspace>/baselines_friends/artifacts` | checkpoint các baseline mở rộng (`rq1_rq2_baselines/`) |
 | `UTS_RESULTS` | `LAYER2/output` | nơi ghi kết quả thí nghiệm |
 
 Máy 16 GB RAM: đặt `OPENBLAS_NUM_THREADS=2` và `CUDA_VISIBLE_DEVICES=` khi chạy
