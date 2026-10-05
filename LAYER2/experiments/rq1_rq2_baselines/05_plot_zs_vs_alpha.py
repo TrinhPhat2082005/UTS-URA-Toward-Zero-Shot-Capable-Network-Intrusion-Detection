@@ -73,11 +73,43 @@ def main(models, csv_path, sfx="", models_from="baseline"):
     print(f"-> {OUT / f'zs_vs_alpha{sfx}.pdf'}, .png")
 
 
+FINAL_STYLE = {"xgb": "xgboost_only", "clad": "clad", "vae_xgb": "vae_xgboost", "ae_xgb": "ae_xgboost_mono",
+               "svdd_xgb": "svdd_xgboost_mono"}
+
+
+def main_final(curve_csv):
+    """The reported figure: final/curve.csv (06_final_results.py) -> final/zs_vs_alpha.pdf/.png."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import final_selection as FS
+    with open(curve_csv, encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    fig, ax = plt.subplots(figsize=(6.4, 4.5))
+    for role in FS.CURVE:
+        pts = sorted((float(r["alpha"]), float(r["zs_acc"]), float(r["pauc"]), r["model"]) for r in rows if r["role"] == role)
+        col, lw, mk = STYLE[FINAL_STYLE[role]]
+        ax.plot([100 * p[0] for p in pts], [p[1] for p in pts], color=col, lw=lw, marker=mk, ms=5,
+                label=f"{pts[0][3]} (pAUC$_{{[0,3\%]}}$ {pts[0][2]:.3f})")
+    alphas = sorted({100 * float(r["alpha"]) for r in rows})
+    ax.set_xticks(alphas)
+    ax.set_xticklabels([f"{a:g}%" for a in alphas])
+    how = "mean of the 14 fold thresholds" if FS.RULE == "meanfold" else "per fold"
+    ax.set_xlabel(f"False-positive budget α (benign-train quantile, {how})")
+    ax.set_ylabel("Zero-shot accuracy (macro, 14 folds)")
+    ax.grid(axis="y", color="#DDDDDD", lw=0.8)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=2)
+    fig.tight_layout()
+    for ext in ("pdf", "png"):
+        fig.savefig(curve_csv.parent / f"zs_vs_alpha.{ext}", dpi=300)
+    print(f"-> {curve_csv.parent / 'zs_vs_alpha.pdf'}, .png")
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--models", nargs="+", default=DEFAULT_MODELS)
-    ap.add_argument("--models-from", choices=sorted(PICK), default="baseline",
-                    help="baseline: the baseline study's checkpoints; paper: the paper's own (default baseline)")
+    ap.add_argument("--models-from", choices=sorted(PICK) + ["final"], default="final",
+                    help="final (default): the reported selection, final/curve.csv from 06_final_results.py; "
+                         "baseline: the baseline study's checkpoints; paper: the paper's own")
     ap.add_argument("--rule", choices=["meanfold", "perfold"], default="meanfold",
                     help="threshold rule of the table to plot (03_baseline_tables.py --rule)")
     ap.add_argument("--grid", default=GRID_TAG, help=f"alpha grid tag of the table (default {GRID_TAG})")
@@ -85,5 +117,8 @@ if __name__ == "__main__":
     a = ap.parse_args()
     sfx = '' if a.rule == 'perfold' else '_' + a.rule
     out_sfx = sfx + ('' if a.grid == GRID_TAG else '_' + a.grid.replace('alpha', '').replace('_', '-'))
-    out_sfx += "" if a.models_from == "baseline" else "_paper-models"
-    main(a.models, a.csv or OUT / f"table_{a.grid}{sfx}.csv", out_sfx, a.models_from)
+    if a.models_from == "final":
+        main_final(a.csv or OUT / "final" / "curve.csv")
+    else:
+        out_sfx += "" if a.models_from == "baseline" else "_paper-models"
+        main(a.models, a.csv or OUT / f"table_{a.grid}{sfx}.csv", out_sfx, a.models_from)

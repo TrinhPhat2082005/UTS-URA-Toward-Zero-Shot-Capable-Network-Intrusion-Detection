@@ -86,3 +86,34 @@ far above it for SVM and Random Forest, whose score scales differ between folds.
 fold with its realized validation FPR, recall and zero-shot accuracy; `manifest_<tag>.json`
 records the code version and the MD5 of every score file used. Re-running `03` with the same
 `--alphas` on the same score files reproduces the tables to the last digit.
+
+## Reproducing the reported comparison (slides of 6 Oct 2026)
+
+`final_selection.py` fixes everything the reported numbers depend on: which checkpoint plays
+each row (AE-only and AE-XGBoost from the paper's run, SVDD-XGBoost and every other baseline from
+the baseline study's run; XGBoost-only is the same file in both), the threshold rule
+(`meanfold`), the table budget (alpha = 0.5%) and the curve budgets (0.1-0.5%).
+
+```bash
+# environment: conda env ai_env (python 3.11, numpy 2.4.6, scikit-learn 1.8.0, xgboost 3.2.0,
+#              torch 2.5.1+cu121, lightgbm 4.7.0); OPENBLAS_NUM_THREADS=2 on a 16 GB machine
+# paper checkpoints (UTS_LAYER1_ART) -> sweep_all_scores.npz
+python ../rq1_rq2_layer1/01_score_val_test.py && python ../rq1_rq2_layer1/02_score_train_benign.py     && python ../rq1_rq2_layer1/03_score_oneclass.py
+# baseline-study checkpoints (UTS_BASELINE_ART)
+python 01_score_baselines.py
+python 02_verify_reproduction.py          # every row must read "yes"
+python 03_baseline_tables.py --rule meanfold --alphas 0.001 0.002 0.003 0.004 0.005
+python 04_baseline_latency.py
+python 06_final_results.py                # -> final/table_main.csv, curve.csv, thresholds_main.csv, manifest.json
+python 05_plot_zs_vs_alpha.py             # -> final/zs_vs_alpha.pdf/.png
+```
+
+`final/manifest.json` lists the MD5 of every checkpoint file and score file behind each row,
+the code version and the library versions. Checkpoints are not in git (several GB); compare
+their MD5 with the manifest before rerunning. The baseline study's training code is kept in
+`LAYER1/baseline_study/` of the repository.
+
+Run-to-run variation: re-training the AE / SVDD encoders on another machine gives different
+weights (GPU non-determinism; K-Means also differs between scikit-learn 1.8 and 1.9), and the
+hybrids' zero-shot accuracy then moves by up to about 0.05, mostly through single folds such as
+DDOS_attack_HOIC. The checkpoints listed in the manifest are the ones reported.

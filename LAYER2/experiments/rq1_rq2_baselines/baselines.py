@@ -308,12 +308,13 @@ REQUIRED = {
     "svm_only": ["svm_only/{fold}/checkpoint/model.pkl"],
     "ae_only": _AE_FILES,
     "svdd_only": _SVDD_FILES,
-    "vae_only": ["vae_only/checkpoint/vae_best.pt"],
+    "vae_only": ["vae_only/checkpoint/vae_best.pt", "vae_only/checkpoint/scaler.pkl"],
     "clad": ["clad/{fold}/checkpoint/clad_best.pt", "clad/{fold}/checkpoint/meta.json",
              "clad/{fold}/checkpoint/scaler.pkl"],
     "ae_xgboost": ["ae_xgboost/{fold}/checkpoint/model.pkl"] + _AE_FILES,
     "svdd_xgboost": ["svdd_xgboost/{fold}/checkpoint/model.pkl"] + _SVDD_FILES,
-    "vae_xgboost": ["vae_xgboost/{fold}/checkpoint/model.pkl", "vae_only/checkpoint/vae_best.pt"],
+    "vae_xgboost": ["vae_xgboost/{fold}/checkpoint/model.pkl", "vae_only/checkpoint/vae_best.pt",
+                    "vae_only/checkpoint/scaler.pkl"],
 }
 
 
