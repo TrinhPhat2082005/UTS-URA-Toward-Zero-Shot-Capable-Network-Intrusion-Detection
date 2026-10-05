@@ -33,6 +33,8 @@ python 03_baseline_tables.py [--alphas 0.005 0.004]
                                         # plus baseline_tables_<tag>.md and manifest_<tag>.json
 python 04_baseline_latency.py [model]   # per-flow latency, CPU, 20 warm-up + 300 calls -> baseline_latency.json
                                         # (with model names: measure only those and merge into the file)
+python 03_baseline_tables.py --alphas 0.001 0.002 0.004 0.008 0.01 0.015 0.02 0.03
+python 05_plot_zs_vs_alpha.py           # figure: ZS-Acc vs alpha for five models -> zs_vs_alpha.pdf/.png
 ```
 
 `01` accepts model names (`python 01_score_baselines.py lgbm knn`) and skips models whose
