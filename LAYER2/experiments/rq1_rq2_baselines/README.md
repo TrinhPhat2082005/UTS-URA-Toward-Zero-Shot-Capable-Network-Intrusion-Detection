@@ -70,6 +70,16 @@ models the paper already reports; the tables list them as re-training variance.
 means the checkpoint, its scaler and its feature construction reproduce the trainer's
 own reported metrics, so the common-budget numbers describe the same trained models.
 
+## Threshold rules
+
+`03` takes `--rule perfold` (default: each fold uses its own threshold) or `--rule meanfold`
+(the baseline study's rule: the per-fold thresholds, each computed on all 560K benign training
+flows, are averaged into one threshold used in every fold). Files of the meanfold rule end in
+`_meanfold`; `05_plot_zs_vs_alpha.py --rule` selects the matching table. The benign training
+pool is the same 560K flows in every fold; thresholds differ per fold because each fold has its
+own supervised model. Averaging leaves the realized FPR slightly above alpha for most models and
+far above it for SVM and Random Forest, whose score scales differ between folds.
+
 ## Reproducing a reported number
 
 `thresholds_alpha<a>.csv` stores the exact threshold (`repr` of the float) of every model and

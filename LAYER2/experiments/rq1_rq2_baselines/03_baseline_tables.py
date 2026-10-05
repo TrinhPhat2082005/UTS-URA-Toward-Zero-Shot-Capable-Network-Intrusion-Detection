@@ -11,8 +11,9 @@ baseline of step 1. A baseline that re-trains one of the paper's six models is l
 under "re-training variance"; one whose scores equal the paper model's is the same
 checkpoint and is only named.
 
-Usage:  python 03_baseline_tables.py [--alphas 0.005 0.004]
-Outputs (OUT_BASE), <a> = alpha in percent, <tag> = the alphas joined by "_":
+Usage:  python 03_baseline_tables.py [--alphas 0.005 0.004] [--rule perfold|meanfold]
+Outputs (OUT_BASE), <a> = alpha in percent, <tag> = the alphas joined by "_"; with --rule meanfold
+every name ends in "_meanfold":
     baseline_tables_<tag>.md        tables at each alpha, alpha sweep, per-type zero-shot
     table_alpha<a>.csv              one row per model at that alpha (read by the slides)
     table_<tag>.csv                 the same rows for every alpha in one file (for plots)
@@ -43,8 +44,14 @@ PAPER = {"xgboost_only": ("XGBoost-only", "Supervised"), "ae_only": ("AE-only", 
          "svdd_xgboost_mono": ("SVDD-XGBoost (ours)", "Hybrid")}
 RETRAIN_OF = {"xgboost_only": "xgboost_only", "ae_only": "ae_only", "svdd_only": "svdd_only",
               "clad": "clad", "ae_xgboost": "ae_xgboost_mono", "svdd_xgboost": "svdd_xgboost_mono"}
-RULE = ('tau = np.quantile(benign-train scores, 1 - alpha, method="higher") per fold; '
-        "alert if score >= tau")
+RULES = {   # --rule; both use all 560K benign training flows of every fold
+    "perfold": 'tau_f = np.quantile(benign-train scores of fold f, 1 - alpha, method="higher"); '
+               "fold f alerts if score >= tau_f",
+    "meanfold": 'tau = mean over the folds of np.quantile(benign-train scores of fold f, 1 - alpha, '
+                'method="higher"); every fold alerts if score >= tau (the baseline study\'s rule)',
+}
+RULE = "perfold"
+_QCACHE = {}
 
 INPUTS = [paths.OUT_L1 / "sweep_all_scores.npz"] + [OUT / f"scores_{n}.npz" for n in REGISTRY]
 S, rows = {}, []
@@ -76,8 +83,18 @@ IDENTICAL = [r for r in rows if r[0] == "base" and r[1] in RETRAIN_OF and same_s
 RETRAIN = [r for r in rows if r[0] == "base" and r[1] in RETRAIN_OF and r not in IDENTICAL]
 
 
+def fold_quantile(src, name, fold, a):
+    key = (src, name, fold, a)
+    if key not in _QCACHE:
+        _QCACHE[key] = float(np.quantile(get(src, name, fold, "tb"), 1 - a, method="higher"))
+    return _QCACHE[key]
+
+
 def thr(src, name, fold, a):
-    return float(np.quantile(get(src, name, fold, "tb"), 1 - a, method="higher"))
+    """Threshold applied in `fold` under the selected RULE."""
+    if RULE == "perfold":
+        return fold_quantile(src, name, fold, a)
+    return float(np.mean([fold_quantile(src, name, f, a) for f in FOLDS]))
 
 
 def fold_metrics(src, name, fold, t):
@@ -140,11 +157,15 @@ def code_version():
         return "not a git checkout"
 
 
-def main(alphas):
-    md, run_tag, all_rows = [], "_".join(f"alpha{pct(a)}" for a in alphas), []
+def main(alphas, rule):
+    global RULE
+    RULE = rule
+    sfx = "" if rule == "perfold" else f"_{rule}"
+    how = "per fold" if rule == "perfold" else "averaged over the folds"
+    md, run_tag, all_rows = [f"Threshold rule: {RULES[rule]}\n"], "_".join(f"alpha{pct(a)}" for a in alphas), []
     for a in alphas:
         md.append(f"## Known-attack detection and zero-shot accuracy at alpha = {pct(a)}% "
-                  f"(quantile {1 - a:.6g} of benign-train scores, per fold; macro over {len(FOLDS)} folds)\n")
+                  f"(quantile {1 - a:.6g} of benign-train scores, {how}; macro over {len(FOLDS)} folds)\n")
         table, thresholds = [], []
         for title, group in (("Methods", NEW),
                              ("Re-training variance (baseline-study run of the paper's models)", RETRAIN)):
@@ -164,17 +185,19 @@ def main(alphas):
                 for f in FOLDS:
                     t = thr(src, name, f, a)
                     fm = fold_metrics(src, name, f, t)
-                    thresholds.append({"alpha": a, "key": name, "model": lab, "source": source, "fold": f,
-                                       "threshold": repr(t), "n_benign_train": len(get(src, name, f, "tb")),
+                    thresholds.append({"alpha": a, "rule": rule, "key": name, "model": lab, "source": source,
+                                       "fold": f, "threshold": repr(t),
+                                       "fold_quantile": repr(fold_quantile(src, name, f, a)),
+                                       "n_benign_train": len(get(src, name, f, "tb")),
                                        "val_fpr": round(fm["fpr"], 6), "val_recall": round(fm["recall"], 6),
                                        "zs_acc": round(fm["zs_acc"], 6)})
             md.append("")
         if IDENTICAL:
             md.append("Identical checkpoints (scores equal to the paper's model on every fold, so not a "
                       "re-training): " + ", ".join(lab for _, _, lab, _ in IDENTICAL) + ".\n")
-        write_csv(OUT / f"table_alpha{pct(a)}.csv", table)
+        write_csv(OUT / f"table_alpha{pct(a)}{sfx}.csv", table)
         all_rows += table
-        write_csv(OUT / f"thresholds_alpha{pct(a)}.csv", thresholds)
+        write_csv(OUT / f"thresholds_alpha{pct(a)}{sfx}.csv", thresholds)
 
     md.append("## ZS-Acc vs alpha (realized val FPR in brackets)\n")
     md.append("| Model | " + " | ".join(f"{pct(a)}%" for a in ALPHAS_SWEEP) + " |")
@@ -190,16 +213,16 @@ def main(alphas):
         for f in FOLDS:
             md.append(f"| {f} | " + " | ".join(f"{fold_metrics(s, n, f, thr(s, n, f, a))['zs_acc']:.3f}"
                                                for s, n, _, _ in group) + " |")
-    (OUT / f"baseline_tables_{run_tag}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    (OUT / f"baseline_tables_{run_tag}{sfx}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     if len(alphas) > 1:
-        write_csv(OUT / f"table_{run_tag}.csv", all_rows)   # long format: one row per model and alpha
+        write_csv(OUT / f"table_{run_tag}{sfx}.csv", all_rows)   # long format: one row per model and alpha
 
     manifest = {"created": datetime.now().isoformat(timespec="seconds"), "code_version": code_version(),
-                "alphas": list(alphas), "threshold_rule": RULE, "folds": FOLDS,
+                "alphas": list(alphas), "threshold_rule": RULES[rule], "folds": FOLDS,
                 "baseline_checkpoints": str(paths.BASE_ART),
                 "inputs_md5": {p.name: md5(p) for p in INPUTS if p.exists()},
                 "identical_checkpoints": [n for _, n, _, _ in IDENTICAL]}
-    (OUT / f"manifest_{run_tag}.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
+    (OUT / f"manifest_{run_tag}{sfx}.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
     print("\n".join(md))
 
 
@@ -207,4 +230,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--alphas", type=float, nargs="+", default=[0.005, 0.004],
                     help="false-positive budgets (fractions); default 0.005 0.004")
-    main(ap.parse_args().alphas)
+    ap.add_argument("--rule", choices=sorted(RULES), default="perfold",
+                    help="perfold (default): threshold of each fold; meanfold: mean of the fold thresholds")
+    args = ap.parse_args()
+    main(args.alphas, args.rule)

@@ -1,12 +1,12 @@
 """Step 5 - figure: zero-shot accuracy against the false-positive budget alpha.
 
 Reads the long-format table written by
-    python 03_baseline_tables.py --alphas 0.001 0.002 0.004 0.008 0.01 0.015 0.02 0.03
+    python 03_baseline_tables.py --rule meanfold --alphas 0.001 0.002 0.004 0.008 0.01 0.015 0.02 0.03
 and draws one line per model (macro ZS-Acc over the 14 folds), with each model's pAUC[0, 3%]
 in the legend. Re-trained copies of the paper's models are not drawn.
 
-Usage:  python 05_plot_zs_vs_alpha.py [--models key ...] [--csv table_<tag>.csv]
-Output: OUT_BASE/zs_vs_alpha.pdf and .png
+Usage:  python 05_plot_zs_vs_alpha.py [--models key ...] [--rule meanfold|perfold] [--csv table_<tag>.csv]
+Output: OUT_BASE/zs_vs_alpha[_meanfold].pdf and .png
 """
 import argparse
 import csv
@@ -29,7 +29,7 @@ STYLE = {   # colour, line width, marker; the paper's two variants drawn heavier
 }
 
 
-def main(models, csv_path):
+def main(models, csv_path, sfx=""):
     with open(csv_path, encoding="utf-8") as fh:
         rows = [r for r in csv.DictReader(fh) if r["key"] in models and not r["retrain_of"]]
     fig, ax = plt.subplots(figsize=(6.4, 3.9))
@@ -47,20 +47,24 @@ def main(models, csv_path):
     ax.set_xticks(alphas)
     ax.set_xticklabels([f"{a:g}%" for a in alphas])
     ax.minorticks_off()
-    ax.set_xlabel("False-positive budget α (benign-train quantile, per fold)")
+    how = "mean of the 14 fold thresholds" if sfx == "_meanfold" else "per fold"
+    ax.set_xlabel(f"False-positive budget α (benign-train quantile, {how})")
     ax.set_ylabel("Zero-shot accuracy (macro, 14 folds)")
     ax.grid(axis="y", color="#DDDDDD", lw=0.8)
     ax.spines[["top", "right"]].set_visible(False)
     ax.legend(frameon=False, fontsize=8.5, loc="lower right")
     fig.tight_layout()
     for ext in ("pdf", "png"):
-        fig.savefig(OUT / f"zs_vs_alpha.{ext}", dpi=300)
-    print(f"-> {OUT / 'zs_vs_alpha.pdf'}, .png")
+        fig.savefig(OUT / f"zs_vs_alpha{sfx}.{ext}", dpi=300)
+    print(f"-> {OUT / f'zs_vs_alpha{sfx}.pdf'}, .png")
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--models", nargs="+", default=DEFAULT_MODELS)
-    ap.add_argument("--csv", type=Path, default=OUT / f"table_{GRID_TAG}.csv")
+    ap.add_argument("--rule", choices=["meanfold", "perfold"], default="meanfold",
+                    help="threshold rule of the table to plot (03_baseline_tables.py --rule)")
+    ap.add_argument("--csv", type=Path, help="table to plot (default: the alpha grid of --rule)")
     a = ap.parse_args()
-    main(a.models, a.csv)
+    sfx = '' if a.rule == 'perfold' else '_' + a.rule
+    main(a.models, a.csv or OUT / f"table_{GRID_TAG}{sfx}.csv", sfx)
