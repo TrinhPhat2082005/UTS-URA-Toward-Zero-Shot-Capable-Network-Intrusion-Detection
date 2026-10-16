@@ -32,7 +32,8 @@ def wilson(k, n, z=1.96):
 
 
 def _norm(s):
-    return str(s).strip().lower().replace("-", "_").replace(" ", "_") if s else s
+    # Bo backtick / nhay: model thuong viet ten feature duoi dang `Dst Port`.
+    return str(s).strip().strip("`'\"*").lower().replace("-", "_").replace(" ", "_") if s else s
 
 
 def load(results_path):
