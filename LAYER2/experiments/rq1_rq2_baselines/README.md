@@ -64,8 +64,13 @@ under `__main__`: 50K scaled training flows, k = 5, inverse-distance vote) and t
 Deep SVDD is rebuilt the same way from `oneclass_deep_svdd.pt`, which stores the encoder weights
 and the fixed centre (bias-free 78 - 256 - 128 - 64, LeakyReLU 0.1).
 
-OptiForest needs its own library and is not re-scored, so it is the one baseline of the study
-absent from the tables; its own run reports a zero-shot accuracy near zero at 4.9 s per flow.
+OptiForest is the one baseline this pipeline does not score itself, because its scorer lives in
+the authors' own repository rather than in a package. Its run nevertheless used the same rule as
+every row here, a threshold calibrated to a 0.5% budget on the benign training pool
+(`target_fpr: 0.005` in `optiforest/metrics.json`), and it reports all 14 folds. At that budget
+it reaches a known-attack F1 of 0.003 and a zero-shot accuracy of 0.001 at 4.9 s per flow, so it
+is recorded here rather than given a row: the checkpoint, the scaler and the benign score arrays
+are kept under `optiforest/` for anyone who clones the upstream code to re-run it.
 
 **Two different SVDD models.** `deep_svdd` is the published One-Class Deep SVDD of Ruff et al.
 (ICML 2018): one encoder, one fixed centre, trained on benign traffic alone. `svdd_only` is this

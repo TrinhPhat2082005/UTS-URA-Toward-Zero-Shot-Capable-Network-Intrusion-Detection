@@ -22,14 +22,21 @@ of this file conflated.
     appears here next to its hybrid form rather than only inside SVDD-XGBoost.
 
 Both are scored by 01 like every other baseline, so both rows are reproduced from
-scores_<key>.npz rather than quoted from a metrics file. OptiForest stays out of the table and
-is recorded in the README: it needs its own library and is not re-scored under this rule.
+scores_<key>.npz rather than quoted from a metrics file.
+
+OptiForest is the one row this pipeline does not recompute. It was run under the same 0.5%
+budget on the benign training pool and reports all 14 folds, but its scorer lives in the
+authors' repository rather than in a package, so 01 cannot re-score it here. Its row is read
+from the trainer's own metrics.json and marked with the source "quoted" in the table, so the
+one row whose numbers this pipeline did not produce is visible as such. It has no pAUC, which
+needs the score arrays, and no latency measured on this machine.
 """
 RULE = "meanfold"                    # 03_baseline_tables.py --rule: mean of the 14 fold thresholds
 ALPHA_TABLE = 0.005                  # budget of the main table (quantile 0.995)
 ALPHA_GRID = (0.001, 0.002, 0.003, 0.004, 0.005)   # budgets on the zero-shot curve
 
 P, B = "paper", "baseline-study"
+Q = "quoted"          # read from the trainer's metrics.json; not re-scored by 01
 # role: (display name, family, key in the tables, source); order = table order
 ROWS = [
     ("xgb",      "XGBoost-only",        "Supervised",  "xgboost_only",      P),
@@ -41,6 +48,7 @@ ROWS = [
     ("vae_only", "VAE-only",            "One-class",   "vae_only",          B),
     ("mix_svdd", "Mixture Deep SVDD",   "One-class",   "svdd_only",         B),
     ("deep_svdd", "Deep SVDD",          "One-class",   "deep_svdd",         B),
+    ("optiforest", "OptiForest",        "One-class",   "optiforest",        Q),
     ("clad",     "CLAD",                "Contrastive", "clad",              B),
     ("vae_xgb",  "VAE-XGBoost",         "Hybrid",      "vae_xgboost",       B),
     ("ae_xgb",   "AE-XGBoost (ours)",   "Hybrid",      "ae_xgboost_mono",   P),
@@ -54,4 +62,5 @@ OURS = {"ae_xgb", "svdd_xgb"}
 LATENCY_KEY = {"xgb": "xgboost_only", "lgbm": "lgbm", "rf": "random_forest", "knn": "knn", "svm": "svm_only",
                "ae_only": "ae_only", "vae_only": "vae_only", "mix_svdd": "svdd_only",
                "deep_svdd": "deep_svdd", "clad": "clad", "vae_xgb": "vae_xgboost",
-               "ae_xgb": "ae_xgboost", "svdd_xgb": "svdd_xgboost"}
+               "ae_xgb": "ae_xgboost", "svdd_xgb": "svdd_xgboost",
+               "optiforest": None}   # not measured here: its scorer is not in this environment

@@ -59,6 +59,10 @@ def md5(p):
 
 def checkpoint_files(key, source):
     """Every file the scores of (key, source) were computed from."""
+    if source == FS.Q:                                    # quoted row: the trainer's own outputs
+        d = paths.BASE_ART / key
+        return sorted(p for p in d.rglob("*")
+                      if p.is_file() and p.suffix in (".pt", ".pkl", ".npy", ".json"))
     if source == FS.B:
         files = [paths.BASE_ART / r.format(fold=f) for r in REQUIRED[key]
                  for f in (folds() if "{fold}" in r else [None])]
@@ -106,10 +110,22 @@ def main():
         assert len(hit) == 1, f"{key}/{source} at alpha={alpha}: {len(hit)} rows in {grid_csv.name}"
         return hit[0]
 
+    def quoted(key):
+        """A row the trainer reported itself, for a model 01 cannot re-score.
+
+        Read from <key>/metrics.json under UTS_BASELINE_ART; that run applied the same budget
+        on the benign training pool. pAUC needs the score arrays and is left empty.
+        """
+        s = json.loads((paths.BASE_ART / key / "metrics.json").read_text(encoding="utf-8"))["summary"]
+        ka, zs = s["known_attack_macro_avg"], s["zero_shot_macro_avg"]
+        return {"acc": ka["accuracy"], "precision": ka["precision"], "recall": ka["recall"],
+                "f1": ka["f1"], "fpr": ka["fpr"], "zs_acc": zs["accuracy"], "pauc": ""}
+
     main_rows, curve_rows, md = [], [], []
     for role, name, fam, key, src in FS.ROWS:
-        r = pick(key, src, FS.ALPHA_TABLE)
-        d = lat.get(f"{FS.LATENCY_KEY[role]}/decision")
+        r = quoted(key) if src == FS.Q else pick(key, src, FS.ALPHA_TABLE)
+        lk = FS.LATENCY_KEY[role]
+        d = lat.get(f"{lk}/decision") if lk else None
         main_rows.append({"role": role, "model": name, "family": fam, "key": key, "source": src,
                           **{k: r[k] for k in ("acc", "precision", "recall", "f1", "fpr", "zs_acc", "pauc")},
                           "latency_ms": round(d["mean_ms"], 3) if d else ""})
@@ -130,9 +146,10 @@ def main():
     md.append("| Model | Family | Checkpoint | Acc | Precision | Recall | F1 | FPR | ZS-Acc | pAUC[0,3%] | ms/flow |")
     md.append("|---|---|---|---|---|---|---|---|---|---|---|")
     for r in main_rows:
+        pauc = f"{float(r['pauc']):.4f}" if r["pauc"] != "" else "-"
         md.append(f"| {r['model']} | {r['family']} | {r['source']} | " + " | ".join(
             f"{float(r[k]):.4f}" for k in ("acc", "precision", "recall", "f1")) +
-            f" | {100 * float(r['fpr']):.2f}% | {float(r['zs_acc']):.4f} | {float(r['pauc']):.4f} | {r['latency_ms']} |")
+            f" | {100 * float(r['fpr']):.2f}% | {float(r['zs_acc']):.4f} | {pauc} | {r['latency_ms']} |")
     md.append(f"\n## Zero-shot accuracy vs alpha ({FS.RULE}); realized val FPR in brackets\n")
     md.append("| Model | " + " | ".join(f"{pct(a)}%" for a in FS.ALPHA_GRID) + " |")
     md.append("|---|" + "---|" * len(FS.ALPHA_GRID))
@@ -145,7 +162,7 @@ def main():
     print("hashing checkpoints ...", flush=True)
     ckpts = {}
     for role, _, _, key, src in FS.ROWS:
-        root = paths.BASE_ART if src == FS.B else paths.L1_ART
+        root = paths.L1_ART if src == FS.P else paths.BASE_ART
         ckpts[role] = {str(p.relative_to(root)): md5(p) for p in checkpoint_files(key, src)}
     score_files = [paths.OUT_L1 / "sweep_all_scores.npz"] + sorted(
         paths.OUT_BASE / f"scores_{k}.npz" for _, _, _, k, s in FS.ROWS if s == FS.B)
