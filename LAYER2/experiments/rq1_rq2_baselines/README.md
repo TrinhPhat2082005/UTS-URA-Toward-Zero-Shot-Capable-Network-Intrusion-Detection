@@ -60,8 +60,18 @@ Two model classes are not in the training code shipped with the checkpoints and 
 in `baselines.py` from what the checkpoints store: the k-NN (`PyTorchKNNClassifier`, pickled
 under `__main__`: 50K scaled training flows, k = 5, inverse-distance vote) and the VAE
 (architecture from the parameter names and shapes of `vae_best.pt` and `vae_params` in
-`metrics.json`). Step 2 confirms both against the trainer's reported metrics.
-OptiForest needs its own library and is not re-scored.
+`metrics.json`). Step 2 confirms both against the trainer's reported metrics. The single-sphere
+Deep SVDD is rebuilt the same way from `oneclass_deep_svdd.pt`, which stores the encoder weights
+and the fixed centre (bias-free 78 - 256 - 128 - 64, LeakyReLU 0.1).
+
+OptiForest needs its own library and is not re-scored, so it is the one baseline of the study
+absent from the tables; its own run reports a zero-shot accuracy near zero at 4.9 s per flow.
+
+**Two different SVDD models.** `deep_svdd` is the published One-Class Deep SVDD of Ruff et al.
+(ICML 2018): one encoder, one fixed centre, trained on benign traffic alone. `svdd_only` is this
+work's Mixture Deep SVDD, which partitions the benign traffic with K-means and fits one sphere
+per cluster so that the per-sphere distances can augment the XGBoost gate. They are separate
+rows of the table and separate checkpoint trees (`deep_svdd_paper/` and `svdd_only/`).
 
 `ae_xgboost`, `svdd_xgboost`, `xgboost_only`, `clad`, `ae_only` and `svdd_only` re-train
 models the paper already reports; the tables list them as re-training variance.

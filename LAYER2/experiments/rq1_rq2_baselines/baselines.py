@@ -104,6 +104,42 @@ def _svdd():
     return _ENC["svdd"]
 
 
+def _deep_svdd():
+    """Single-sphere One-Class Deep SVDD of the baseline study (Ruff et al., ICML 2018).
+
+    One encoder and one fixed centre, trained on benign traffic alone; the anomaly score is
+    the squared distance to that centre. Distinct from the Mixture Deep SVDD above, which
+    partitions the benign traffic with K-means and fits one sphere per cluster.
+    The encoder is bias-free (78 -> 256 -> 128 -> 64, LeakyReLU 0.1) and the checkpoint
+    carries the centre alongside the weights.
+    """
+    if "deep_svdd" not in _ENC:
+        import torch.nn as nn
+        torch, dev = _torch()
+        d = paths.BASE_ART / "deep_svdd_paper" / "checkpoint"
+        sc = joblib.load(d / "scaler.pkl")
+        ck = torch.load(d / "oneclass_deep_svdd.pt", map_location=dev, weights_only=False)
+        net = nn.Sequential(
+            nn.Linear(ck["input_dim"], 256, bias=False), nn.LeakyReLU(negative_slope=0.1),
+            nn.Linear(256, 128, bias=False), nn.LeakyReLU(negative_slope=0.1),
+            nn.Linear(128, ck["embed_dim"], bias=False),
+        ).to(dev)
+        net.load_state_dict({k.replace("net.", "", 1): v for k, v in ck["encoder_state_dict"].items()})
+        net.eval()
+        centre = ck["center"].to(dev)
+
+        def forward(X):
+            Xs = np.clip(sc.transform(X), -CLIP, CLIP).astype("float32")
+            out = []
+            with torch.no_grad():
+                for i in range(0, len(Xs), 8192):
+                    z = net(torch.tensor(Xs[i:i + 8192], device=dev))
+                    out.append(((z - centre) ** 2).sum(1).cpu().numpy())
+            return np.concatenate(out)
+        _ENC["deep_svdd"] = forward
+    return _ENC["deep_svdd"]
+
+
 def _vae_net(d_in=N_FEATURES, hidden=(512, 256), latent=32, slope=0.2, p=0.1):
     """Benign VAE of the baseline study. Rebuilt from vae_best.pt (parameter names and shapes)
     and vae_params in vae_only/metrics.json: Linear -> LayerNorm -> LeakyReLU -> Dropout blocks."""
@@ -261,6 +297,11 @@ def _svdd_only(fold):
     return lambda X: fwd(X)[1].min(1)
 
 
+def _deep_svdd_only(fold):
+    fwd = _deep_svdd()
+    return lambda X: fwd(X)
+
+
 def _vae_only(fold):
     fwd = _vae()
     return lambda X: fwd(X)[2]
@@ -284,6 +325,7 @@ REGISTRY = {
     "svm_only":      Spec("SVM (linear)", "Supervised", True, _svm),
     "ae_only":       Spec("AE-only", "One-class", False, _ae_only),
     "svdd_only":     Spec("Mixture Deep SVDD", "One-class", False, _svdd_only),
+    "deep_svdd":     Spec("Deep SVDD", "One-class", False, _deep_svdd_only),
     "vae_only":      Spec("VAE-only", "One-class", False, _vae_only),
     "clad":          Spec("CLAD", "Contrastive", True, _clad),
     "ae_xgboost":    Spec("AE-XGBoost", "Hybrid", True, _ae_xgboost, tree=True),
@@ -308,6 +350,8 @@ REQUIRED = {
     "svm_only": ["svm_only/{fold}/checkpoint/model.pkl"],
     "ae_only": _AE_FILES,
     "svdd_only": _SVDD_FILES,
+    "deep_svdd": ["deep_svdd_paper/checkpoint/scaler.pkl",
+                  "deep_svdd_paper/checkpoint/oneclass_deep_svdd.pt"],
     "vae_only": ["vae_only/checkpoint/vae_best.pt", "vae_only/checkpoint/scaler.pkl"],
     "clad": ["clad/{fold}/checkpoint/clad_best.pt", "clad/{fold}/checkpoint/meta.json",
              "clad/{fold}/checkpoint/scaler.pkl"],
