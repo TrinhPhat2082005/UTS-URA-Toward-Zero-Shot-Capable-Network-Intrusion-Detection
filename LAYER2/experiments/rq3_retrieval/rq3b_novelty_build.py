@@ -3,7 +3,13 @@
 unknown: test_zeroshot) o nguong thap nhat trong BUDGETS; loc lai theo nguong cao hon o buoc cham.
 Khong luu vector (qua lon) - luu diem novelty kNN-10 L2 cho 3 khoa (SHAP day du / SHAP 78 / feature tho),
 nhan lang gieng top-1 (cosine, SHAP day du va feature tho) va khoang cach toi flow gan nhat (feature tho).
-Chi doc checkpoint + CSV; ghi r3_full/<variant>__<label>.npz. Khong sua gi trong project."""
+Chi doc checkpoint + CSV; ghi r3_full/<variant>__<label>.npz. Khong sua gi trong project.
+
+    python LAYER2/experiments/rq3_retrieval/rq3b_novelty_build.py                          # 3 bien the cua paper
+    python LAYER2/experiments/rq3_retrieval/rq3b_novelty_build.py --variants svdd_xgboost_bs
+svdd_xgboost_bs = SVDD-XGBoost cua baseline study (UTS_BASELINE_ART/svdd_xgboost, encoder svdd_only cua ho),
+ban duoc chon trong rq1_rq2_baselines/final_selection.py; diem benign train lay tu scores_svdd_xgboost.npz."""
+import argparse
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -23,10 +29,24 @@ OUT = HERE / "r3_full"
 OUT.mkdir(exist_ok=True)
 DEV = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LABELS = sorted(p.name for p in SPL.iterdir() if p.is_dir())
-VARS = ["xgboost_only", "ae_xgboost_mono", "svdd_xgboost_mono"]
+ap = argparse.ArgumentParser()
+ap.add_argument("--variants", nargs="+", default=["xgboost_only", "ae_xgboost_mono", "svdd_xgboost_mono"])
+VARS = ap.parse_args().variants
 BUDGETS = [0.004, 0.015]
 CLIP, K = 20.0, 10
-TB = np.load(paths.OUT_L1 / "sweep_train_scores.npz")  # tu rq1_rq2_layer1/02
+TB = dict(np.load(paths.OUT_L1 / "sweep_train_scores.npz"))  # tu rq1_rq2_layer1/02
+BS = "svdd_xgboost_bs"
+if BS in VARS:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rq1_rq2_baselines"))
+    import baselines  # noqa: E402
+    _bs = np.load(paths.OUT_BASE / "scores_svdd_xgboost.npz")
+    TB.update({k.replace("svdd_xgboost|", f"{BS}|"): _bs[k] for k in _bs.files if k.endswith("|tb")})
+
+
+def model_path(var, lab):
+    if var == BS:
+        return paths.BASE_ART / "svdd_xgboost" / lab / "checkpoint" / "model.pkl"
+    return ART / var / lab / "checkpoint" / "model.pkl"
 
 ae_sc = joblib.load(ART / "ae_only/checkpoint/scaler.pkl")
 sv_sc = joblib.load(ART / "svdd_only/checkpoint/scaler.pkl")
@@ -50,6 +70,9 @@ def build_input(var, lab, X):
         return joblib.load(ART / var / lab / "checkpoint" / "scaler.pkl").transform(X)
     if var == "ae_xgboost_mono":
         return ae_aug(np.clip(ae_sc.transform(X), -CLIP, CLIP).astype("float32"))
+    if var == BS:
+        Xs, d = baselines._svdd()(X)
+        return np.concatenate([Xs, d, d.min(1, keepdims=True)], 1)
     Xs = np.clip(sv_sc.transform(X), -CLIP, CLIP)
     d = svdd.all_sphere_distances(Xs)
     return np.concatenate([Xs, d, d.min(1, keepdims=True)], 1)
@@ -104,11 +127,12 @@ for lab in LABELS:
     for var in VARS:
         if (OUT / f"{var}__{lab}.npz").exists():
             continue
-        model = joblib.load(ART / var / lab / "checkpoint" / "model.pkl")
+        model = joblib.load(model_path(var, lab))
         booster = model.get_booster(); booster.set_param({"device": DEV.type})
         thr_low = min(np.quantile(TB[f"{var}|{lab}|tb"], 1 - b, method="higher") for b in BUDGETS)
         A_va, A_zs = build_input(var, lab, Xva), build_input(var, lab, Xzs)
-        p_va, p_zs = model.predict_proba(A_va)[:, 1], model.predict_proba(A_zs)[:, 1]
+        pos = int(np.flatnonzero(model.classes_ == 1)[0]) if hasattr(model, "classes_") else 1
+        p_va, p_zs = model.predict_proba(A_va)[:, pos], model.predict_proba(A_zs)[:, pos]
         k_idx, u_idx = np.where(p_va >= thr_low)[0], np.where(p_zs >= thr_low)[0]
         contrib = lambda A: booster.predict(xgb.DMatrix(A), pred_contribs=True)[:, :-1].astype("float32")
         S_pool = contrib(build_input(var, lab, Xtr))

@@ -5,7 +5,53 @@
   "mitre_id": "T1583.005",
   "mitre_tactic": "Resource Development",
   "mitre_url": "https://attack.mitre.org/techniques/T1583/005/",
+  "secondary_technique": {
+    "mitre_id": "T1113",
+    "title": "Collection: Screen Capture",
+    "mitre_tactic": "Collection",
+    "mitre_url": "https://attack.mitre.org/techniques/T1113/"
+  },
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
+  "description": "This dataset attack label spans a botnet's two functional roles: acquiring/operating the botnet infrastructure itself, and the infected host performing screen-capture data collection on behalf of the operator. Periodic beaconing over HTTP/HTTPS is a common transport pattern for both stages, but transport-layer camouflage is not itself the technique captured here.",
+  "network_indicators": {
+    "key_features": [
+      "Periodic Flow IAT",
+      "Small Packet Sizes",
+      "High Flow Duration",
+      "Specific C2 Ports"
+    ],
+    "traffic_pattern": "Regular 'heartbeat' signals (beacons) from the infected host to an external controller, often masked as legitimate web browsing.",
+    "observed_features": {
+      "ae_xgboost": [
+        "RST Flag Cnt",
+        "ae_latent_8",
+        "ae_recon_error",
+        "Dst Port",
+        "Fwd IAT Tot"
+      ],
+      "svdd_xgboost": [
+        "RST Flag Cnt",
+        "Dst Port",
+        "Fwd Header Len",
+        "ECE Flag Cnt",
+        "Fwd IAT Tot"
+      ]
+    }
+  },
+  "mitigation": [
+    {
+      "id": "M1031",
+      "name": "Network Intrusion Prevention",
+      "action": "Identify and block known C2 IP addresses and domains using reputation-based filtering."
+    },
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Implement strict outbound traffic filtering and deep packet inspection to identify non-standard protocol usage over web ports."
+    }
+  ],
+  "false_positive_hints": "Background update services, telemetry, and legitimate cloud-sync applications often use periodic HTTP communication.",
   "mitre_stages": [
     {
       "order": 1,
@@ -21,28 +67,5 @@
       "technique_name": "Screen Capture",
       "note": "Bot-infected host captures screenshots for exfiltration back to the operator."
     }
-  ],
-  "description": "This dataset attack label spans a botnet's two functional roles: acquiring/operating the botnet infrastructure itself, and the infected host performing screen-capture data collection on behalf of the operator. Periodic beaconing over HTTP/HTTPS is a common transport pattern for both stages, but transport-layer camouflage is not itself the technique captured here.",
-  "network_indicators": {
-    "key_features": [
-      "Periodic Flow IAT",
-      "Small Packet Sizes",
-      "High Flow Duration",
-      "Specific C2 Ports"
-    ],
-    "traffic_pattern": "Regular 'heartbeat' signals (beacons) from the infected host to an external controller, often masked as legitimate web browsing."
-  },
-  "mitigation": [
-    {
-      "id": "M1031",
-      "name": "Network Intrusion Prevention",
-      "action": "Identify and block known C2 IP addresses and domains using reputation-based filtering."
-    },
-    {
-      "id": "M1037",
-      "name": "Filter Network Traffic",
-      "action": "Implement strict outbound traffic filtering and deep packet inspection to identify non-standard protocol usage over web ports."
-    }
-  ],
-  "false_positive_hints": "Background update services, telemetry, and legitimate cloud-sync applications often use periodic HTTP communication."
+  ]
 }

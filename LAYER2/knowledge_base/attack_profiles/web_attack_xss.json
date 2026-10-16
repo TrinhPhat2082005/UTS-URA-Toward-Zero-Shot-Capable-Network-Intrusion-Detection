@@ -6,6 +6,7 @@
   "mitre_tactic": "Initial Access",
   "mitre_url": "https://attack.mitre.org/techniques/T1189/",
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
   "description": "Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. Cross-site scripting (XSS) injects malicious client-side scripts into a web application's input fields to be executed in a victim's browser.",
   "network_indicators": {
     "key_features": [
@@ -13,7 +14,23 @@
       "High TotLen Bwd Pkts",
       "Dst Port 80/443"
     ],
-    "traffic_pattern": "HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters."
+    "traffic_pattern": "HTTP requests containing script-like payloads (e.g. angle brackets, encoded JavaScript) submitted through form fields or URL parameters.",
+    "observed_features": {
+      "ae_xgboost": [
+        "Fwd Act Data Pkts",
+        "ae_recon_error",
+        "Init Fwd Win Byts",
+        "Dst Port",
+        "RST Flag Cnt"
+      ],
+      "svdd_xgboost": [
+        "Fwd Act Data Pkts",
+        "Init Fwd Win Byts",
+        "RST Flag Cnt",
+        "Fwd Seg Size Min",
+        "Dst Port"
+      ]
+    }
   },
   "mitigation": [
     {

@@ -6,6 +6,7 @@
   "mitre_tactic": "Impact",
   "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
   "description": "GoldenEye is a DoS tool that performs a layer 7 DoS attack by exhausting the application pool resources. It uses Keep-Alive and Cache-Control headers to persist connections.",
   "network_indicators": {
     "key_features": [
@@ -14,7 +15,23 @@
       "Low Flow IAT Mean",
       "Specific HTTP Headers"
     ],
-    "traffic_pattern": "Persistent HTTP connections with high request rates designed to exhaust server-side resources."
+    "traffic_pattern": "Persistent HTTP connections with high request rates designed to exhaust server-side resources.",
+    "observed_features": {
+      "ae_xgboost": [
+        "Fwd Seg Size Min",
+        "Dst Port",
+        "ae_recon_error",
+        "Init Fwd Win Byts",
+        "RST Flag Cnt"
+      ],
+      "svdd_xgboost": [
+        "Fwd Seg Size Min",
+        "Dst Port",
+        "Init Fwd Win Byts",
+        "svdd_sphere_6",
+        "RST Flag Cnt"
+      ]
+    }
   },
   "mitigation": [
     {

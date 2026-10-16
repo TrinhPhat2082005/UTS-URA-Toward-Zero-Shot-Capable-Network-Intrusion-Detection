@@ -48,12 +48,49 @@ def known_alerts(l1, thr):
     return np.vstack(parts)
 
 
+def calibrate_loao(variant, alpha):
+    """Protocol A (Setup 2): tau_zd rieng tung fold.
+
+    Alert da biet cua fold = flow attack (13 loai giu lai) cua val_binary co p >= tau_alpha
+    cua fold; s(q) cua chung da duoc rq3b_novelty_build tinh tren chinh pool cua fold
+    (output/rq3b_novelty/r3_full/<variant>__<fold>.npz), nen chi can lay phan vi.
+    Cung quy uoc voi Detect@5% trong tab:res-novelty (np.quantile mac dinh).
+    """
+    for meta_path in sorted(paths.LOAO_POOLS.glob(f"*/shap_pool_{variant}.meta.json")):
+        fold = meta_path.parent.name
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        thr = float(meta["layer1_thresholds_by_alpha"][alpha])
+        D = np.load(paths.OUT_RQ3B / "r3_full" / f"{variant}__{fold}.npz", allow_pickle=True)
+        j = [f"{b:.3f}" for b in D["thr_budgets"]].index(alpha)
+        assert abs(float(D["thr_values"][j]) - thr) < 1e-6, f"{fold}: nguong r3_full != nguong pool"
+        s = D["s_full_known"][D["p_known"] >= thr]
+        tau = float(np.quantile(s, QUANTILE))
+        meta["novelty"] = {
+            "score": f"mean L2 distance to the {config.RAG_NOVELTY_K} nearest reference vectors",
+            "k": config.RAG_NOVELTY_K, "quantile": QUANTILE, "tau_zd": tau, "alpha": float(alpha),
+            "calibration_set": "alerts raised at the fold's Layer 1 threshold on the attack flows "
+                               "of val_binary (retained types only)",
+            "source": f"rq3b_novelty_build: r3_full/{variant}__{fold}.npz (s_full_known)",
+            "n_calibration": int(len(s)),
+            "calibrated_at": pd.Timestamp.now().isoformat(timespec="seconds"),
+        }
+        meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        print(f"{fold:<26} tau_alpha = {thr:.4f}  tau_zd = {tau:.4f}  (n = {len(s):,})", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--variants", nargs="+", default=["ae_xgboost", "svdd_xgboost"])
+    ap.add_argument("--protocol", choices=["A", "B"], default="B")
+    ap.add_argument("--variants", nargs="+", default=None)
+    ap.add_argument("--alpha", default="0.004", help="Protocol A: ngan sach FPR cua Layer 1")
     args = ap.parse_args()
 
-    for v in args.variants:
+    if args.protocol == "A":
+        for v in args.variants or ["ae_xgboost_mono"]:
+            calibrate_loao(v, args.alpha)
+        return
+
+    for v in args.variants or ["ae_xgboost", "svdd_xgboost"]:
         t0 = time.time()
         npz = Path(config.ARTIFACTS_DIR) / f"shap_pool_{v}.npz"
         l1 = pipeline.Layer1Engine(v)

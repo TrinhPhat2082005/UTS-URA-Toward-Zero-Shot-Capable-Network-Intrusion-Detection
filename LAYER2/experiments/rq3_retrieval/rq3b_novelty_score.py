@@ -1,6 +1,13 @@
 """Cham R3 tren pool DAY DU (r3_full/). Moi round: loc alert theo nguong alpha, novelty = kNN-10 L2.
 In va ghi R3_full_tables.md: macro AUROC / Detect@5% cho 3 khoa, Wilcoxon theo round, bang tung round,
-ti le trung lap, tactic consistency, end-to-end zero-day."""
+ti le trung lap, tactic consistency, end-to-end zero-day.
+
+Mac dinh: alpha = 0.4% va 1.5%, nguong rieng tung fold (nhu paper).
+Ngan sach / quy tac khac (alert da luu o nguong thap nhat cua build, nen chi can alpha <= 1.5%):
+    python LAYER2/experiments/rq3_retrieval/rq3b_novelty_score.py --alpha 0.005 --rule meanfold
+  meanfold = trung binh 14 nguong Q_(1-alpha) cua benign train, mot nguong cho moi fold
+  (quy tac cua rq1_rq2_baselines/final_selection.py). Output: R3_full_tables_alpha0.5_meanfold.md"""
+import argparse
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -18,9 +25,15 @@ from shap_knn_retriever import LABEL_TO_PROFILE_ID  # noqa: E402
 PROF = paths.PROFILES
 TAC = {l: json.loads((PROF / f"{p}.json").read_text(encoding="utf-8"))["mitre_tactic"]
        for l, p in LABEL_TO_PROFILE_ID.items() if (PROF / f"{p}.json").exists()}
-S = np.load(paths.OUT_L1 / "sweep_all_scores.npz")  # tu rq1_rq2_layer1/03
+S = dict(np.load(paths.OUT_L1 / "sweep_all_scores.npz"))  # tu rq1_rq2_layer1/03
 VARS = ["xgboost_only", "ae_xgboost_mono", "svdd_xgboost_mono"]
-NAME = {"xgboost_only": "XGBoost-only", "ae_xgboost_mono": "AE-XGBoost", "svdd_xgboost_mono": "SVDD-XGBoost"}
+NAME = {"xgboost_only": "XGBoost-only", "ae_xgboost_mono": "AE-XGBoost", "svdd_xgboost_mono": "SVDD-XGBoost",
+        "svdd_xgboost_bs": "SVDD-XGBoost (baseline study)"}
+# SVDD-XGBoost cua baseline study (rq3b_novelty_build.py --variants svdd_xgboost_bs), diem tu rq1_rq2_baselines
+if any((paths.OUT_RQ3B / "r3_full").glob("svdd_xgboost_bs__*.npz")):
+    VARS.append("svdd_xgboost_bs")
+    _bs = np.load(paths.OUT_BASE / "scores_svdd_xgboost.npz")
+    S.update({k.replace("svdd_xgboost|", "svdd_xgboost_bs|"): _bs[k] for k in _bs.files})
 TW = {"DoS_attacks_SlowHTTPTest", "FTP_BruteForce"}
 KEYS = [("full", "SHAP day du"), ("b78", "SHAP 78"), ("raw", "Feature tho")]
 MIN_N = 20
@@ -30,15 +43,31 @@ P = lambda s="": (print(s), out.append(s))
 au = lambda u, k: roc_auc_score(np.r_[np.ones(len(u)), np.zeros(len(k))], np.r_[u, k])
 d5 = lambda u, k: float((u > np.quantile(k, 0.95)).mean())
 
-for bi, a in ((0, 0.004), (1, 0.015)):
-    P(f"\n## alpha = {a:.1%}\n")
+ap = argparse.ArgumentParser()
+ap.add_argument("--alpha", type=float, default=None)
+ap.add_argument("--rule", choices=["perfold", "meanfold"], default="perfold")
+args = ap.parse_args()
+q = lambda v, l, a: np.quantile(S[f"{v}|{l}|tb"], 1 - a, method="higher")
+
+
+def tau(v, l, a, bi):
+    """Nguong Layer 1 cua fold l. Mac dinh: nguong da luu luc build (bi)."""
+    if args.alpha is None:
+        return np.load(F / f"{v}__{l}.npz")["thr_values"][bi]
+    return q(v, l, a) if args.rule == "perfold" else float(np.mean([q(v, x, a) for x in LABELS]))
+
+
+RUNS = ((0, 0.004), (1, 0.015)) if args.alpha is None else ((None, args.alpha),)
+for bi, a in RUNS:
+    P(f"\n## alpha = {a:.1%}" + ("" if args.alpha is None else f", rule = {args.rule}") + "\n")
     for v in VARS:
         rows = []
         for l in LABELS:
             D = np.load(F / f"{v}__{l}.npz", allow_pickle=True)
-            t = D["thr_values"][bi]
+            t = tau(v, l, a, bi)
+            assert t >= D["thr_values"].min() - 1e-9, f"{v}/{l}: nguong {t} thap hon nguong luc build"
             km, um = D["p_known"] >= t, D["p_unk"] >= t
-            zs = float((S[f"{v}|{l}|zs"] >= np.quantile(S[f"{v}|{l}|tb"], 1 - a, method="higher")).mean())
+            zs = float((S[f"{v}|{l}|zs"] >= t).mean())
             r = {"lab": l, "n_unk": int(um.sum()), "n_known": int(km.sum()), "zs": zs, "twin": l in TW,
                  "n_pool": int(D["n_pool"])}
             if um.sum() >= MIN_N and km.sum() >= MIN_N:
@@ -86,5 +115,6 @@ for bi, a in ((0, 0.004), (1, 0.015)):
               f"{r['full']:.3f} | {r['b78']:.3f} | {r['raw']:.3f} | {r['full_d5']:.3f} | {r['tac_full']:.3f} | {r['tac_raw']:.3f} |")
         P("")
 
-(HERE / "R3_full_tables.md").write_text("\n".join(out), encoding="utf-8")
-print("\nsaved R3_full_tables.md")
+name = "R3_full_tables" + ("" if args.alpha is None else f"_alpha{100 * args.alpha:g}_{args.rule}") + ".md"
+(HERE / name).write_text("\n".join(out), encoding="utf-8")
+print(f"\nsaved {name}")

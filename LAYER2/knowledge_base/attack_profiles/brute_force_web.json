@@ -2,10 +2,11 @@
   "id": "brute_force_web",
   "title": "Brute Force: Password Guessing (Web Application Login)",
   "category": "Credential Access",
-  "mitre_id": "T1110.001",
+  "mitre_id": "T1110",
   "mitre_tactic": "Credential Access",
-  "mitre_url": "https://attack.mitre.org/techniques/T1110/001/",
+  "mitre_url": "https://attack.mitre.org/techniques/T1110/",
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
   "description": "Adversaries may attempt to gain access to a web application by systematically trying many username/password combinations against its login form, without knowledge of valid credentials.",
   "network_indicators": {
     "key_features": [
@@ -13,7 +14,23 @@
       "High Init Fwd Win Byts",
       "Dst Port 80/443"
     ],
-    "traffic_pattern": "Repeated HTTP POST requests to a login endpoint with varying credential payloads, from a single or small set of source IPs."
+    "traffic_pattern": "Repeated HTTP POST requests to a login endpoint with varying credential payloads, from a single or small set of source IPs.",
+    "observed_features": {
+      "ae_xgboost": [
+        "ae_recon_error",
+        "Dst Port",
+        "Init Fwd Win Byts",
+        "RST Flag Cnt",
+        "Fwd Act Data Pkts"
+      ],
+      "svdd_xgboost": [
+        "Init Fwd Win Byts",
+        "RST Flag Cnt",
+        "Fwd Seg Size Min",
+        "Fwd Act Data Pkts",
+        "Dst Port"
+      ]
+    }
   },
   "mitigation": [
     {

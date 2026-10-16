@@ -17,7 +17,15 @@ Chay 2 lan (nap Layer 1 va tinh khoang cach trong cung tien trinh de het RAM may
     python LAYER2/experiments/rq3_retrieval/rq3a_identify.py ae_xgboost   # lan 1: SHAP + feature -> cache
     python LAYER2/experiments/rq3_retrieval/rq3a_identify.py ae_xgboost   # lan 2: cham -> json
 Output: output/rq3a_identify/rq3a_<variant>.json
+
+Ngan sach FPR khac nguong van hanh (mac dinh: "threshold" cua metrics.json, alpha = 0.4%):
+    python LAYER2/experiments/rq3_retrieval/rq3a_identify.py ae_xgboost --alpha 0.005   (x2 nhu tren)
+  tau = Q_(1-alpha) (method="higher") cua p tren benign cua TRAIN, nhu train_layer1.py; lay tu
+  thresholds_by_alpha neu co, neu khong thi tinh lai. Output: cache/rq3a_<variant>_alpha0.5.*
+Luon ghi them tau_zd = Q_0.95 cua s(q) (TB L2 toi 10 NN, khoa SHAP) tren cung tap alert,
+dung cach hieu chinh cua 02_calibrate_novelty.py (khong ghi vao meta cua pipeline).
 """
+import argparse
 import gc
 import json
 import sys
@@ -48,15 +56,33 @@ def attack_rows(path, f):
     return np.vstack([p[0] for p in parts]), np.concatenate([p[1] for p in parts])
 
 
-def build_cache(v, cache):
+def layer1_tau(v, l1, f, alpha):
+    """Nguong Layer 1: nguong van hanh (alpha=None) hoac Q_(1-alpha) tren benign cua train_full."""
+    if alpha is None:
+        return config.layer1_threshold(v)
+    m = json.loads(Path(config.LAYER1_ARTIFACTS[v]["metrics"]).read_text(encoding="utf-8"))
+    if f"{alpha:.3f}" in m.get("thresholds_by_alpha", {}):
+        return float(m["thresholds_by_alpha"][f"{alpha:.3f}"])
+    p = []
+    for ch in pd.read_csv(config.TRAIN_FULL_CSV, usecols=f + ["Label"], chunksize=100_000):
+        Xb = ch.loc[ch["Label"] == 0, f].to_numpy("float32")
+        p.extend(l1.predict_proba(Xb[i:i + 5000]) for i in range(0, len(Xb), 5000))
+    p = np.concatenate(p)
+    print(f"  benign train: {len(p):,} flow")
+    return float(np.quantile(p, 1 - alpha, method="higher"))
+
+
+def build_cache(v, cache, alpha=None):
     """SHAP + feature da scale cua alert TP va cua R. Khong cham gi o buoc nay."""
     import pipeline
     l1 = pipeline.Layer1Engine(v)
     cols = list(pd.read_csv(config.VAL_BINARY_CSV, nrows=0).columns)
     f = l1.base_feature_columns(pd.DataFrame(columns=cols))
+    tau = layer1_tau(v, l1, f, alpha)
+    print(f"  tau_alpha = {tau:.6f}")
     X, y = attack_rows(config.VAL_BINARY_CSV, f)
     p = np.concatenate([l1.predict_proba(X[i:i + 5000]) for i in range(0, len(X), 5000)])
-    keep = p >= config.layer1_threshold(v)
+    keep = p >= tau
     X, y = X[keep], y[keep]
     sv = np.vstack([np.asarray(l1.score(X[i:i + 2000])[1], dtype="float32") for i in range(0, len(X), 2000)])
     Xr = np.vstack([l1.preprocess(X[i:i + 20000]).astype("float32") for i in range(0, len(X), 20000)])
@@ -72,23 +98,25 @@ def build_cache(v, cache):
     Xt, yt = attack_rows(config.TRAIN_FULL_CSV, f)
     Praw = np.vstack([l1.preprocess(Xt[yt == l]).astype("float32") for l in labs])
     assert len(Praw) == len(P), "pool feature tho khong khop pool SHAP"
-    np.savez(cache, sv=sv, Xr=Xr, y=y, P=P, Praw=Praw, labs=labs, sizes=sizes)
+    np.savez(cache, sv=sv, Xr=Xr, y=y, P=P, Praw=Praw, labs=labs, sizes=sizes, tau=tau)
 
 
 def identify(P, yP, starts, labs, Q, chunk=8):
-    """Ba luat tren cung mot lan tinh. Tra (top-3 L2, top-1 cosine, top-1 vote, so nhan trong 10 NN)."""
+    """Ba luat tren cung mot lan tinh. Tra (top-3 L2, top-3 cosine, top-1 vote, so nhan trong 10 NN,
+    novelty s(q) = TB L2 toi 10 NN)."""
     sqP = (P ** 2).sum(1)
     normP = np.sqrt(sqP) + 1e-12
-    t3, cos1, vote, ndist = [], [], [], []
+    t3, cos3, vote, ndist, nov = [], [], [], [], []
     for i in range(0, len(Q), chunk):
         q = Q[i:i + chunk]
         dot = q @ P.T
         d = sqP[None, :] - 2.0 * dot + (q ** 2).sum(1)[:, None]
         t3.extend(labs[np.argsort(np.minimum.reduceat(d, starts, axis=1), 1)[:, :3]])
         sim = dot / (np.linalg.norm(q, axis=1)[:, None] + 1e-12) / normP[None, :]
-        cos1.extend(labs[np.argmax(np.maximum.reduceat(sim, starts, axis=1), 1)])
+        cos3.extend(labs[np.argsort(-np.maximum.reduceat(sim, starts, axis=1), 1, kind="stable")[:, :3]])  # top-3, cot 0 = top-1
         nn = np.argpartition(d, K, axis=1)[:, :K]
         nn = np.take_along_axis(nn, np.argsort(np.take_along_axis(d, nn, 1), 1), 1)
+        nov.extend(np.sqrt(np.maximum(np.take_along_axis(d, nn, 1), 0.0)).mean(1))
         for row in nn:
             l = yP[row]
             c = Counter(l)
@@ -97,14 +125,14 @@ def identify(P, yP, starts, labs, Q, chunk=8):
                 first.setdefault(x, r)
             vote.append(sorted(c, key=lambda x: (-c[x], first[x]))[0])
             ndist.append(len(c))
-    return np.array(t3), np.array(cos1), np.array(vote), np.array(ndist)
+    return np.array(t3), np.array(cos3), np.array(vote), np.array(ndist), np.array(nov)
 
 
-def summarize(y, t3, cos1, vote):
+def summarize(y, t3, c3, vote):
     tech = lambda pred: [TECH[p] == TECH[a] for p, a in zip(pred, y)]
     df = pd.DataFrame({"y": y,
                        "l2_top1": t3[:, 0] == y, "l2_hit3": (t3 == y[:, None]).any(1), "l2_tech": tech(t3[:, 0]),
-                       "cos_top1": cos1 == y, "cos_tech": tech(cos1),
+                       "cos_top1": c3[:, 0] == y, "cos_hit3": (c3 == y[:, None]).any(1), "cos_tech": tech(c3[:, 0]),
                        "vote_top1": vote == y, "vote_tech": tech(vote)})
     per = df.groupby("y").mean()
     m12 = per.loc[[t for t in per.index if t not in paths.TWINS]].mean()
@@ -112,10 +140,15 @@ def summarize(y, t3, cos1, vote):
 
 
 def main():
-    v = sys.argv[1]
-    cache = OUT / f"cache_{v}.npz"
+    ap = argparse.ArgumentParser()
+    ap.add_argument("variant")
+    ap.add_argument("--alpha", type=float, default=None, help="ngan sach FPR (mac dinh: nguong van hanh)")
+    a = ap.parse_args()
+    v = a.variant
+    tag = "" if a.alpha is None else f"_alpha{100 * a.alpha:g}"
+    cache = OUT / f"cache_{v}{tag}.npz"
     if not cache.exists():
-        build_cache(v, cache)
+        build_cache(v, cache, a.alpha)
         print(f"cache -> {cache.name}; chay lai lenh nay de cham")
         return
 
@@ -123,19 +156,21 @@ def main():
     labs, sizes = c["labs"], c["sizes"]
     starts = np.concatenate([[0], np.cumsum(sizes)[:-1]])
     yP, y = np.repeat(labs, sizes), c["y"]
-    out = {"variant": v, "n_alerts": int(len(y)), "n_pool": int(len(yP)),
+    out = {"variant": v, "alpha": a.alpha, "tau_alpha": float(c["tau"]) if "tau" in c.files else None,
+           "n_alerts": int(len(y)), "n_pool": int(len(yP)),
            "n_per_type": {t: int((y == t).sum()) for t in np.unique(y)}}
     print(f"==== {v} | {len(y):,} alert TP | R = {len(yP):,} vector ====")
     for key, P, Q in [("shap", c["P"], c["sv"]), ("raw", c["Praw"], c["Xr"])]:
-        t3, cos1, vote, ndist = identify(P, yP, starts, labs, Q)
-        per, m12, m14 = summarize(y, t3, cos1, vote)
+        t3, cos3, vote, ndist, nov = identify(P, yP, starts, labs, Q)
+        per, m12, m14 = summarize(y, t3, cos3, vote)
         out[key] = {"macro12": m12.to_dict(), "macro14": m14.to_dict(), "per_type": per.to_dict(),
-                    "vote_single_label_share": float((ndist == 1).mean())}
+                    "vote_single_label_share": float((ndist == 1).mean()),
+                    "tau_zd_q95": float(np.quantile(nov, 0.95))}
         print(f"  [{key}] L2     top1 {m12.l2_top1:.4f}  hit3 {m12.l2_hit3:.4f}  tech {m12.l2_tech:.4f}"
               f"   | cosine top1 {m12.cos_top1:.4f} | vote top1 {m12.vote_top1:.4f}"
-              f"   | 10 NN cung nhan: {(ndist == 1).mean():.3f}")
-    (OUT / f"rq3a_{v}.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
-    print(f"-> {OUT / f'rq3a_{v}.json'}")
+              f"   | 10 NN cung nhan: {(ndist == 1).mean():.3f} | tau_zd {np.quantile(nov, 0.95):.4f}")
+    (OUT / f"rq3a_{v}{tag}.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+    print(f"-> {OUT / f'rq3a_{v}{tag}.json'}")
 
 
 if __name__ == "__main__":

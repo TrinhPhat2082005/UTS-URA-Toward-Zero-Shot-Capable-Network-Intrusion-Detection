@@ -14,7 +14,8 @@ chạy theo thứ tự; file trung gian và kết quả ghi vào `output/<thư m
 | Ngưỡng τ_zd của pipeline (Eq. `zeroday-flag`) | `rq3_retrieval/02_calibrate_novelty.py` | khoá `novelty` trong `artifacts/shap_pool_<variant>.meta.json` |
 | Tập tham chiếu R từng fold (Setup 2) | `rq3_retrieval/01_build_loao_pools.py` | `artifacts/loao_pools/<fold>/` |
 | `tab:res-pilot` (RQ4) | `run_layer2.ipynb` (dùng `pipeline.py`) + `metrics.py` | `rq4_vlm/pilot_results_ae_xgboost_neutral_v1.jsonl`, `rq4_vlm/PILOT_RESULTS.md` |
-| `tab:res-ablation`, `tab:res-vlm-zeroday` (RQ4, Setup 1 và 2) | chưa viết | `rq4_vlm/` |
+| `tab:res-vlm-zeroday` (RQ4, Setup 2) | `rq3_retrieval/02_calibrate_novelty.py --protocol A` → `rq4_vlm/setup2_build_evidence.py` (local) → `rq4_vlm/setup2_vlm.ipynb` (Kaggle, VLM) → `rq4_vlm/setup2_score.py` | `rq4_vlm/setup2_bundle/` (evidence), `setup2_out/` trên Kaggle: `results.jsonl`, `run_meta.json`, `prompt_template.txt`, `scored/` |
+| `tab:res-ablation` (RQ4, Setup 1) | chưa viết | `rq4_vlm/` |
 
 ## Thành phần pipeline mà các thí nghiệm dùng
 

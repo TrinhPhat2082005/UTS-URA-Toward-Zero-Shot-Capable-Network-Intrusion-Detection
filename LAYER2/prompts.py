@@ -279,3 +279,235 @@ def parse_report(raw: str) -> dict:
         out["parse_error"] = (out["parse_error"] or "") + f"|only_{out['n_sections']}_sections"
 
     return out
+
+
+# ==========================================================================
+# Prompt chon ung vien (Section 3.6, 4.5; Setup 2 va Setup 1)
+#
+# Khong gian dau ra thong nhat: 3 loai tan cong do retriever tra ve + UNKNOWN.
+#   - Khong co co zero-day: 3 ung vien (co profile) roi UNKNOWN o cuoi, khong profile.
+#   - Co co zero-day: profile unknown_anomaly va canh bao dat LEN DAU, roi 3 ung vien.
+# Context duoc dung tu du lieu co cau truc (nhan, khoang cach, id profile) chu khong
+# tu chuoi format_context_for_vlm(), nen sua prompt khong phai dung lai evidence.
+# ==========================================================================
+UNKNOWN = "UNKNOWN"
+
+MITRE_TACTICS = [
+    "Reconnaissance", "Resource Development", "Initial Access", "Execution",
+    "Persistence", "Privilege Escalation", "Defense Evasion", "Credential Access",
+    "Discovery", "Lateral Movement", "Collection", "Command and Control",
+    "Exfiltration", "Impact",
+]
+
+_CANDIDATE_INSTRUCTIONS = """\
+Layer 1, an XGBoost gate, flagged this flow as malicious. A retriever compared the
+flow's SHAP attribution vector with the attribution vectors of known attack flows
+and returned the options listed under RETRIEVED CONTEXT. Decide which option the
+evidence supports, then write the forensic report an analyst would act on.
+
+Weigh three sources:
+
+  A. SHAP WATERFALL (image 1) - the per-feature attribution behind Layer 1's
+     score. Positive values push toward attack, negative toward benign. Judge
+     bar MAGNITUDE, not only sign.
+
+  B. FLOW-STATISTIC CHARTS (images 2-5) - packet length profile, TCP flag
+     composition, inter-arrival timing, directional balance.
+
+  C. RETRIEVED CONTEXT (text below) - the options you may choose from. Each known
+     attack option gives the attack type, its MITRE ATT&CK profile and the
+     distance from this flow to the nearest reference flow of that type (smaller
+     is closer). UNKNOWN means the flow matches none of the known attack types.
+
+Choose exactly one option. Choose a known attack type only if the evidence is
+consistent with its profile; otherwise choose UNKNOWN.\
+"""
+
+# Ban khong co UNKNOWN: dung cho Setup 1 (Protocol B), noi moi alert deu thuoc 14
+# loai da biet. Giu nguyen phan A/B/C, chi bo moi loi nhac toi UNKNOWN.
+_CANDIDATE_INSTRUCTIONS_NO_UNKNOWN = _CANDIDATE_INSTRUCTIONS.replace(
+    " UNKNOWN means the flow matches none of the known attack types.", ""
+).replace(
+    "Choose exactly one option. Choose a known attack type only if the evidence is\n"
+    "consistent with its profile; otherwise choose UNKNOWN.",
+    "Choose exactly one option: the attack type whose profile and reference distance\n"
+    "the evidence supports best.",
+)
+
+_CANDIDATE_SCHEMA = """\
+Produce the report in exactly this form.
+
+## 1. EXECUTIVE SUMMARY
+Three to four sentences: what was detected, which option you selected and why.
+
+## 2. ATTACK ASSESSMENT
+Selected option: <copy exactly one option name: {options}>
+Tactic: <exactly one MITRE ATT&CK tactic from: {tactics}>
+Severity: <Low, Medium, High or Critical>
+Top indicators: <three feature names, copied verbatim from the SHAP chart>
+Endpoints: <destination port and protocol if the SHAP chart names them,
+           otherwise "not available"; IP addresses are not in the evidence>
+
+## 3. FORENSIC REASONING
+One bullet per evidence source (SHAP, flow charts, retrieved context). Close
+with one sentence stating whether the sources converge or conflict.
+
+## 4. MITRE MAPPING
+If you selected a known attack type: its tactic and technique ID, taken from its
+profile. If you selected UNKNOWN: the tactic the observed behavior suggests, and
+"Technique: N/A".
+
+## 5. MITIGATIONS
+Ranked recommendations.
+
+## 6. ANALYST NOTES
+Data gaps, caveats, recommended next steps.
+
+Rules:
+  - Selected option must be one of the option names above, copied exactly. Do not
+    write a profile title, a tactic or any other name there.
+  - Top indicators must be feature names that appear in the SHAP chart.\
+"""
+
+# Ban khong co UNKNOWN cua schema: muc 4 chi con nhanh "loai da biet".
+_CANDIDATE_SCHEMA_NO_UNKNOWN = _CANDIDATE_SCHEMA.replace(
+    'If you selected a known attack type: its tactic and technique ID, taken from its\n'
+    'profile. If you selected UNKNOWN: the tactic the observed behavior suggests, and\n'
+    '"Technique: N/A".',
+    "The tactic and technique ID of the option you selected, taken from its profile.",
+)
+
+
+def _profile_block(doc, variant=None):
+    mit = ", ".join(m["name"] for m in doc.get("mitigation", []))
+    lines = [f"- Technique: {doc['title']} ({doc['mitre_id']})",
+             f"- Tactic: {doc['mitre_tactic']}",
+             f"- Description: {doc['description']}",
+             f"- Typical pattern: {doc['network_indicators']['traffic_pattern']}"]
+    # Attribution da quan sat tren tap tham chieu cua dung variant Layer 1 dang
+    # chay: cung khong gian feature voi bieu do SHAP cua alert nen doi chieu duoc
+    # truc tiep. key_features khong dua vao day vi la ky vong chung tu tai lieu
+    # ATT&CK, khong do tren dataset nay.
+    obs = (doc.get("network_indicators", {}).get("observed_features") or {}).get(variant)
+    if obs:
+        lines.append(f"- Attribution usually strongest for this type: {', '.join(obs)}")
+    if mit:
+        lines.append(f"- Mitigations: {mit}")
+    return "\n".join(lines)
+
+
+def render_candidate_context(candidates, flagged, profiles, novelty=None, tau_zd=None,
+                             variant=None, allow_unknown=True):
+    """Khoi RETRIEVED CONTEXT cho prompt chon ung vien.
+
+    Args:
+        candidates: list dict {"label", "distance", "profile_id"}, gan nhat truoc.
+        flagged: co zero-day cua retriever.
+        profiles: {profile_id: doc} (knowledge_base/attack_profiles).
+        novelty, tau_zd: in cho moi alert (thuoc do khoang cach); co co thi kem canh bao.
+        variant: bien the Layer 1 ("ae_xgboost" / "svdd_xgboost") de lay dung
+            observed_features — moi variant co khong gian attribution rieng.
+        allow_unknown: False thi khong them lua chon UNKNOWN. Dung cho Setup 1
+            (Protocol B), noi moi alert deu thuoc 14 loai da biet nen UNKNOWN
+            luon sai; Setup 2 giu True vi do chinh la dap an dung.
+    """
+    parts = ["### RETRIEVED CONTEXT"]
+    if not flagged and novelty is not None:
+        parts.append(f"Novelty: mean distance to the 10 nearest known attack flows = {novelty:.3f}"
+                     + (f" (threshold {tau_zd:.3f})" if tau_zd is not None else "") + ".")
+    parts.append("Known attack options are listed nearest first.")
+    if flagged and allow_unknown:
+        parts.append(
+            "NOVELTY FLAG RAISED: this flow's attribution vector lies outside the region "
+            "occupied by known attack types"
+            + (f" (mean distance to its 10 nearest known attack flows {novelty:.3f}, "
+               f"threshold {tau_zd:.3f})" if novelty is not None and tau_zd is not None else "")
+            + ".")
+        parts.append(f"#### Option: {UNKNOWN}\n{_profile_block(profiles['unknown_anomaly'], variant)}")
+    for c in candidates:
+        parts.append(f"#### Option: {c['label']} (distance to nearest known flow: {c['distance']:.3f})\n"
+                     f"{_profile_block(profiles[c['profile_id']], variant)}")
+    if not flagged and allow_unknown:
+        parts.append(f"#### Option: {UNKNOWN}\nNone of the attack types above matches the evidence.")
+    return "\n\n".join(parts)
+
+
+def candidate_options(candidates, flagged, allow_unknown=True):
+    """Thu tu cac lua chon dung nhu trong context."""
+    labels = [c["label"] for c in candidates]
+    if not allow_unknown:
+        return labels
+    return [UNKNOWN] + labels if flagged else labels + [UNKNOWN]
+
+
+def build_candidate_prompt(candidates, flagged, profiles, novelty=None, tau_zd=None,
+                           variant=None, allow_unknown=True):
+    """Tra (user_prompt, options)."""
+    options = candidate_options(candidates, flagged, allow_unknown)
+    ctx = render_candidate_context(candidates, flagged, profiles, novelty, tau_zd,
+                                   variant, allow_unknown)
+    head = _CANDIDATE_INSTRUCTIONS if allow_unknown else _CANDIDATE_INSTRUCTIONS_NO_UNKNOWN
+    tmpl = _CANDIDATE_SCHEMA if allow_unknown else _CANDIDATE_SCHEMA_NO_UNKNOWN
+    schema = tmpl.format(options=" | ".join(options), tactics=", ".join(MITRE_TACTICS))
+    return f"{head}\n\n{ctx}\n\n{schema}", options
+
+
+_SELECTED_RE = re.compile(r"selected\s*option\s*[::]\s*\**\s*([^\n]+)", re.IGNORECASE)
+
+
+def _norm(s):
+    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+
+def parse_candidate_report(raw, options):
+    """Tach truong cua bao cao chon ung vien.
+
+    selected: mot phan tu cua options, hoac None neu khong khop (selected_raw giu
+    nguyen van ban de xem lai). Khong doan: chuoi khop nhieu lua chon -> None.
+    tactic: mot tactic trong MITRE_TACTICS (lay o muc 2, neu thieu thi muc 4).
+    technique_ids: moi ID T#### xuat hien trong muc 4.
+    """
+    out = {"selected": None, "selected_raw": None, "tactic": None, "tactic_raw": None,
+           "technique_ids": [], "severity": None, "top_indicators": None,
+           "n_sections": 0, "parse_error": None}
+    if not raw or not raw.strip():
+        out["parse_error"] = "empty_output"
+        return out
+
+    sec2, sec4 = _section(raw, 2), _section(raw, 4)
+    m = _SELECTED_RE.search(sec2 or raw)
+    if m:
+        txt = m.group(1).strip().strip("*`").strip()
+        out["selected_raw"] = txt
+        hits = [o for o in options if _norm(o) and _norm(o) in _norm(txt)]
+        exact = [o for o in options if _norm(o) == _norm(txt)]
+        pick = exact or hits
+        if len(pick) == 1:
+            out["selected"] = pick[0]
+        else:
+            out["parse_error"] = "selected_not_an_option" if not pick else "selected_ambiguous"
+    else:
+        out["parse_error"] = "selected_not_found"
+
+    for src in (sec2, sec4):
+        m = _TACTIC_RE.search(src or "")
+        if m:
+            txt = m.group(1).strip().strip("*`").strip()
+            out["tactic_raw"] = out["tactic_raw"] or txt
+            hit = [t for t in MITRE_TACTICS if _norm(t) == _norm(txt)] or \
+                  [t for t in MITRE_TACTICS if _norm(t) in _norm(txt)]
+            if hit:
+                out["tactic"] = max(hit, key=len)
+                break
+
+    out["technique_ids"] = sorted(set(_MITRE_RE.findall(sec4 or "")))
+    m = _SEV_RE.search(raw)
+    if m:
+        out["severity"] = m.group(1).capitalize()
+    m = _TOPIND_RE.search(raw)
+    if m:
+        out["top_indicators"] = m.group(1).strip().strip("*").strip()
+    out["n_sections"] = sum(1 for i in range(1, 7) if _section(raw, i))
+    if out["n_sections"] < 6:
+        out["parse_error"] = (out["parse_error"] or "") + f"|only_{out['n_sections']}_sections"
+    return out

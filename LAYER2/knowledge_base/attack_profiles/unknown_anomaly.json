@@ -3,8 +3,9 @@
   "title": "Anomaly: Potential Novel Attack or Zero-day (Unclassified)",
   "category": "Unknown",
   "mitre_id": "N/A",
-  "mitre_tactic": "Detection Required",
+  "mitre_tactic": "N/A",
   "mitre_url": "N/A",
+  "source_note": "Not an ATT&CK technique. Used when the novelty flag is raised; asserts no technique and records N/A for both tactic and identifier.",
   "description": "This profile represents a network behavior that deviates significantly from the normal baseline but does not match any known attack signatures or MITRE ATT&CK techniques in the current database. This could indicate a zero-day exploit, a novel evasion technique, or a misconfigured internal service.",
   "network_indicators": {
     "key_features": [

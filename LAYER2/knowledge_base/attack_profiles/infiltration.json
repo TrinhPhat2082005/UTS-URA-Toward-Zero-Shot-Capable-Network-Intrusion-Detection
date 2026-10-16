@@ -5,7 +5,52 @@
   "mitre_id": "T1204.002",
   "mitre_tactic": "Execution",
   "mitre_url": "https://attack.mitre.org/techniques/T1204/002/",
+  "secondary_technique": {
+    "mitre_id": "T1046",
+    "title": "Discovery: Network Service Discovery",
+    "mitre_tactic": "Discovery",
+    "mitre_url": "https://attack.mitre.org/techniques/T1046/"
+  },
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
+  "description": "This dataset attack label spans two stages: a malicious file is opened to gain an initial foothold on the host, followed by internal network service scanning from the compromised machine. This can include buffer overflows, path traversal, or remote code execution as the initial vector.",
+  "network_indicators": {
+    "key_features": [
+      "High Flow Duration",
+      "Variable Packet Length",
+      "Atypical Service Communication"
+    ],
+    "traffic_pattern": "Initial exploit payload followed by persistent command and control traffic or data exfiltration.",
+    "observed_features": {
+      "ae_xgboost": [
+        "ae_recon_error",
+        "Fwd Seg Size Min",
+        "RST Flag Cnt",
+        "Dst Port",
+        "ae_latent_8"
+      ],
+      "svdd_xgboost": [
+        "Fwd Seg Size Min",
+        "RST Flag Cnt",
+        "Dst Port",
+        "Init Fwd Win Byts",
+        "Init Bwd Win Byts"
+      ]
+    }
+  },
+  "mitigation": [
+    {
+      "id": "M1051",
+      "name": "Update Software",
+      "action": "Regularly patch and update all software and operating systems."
+    },
+    {
+      "id": "M1037",
+      "name": "Filter Network Traffic",
+      "action": "Use network segmentation to limit the impact of a successful infiltration."
+    }
+  ],
+  "false_positive_hints": "Unusual but legitimate administrative activity or specialized software updates can sometimes mimic infiltration patterns.",
   "mitre_stages": [
     {
       "order": 1,
@@ -21,27 +66,5 @@
       "technique_name": "Network Service Discovery",
       "note": "Attacker scans the internal network from the compromised host to map reachable services."
     }
-  ],
-  "description": "This dataset attack label spans two stages: a malicious file is opened to gain an initial foothold on the host, followed by internal network service scanning from the compromised machine. This can include buffer overflows, path traversal, or remote code execution as the initial vector.",
-  "network_indicators": {
-    "key_features": [
-      "High Flow Duration",
-      "Variable Packet Length",
-      "Atypical Service Communication"
-    ],
-    "traffic_pattern": "Initial exploit payload followed by persistent command and control traffic or data exfiltration."
-  },
-  "mitigation": [
-    {
-      "id": "M1051",
-      "name": "Update Software",
-      "action": "Regularly patch and update all software and operating systems."
-    },
-    {
-      "id": "M1037",
-      "name": "Filter Network Traffic",
-      "action": "Use network segmentation to limit the impact of a successful infiltration."
-    }
-  ],
-  "false_positive_hints": "Unusual but legitimate administrative activity or specialized software updates can sometimes mimic infiltration patterns."
+  ]
 }

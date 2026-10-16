@@ -6,6 +6,7 @@
   "mitre_tactic": "Impact",
   "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
   "description": "Adversaries may attempt to cause a denial of service (DoS) by sending a high volume of network traffic directly to a target. This specific profile mimics the HULK (Http Unbearable Load King) tool, which generates unique HTTP requests to exhaust server resources and bypass caching.",
   "network_indicators": {
     "key_features": [
@@ -14,7 +15,23 @@
       "High Flow IAT Mean",
       "Low Packet Length Variance"
     ],
-    "traffic_pattern": "Massive volume of unique HTTP GET requests with randomized headers (User-Agent, Referer) to prevent server-side caching and exhaust the application pool."
+    "traffic_pattern": "Massive volume of unique HTTP GET requests with randomized headers (User-Agent, Referer) to prevent server-side caching and exhaust the application pool.",
+    "observed_features": {
+      "ae_xgboost": [
+        "Fwd Seg Size Min",
+        "Dst Port",
+        "ae_recon_error",
+        "ae_latent_8",
+        "Init Fwd Win Byts"
+      ],
+      "svdd_xgboost": [
+        "Fwd Seg Size Min",
+        "Dst Port",
+        "Init Fwd Win Byts",
+        "Fwd Header Len",
+        "svdd_d_min"
+      ]
+    }
   },
   "mitigation": [
     {

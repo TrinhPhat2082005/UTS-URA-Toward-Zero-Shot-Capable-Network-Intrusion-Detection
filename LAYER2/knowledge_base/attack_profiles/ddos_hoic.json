@@ -6,6 +6,7 @@
   "mitre_tactic": "Impact",
   "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
+  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
   "description": "Adversaries may cause a DoS by exhausting the resources of an endpoint's application layer. HOIC (High Orbit Ion Cannon) coordinates many hosts to send high-volume HTTP requests, often with randomized headers via 'boosters', to exhaust server resources and evade simple filtering.",
   "network_indicators": {
     "key_features": [
@@ -13,7 +14,23 @@
       "Low Flow IAT Min",
       "Dst Port 80/443"
     ],
-    "traffic_pattern": "Coordinated high-volume HTTP requests from multiple source IPs, with randomized headers to defeat basic signature and caching defenses."
+    "traffic_pattern": "Coordinated high-volume HTTP requests from multiple source IPs, with randomized headers to defeat basic signature and caching defenses.",
+    "observed_features": {
+      "ae_xgboost": [
+        "RST Flag Cnt",
+        "ae_recon_error",
+        "Init Fwd Win Byts",
+        "Dst Port",
+        "Bwd Pkt Len Std"
+      ],
+      "svdd_xgboost": [
+        "RST Flag Cnt",
+        "Init Fwd Win Byts",
+        "Fwd Header Len",
+        "Dst Port",
+        "ECE Flag Cnt"
+      ]
+    }
   },
   "mitigation": [
     {
