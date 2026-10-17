@@ -418,7 +418,8 @@ def render_candidate_context(candidates, flagged, profiles, novelty=None, tau_zd
     if not flagged and novelty is not None:
         parts.append(f"Novelty: mean distance to the 10 nearest known attack flows = {novelty:.3f}"
                      + (f" (threshold {tau_zd:.3f})" if tau_zd is not None else "") + ".")
-    parts.append("Known attack options are listed nearest first.")
+    # Khong nhac "listed nearest first": thu tu da theo khoang cach va moi option
+    # deu in khoang cach cua no, nen cau do chi them mot goi y ve vi tri.
     if flagged and allow_unknown:
         parts.append(
             "NOVELTY FLAG RAISED: this flow's attribution vector lies outside the region "
