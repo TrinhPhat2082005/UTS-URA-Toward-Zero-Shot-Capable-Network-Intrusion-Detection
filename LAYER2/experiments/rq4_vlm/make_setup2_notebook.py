@@ -90,6 +90,7 @@ for f in glob.glob(os.path.join(config.ATTACK_PROFILES_DIR, "*.json")):
 manifest = [json.loads(l) for l in open(os.path.join(BUNDLE, "manifest.jsonl"), encoding="utf-8")]
 bundle_meta = json.load(open(os.path.join(BUNDLE, "bundle_meta.json"), encoding="utf-8"))
 fold_stats = json.load(open(os.path.join(BUNDLE, "fold_stats.json"), encoding="utf-8"))
+VARIANT = bundle_meta["variant"]
 print(json.dumps(bundle_meta, indent=1))
 cols = ["n_test", "n_alerts", "zs_acc", "tau_alpha", "tau_zd", "flag_rate", "n_sampled",
         "n_sampled_flagged", "excluded"]
@@ -129,7 +130,8 @@ TEMPLATE_HASH = hashlib.sha256((prompts.SYSTEM_PROMPT + prompts._CANDIDATE_INSTR
 
 def run_one(r):
     user_prompt, options = prompts.build_candidate_prompt(
-        r["candidates"], r["flagged"], PROFILES, r["novelty_score"], r["tau_zd"])
+        r["candidates"], r["flagged"], PROFILES, r["novelty_score"], r["tau_zd"],
+        variant=VARIANT)
     imgs = [os.path.join(BUNDLE, p) for p in r["images"]]
     rec = dict(r)
     rec.update(options=options, user_prompt=user_prompt, template_hash=TEMPLATE_HASH,

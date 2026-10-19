@@ -391,7 +391,10 @@ def _profile_block(doc, variant=None):
     # chay: cung khong gian feature voi bieu do SHAP cua alert nen doi chieu duoc
     # truc tiep. key_features khong dua vao day vi la ky vong chung tu tai lieu
     # ATT&CK, khong do tren dataset nay.
-    obs = (doc.get("network_indicators", {}).get("observed_features") or {}).get(variant)
+    # Checkpoint cua Protocol A mang hau to _mono; khong gian attribution van la
+    # cua chinh variant do, nen tra ve cung mot danh sach.
+    key = variant[:-5] if variant and variant.endswith("_mono") else variant
+    obs = (doc.get("network_indicators", {}).get("observed_features") or {}).get(key)
     if obs:
         lines.append(f"- Attribution usually strongest for this type: {', '.join(obs)}")
     if mit:
