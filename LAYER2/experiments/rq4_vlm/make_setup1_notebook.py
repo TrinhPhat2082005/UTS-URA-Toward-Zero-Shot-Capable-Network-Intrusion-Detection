@@ -150,8 +150,8 @@ print("VLM chon    :", rec.get("selected"), "| raw:", rec.get("selected_raw"))
 print("tactic      :", rec.get("tactic"), "| parse_error:", rec.get("parse_error"))
 print("latency     :", round(rec.get("t_vlm_s") or 0, 1), "s")
 assert "UNKNOWN" not in rec["options"], "UNKNOWN khong duoc nam trong lua chon cua Setup 1"
-assert "Attribution usually strongest" in rec["user_prompt"], \\
-    "Thieu observed_features trong prompt - kiem tra knowledge base da dong bo chua"
+assert "Attribution usually strongest" not in rec["user_prompt"], \\
+    "observed_features van con trong prompt - phai dat include_observed=False"
 print("=" * 80); print(rec["user_prompt"]); print("=" * 80)
 print(rec.get("raw_output") or rec.get("traceback"))
 ''')
@@ -197,7 +197,9 @@ def v(p):
 env = {"libraries": {p: v(p) for p in ("torch", "transformers", "bitsandbytes", "accelerate")},
        "vlm": {"model": getattr(vlm, "model_id", None), "load_4bit": config.VLM_LOAD_4BIT,
                "max_new_tokens": config.VLM_MAX_NEW_TOKENS, "temperature": config.VLM_TEMPERATURE},
-       "bundle_meta": bundle_meta, "template_hash": TEMPLATE_HASH, "allow_unknown": False}
+       "bundle_meta": bundle_meta, "template_hash": TEMPLATE_HASH,
+       "allow_unknown": False, "include_observed": False,
+       "context_hash": hashlib.sha256(rec["user_prompt"].encode()).hexdigest()[:12]}
 json.dump(env, open(os.path.join(OUT, "run_meta.json"), "w", encoding="utf-8"), indent=1)
 print(json.dumps(env, indent=1))
 ''')

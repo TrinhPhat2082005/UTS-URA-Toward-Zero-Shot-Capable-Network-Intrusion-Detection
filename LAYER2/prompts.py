@@ -381,29 +381,30 @@ _CANDIDATE_SCHEMA_NO_UNKNOWN = _CANDIDATE_SCHEMA.replace(
 )
 
 
-def _profile_block(doc, variant=None):
+def _profile_block(doc, variant=None, include_observed=True):
     mit = ", ".join(m["name"] for m in doc.get("mitigation", []))
     lines = [f"- Technique: {doc['title']} ({doc['mitre_id']})",
              f"- Tactic: {doc['mitre_tactic']}",
              f"- Description: {doc['description']}",
              f"- Typical pattern: {doc['network_indicators']['traffic_pattern']}"]
-    # Attribution da quan sat tren tap tham chieu cua dung variant Layer 1 dang
-    # chay: cung khong gian feature voi bieu do SHAP cua alert nen doi chieu duoc
-    # truc tiep. key_features khong dua vao day vi la ky vong chung tu tai lieu
-    # ATT&CK, khong do tren dataset nay.
-    # Checkpoint cua Protocol A mang hau to _mono; khong gian attribution van la
-    # cua chinh variant do, nen tra ve cung mot danh sach.
-    key = variant[:-5] if variant and variant.endswith("_mono") else variant
-    obs = (doc.get("network_indicators", {}).get("observed_features") or {}).get(key)
-    if obs:
-        lines.append(f"- Attribution usually strongest for this type: {', '.join(obs)}")
+    # observed_features duoc tinh tu top-5 mean |SHAP| tren chinh tap tham chieu —
+    # cung dai luong retriever dung lam khoa xep hang. Dua no vao day thi ban do
+    # SHAP cua alert va danh sach cua ung vien gan nhat trung nhau san (do duoc:
+    # overlap 0.83), nen cau tra loi nam san trong cau hoi. Mac dinh TAT.
+    # Checkpoint Protocol A mang hau to _mono, khong gian attribution van la cua
+    # chinh variant do.
+    if include_observed:
+        key = variant[:-5] if variant and variant.endswith("_mono") else variant
+        obs = (doc.get("network_indicators", {}).get("observed_features") or {}).get(key)
+        if obs:
+            lines.append(f"- Attribution usually strongest for this type: {', '.join(obs)}")
     if mit:
         lines.append(f"- Mitigations: {mit}")
     return "\n".join(lines)
 
 
 def render_candidate_context(candidates, flagged, profiles, novelty=None, tau_zd=None,
-                             variant=None, allow_unknown=True):
+                             variant=None, allow_unknown=True, include_observed=False):
     """Khoi RETRIEVED CONTEXT cho prompt chon ung vien.
 
     Args:
@@ -430,10 +431,11 @@ def render_candidate_context(candidates, flagged, profiles, novelty=None, tau_zd
             + (f" (mean distance to its 10 nearest known attack flows {novelty:.3f}, "
                f"threshold {tau_zd:.3f})" if novelty is not None and tau_zd is not None else "")
             + ".")
-        parts.append(f"#### Option: {UNKNOWN}\n{_profile_block(profiles['unknown_anomaly'], variant)}")
+        parts.append(f"#### Option: {UNKNOWN}\n"
+                     f"{_profile_block(profiles['unknown_anomaly'], variant, include_observed)}")
     for c in candidates:
         parts.append(f"#### Option: {c['label']} (distance to nearest known flow: {c['distance']:.3f})\n"
-                     f"{_profile_block(profiles[c['profile_id']], variant)}")
+                     f"{_profile_block(profiles[c['profile_id']], variant, include_observed)}")
     if not flagged and allow_unknown:
         parts.append(f"#### Option: {UNKNOWN}\nNone of the attack types above matches the evidence.")
     return "\n\n".join(parts)
@@ -448,11 +450,15 @@ def candidate_options(candidates, flagged, allow_unknown=True):
 
 
 def build_candidate_prompt(candidates, flagged, profiles, novelty=None, tau_zd=None,
-                           variant=None, allow_unknown=True):
-    """Tra (user_prompt, options)."""
+                           variant=None, allow_unknown=True, include_observed=False):
+    """Tra (user_prompt, options).
+
+    include_observed: mac dinh False. Bat len chi de chay lai nhanh doi chung
+    cua ablation, khong dung cho ket qua chinh — xem chu thich o _profile_block.
+    """
     options = candidate_options(candidates, flagged, allow_unknown)
     ctx = render_candidate_context(candidates, flagged, profiles, novelty, tau_zd,
-                                   variant, allow_unknown)
+                                   variant, allow_unknown, include_observed)
     head = _CANDIDATE_INSTRUCTIONS if allow_unknown else _CANDIDATE_INSTRUCTIONS_NO_UNKNOWN
     tmpl = _CANDIDATE_SCHEMA if allow_unknown else _CANDIDATE_SCHEMA_NO_UNKNOWN
     schema = tmpl.format(options=" | ".join(options), tactics=", ".join(MITRE_TACTICS))
