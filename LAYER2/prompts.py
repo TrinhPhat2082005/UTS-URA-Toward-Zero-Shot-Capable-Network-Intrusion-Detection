@@ -35,6 +35,7 @@ VE PROMPT VARIANTS
    giu lai trong PROMPT_VARIANTS de DO DO NHAY, khong phai de chon cai co so
    dep nhat.
 """
+import random
 import re
 
 # --------------------------------------------------------------------------
@@ -404,7 +405,8 @@ def _profile_block(doc, variant=None, include_observed=True):
 
 
 def render_candidate_context(candidates, flagged, profiles, novelty=None, tau_zd=None,
-                             variant=None, allow_unknown=True, include_observed=False):
+                             variant=None, allow_unknown=True, include_observed=False,
+                             shuffle_seed=None):
     """Khoi RETRIEVED CONTEXT cho prompt chon ung vien.
 
     Args:
@@ -417,48 +419,67 @@ def render_candidate_context(candidates, flagged, profiles, novelty=None, tau_zd
         allow_unknown: False thi khong them lua chon UNKNOWN. Dung cho Setup 1
             (Protocol B), noi moi alert deu thuoc 14 loai da biet nen UNKNOWN
             luon sai; Setup 2 giu True vi do chinh la dap an dung.
+        shuffle_seed: None thi in theo thu tu khoang cach tang dan. Dat mot so
+            thi hoan vi thu tu in: khoang cach van hien day du nhung khong con
+            trung voi vi tri, nen tach duoc "chon theo khoang cach" khoi "chon
+            muc dau danh sach".
     """
+    order = _option_order(candidates, flagged, allow_unknown, shuffle_seed)
     parts = ["### RETRIEVED CONTEXT"]
-    if not flagged and novelty is not None:
+    # Diem novelty in giong nhau cho moi alert, khong phan biet co co: con so va
+    # nguong da du de mo hinh tu doc, khong can mot canh bao rieng.
+    if novelty is not None:
         parts.append(f"Novelty: mean distance to the 10 nearest known attack flows = {novelty:.3f}"
                      + (f" (threshold {tau_zd:.3f})" if tau_zd is not None else "") + ".")
-    # Khong nhac "listed nearest first": thu tu da theo khoang cach va moi option
-    # deu in khoang cach cua no, nen cau do chi them mot goi y ve vi tri.
-    if flagged and allow_unknown:
-        parts.append(
-            "NOVELTY FLAG RAISED: this flow's attribution vector lies outside the region "
-            "occupied by known attack types"
-            + (f" (mean distance to its 10 nearest known attack flows {novelty:.3f}, "
-               f"threshold {tau_zd:.3f})" if novelty is not None and tau_zd is not None else "")
-            + ".")
-        parts.append(f"#### Option: {UNKNOWN}\n"
-                     f"{_profile_block(profiles['unknown_anomaly'], variant, include_observed)}")
-    for c in candidates:
-        parts.append(f"#### Option: {c['label']} (distance to nearest known flow: {c['distance']:.3f})\n"
-                     f"{_profile_block(profiles[c['profile_id']], variant, include_observed)}")
-    if not flagged and allow_unknown:
-        parts.append(f"#### Option: {UNKNOWN}\nNone of the attack types above matches the evidence.")
+    for item in order:
+        if item is UNKNOWN:
+            parts.append(f"#### Option: {UNKNOWN}\n"
+                         f"{_profile_block(profiles['unknown_anomaly'], variant, include_observed)}")
+        else:
+            parts.append(
+                f"#### Option: {item['label']} "
+                f"(distance to nearest known flow: {item['distance']:.3f})\n"
+                f"{_profile_block(profiles[item['profile_id']], variant, include_observed)}")
     return "\n\n".join(parts)
 
 
-def candidate_options(candidates, flagged, allow_unknown=True):
-    """Thu tu cac lua chon dung nhu trong context."""
-    labels = [c["label"] for c in candidates]
-    if not allow_unknown:
-        return labels
-    return [UNKNOWN] + labels if flagged else labels + [UNKNOWN]
+def _option_order(candidates, flagged, allow_unknown, shuffle_seed=None):
+    """Thu tu cac lua chon se duoc in ra.
+
+    UNKNOWN chi co mat khi retriever bat co zero-day. Khong co co nghia la
+    retriever ket luan flow nam trong vung da biet, nen dua UNKNOWN vao se mau
+    thuan voi chinh ket luan do; no cung la lua chon cua tang retrieval, khong
+    phai thu mo hinh sinh bao cao tu quyet. Khi co mat, no la mot phan tu nhu
+    moi lua chon khac: cung do dai khoi, cung tham gia hoan vi.
+    """
+    items = list(candidates)
+    if allow_unknown and flagged:
+        items.append(UNKNOWN)
+    if shuffle_seed is not None:
+        # Hoan vi on dinh theo alert: cung seed + cung tap ung vien -> cung thu tu.
+        key = f"{shuffle_seed}|{'|'.join(c['label'] for c in candidates)}|{int(flagged)}"
+        random.Random(key).shuffle(items)
+    return items
+
+
+def candidate_options(candidates, flagged, allow_unknown=True, shuffle_seed=None):
+    """Ten cac lua chon, dung thu tu chung duoc in trong context."""
+    return [UNKNOWN if x is UNKNOWN else x["label"]
+            for x in _option_order(candidates, flagged, allow_unknown, shuffle_seed)]
 
 
 def build_candidate_prompt(candidates, flagged, profiles, novelty=None, tau_zd=None,
-                           variant=None, allow_unknown=True, include_observed=False):
-    """Tra (user_prompt, options).
+                           variant=None, allow_unknown=True, include_observed=False,
+                           shuffle_seed=None):
+    """Tra (user_prompt, options), options theo dung thu tu da in.
 
     include_observed: mac dinh False. Bat len chi de chay lai nhanh doi chung
     cua ablation, khong dung cho ket qua chinh — xem chu thich o _profile_block.
+    shuffle_seed: dat mot so de hoan vi thu tu in cac lua chon.
     """
-    options = candidate_options(candidates, flagged, allow_unknown)
+    options = candidate_options(candidates, flagged, allow_unknown, shuffle_seed)
     ctx = render_candidate_context(candidates, flagged, profiles, novelty, tau_zd,
-                                   variant, allow_unknown, include_observed)
+                                   variant, allow_unknown, include_observed, shuffle_seed)
     head = _CANDIDATE_INSTRUCTIONS if allow_unknown else _CANDIDATE_INSTRUCTIONS_NO_UNKNOWN
     tmpl = _CANDIDATE_SCHEMA if allow_unknown else _CANDIDATE_SCHEMA_NO_UNKNOWN
     schema = tmpl.format(options=" | ".join(options), tactics=", ".join(MITRE_TACTICS))

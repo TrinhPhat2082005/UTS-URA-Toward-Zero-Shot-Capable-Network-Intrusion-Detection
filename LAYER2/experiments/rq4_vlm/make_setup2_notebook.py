@@ -127,14 +127,17 @@ md("## 3. Mot alert -> mot bao cao\n\nDoc ky prompt va output truoc khi chay ca 
 code('''
 TEMPLATE_HASH = hashlib.sha256((prompts.SYSTEM_PROMPT + prompts._CANDIDATE_INSTRUCTIONS
                                 + prompts._CANDIDATE_SCHEMA).encode()).hexdigest()[:12]
+SHUFFLE_SEED = 42   # hoan vi thu tu in cac lua chon; xem _option_order trong prompts.py
 
 def run_one(r):
     user_prompt, options = prompts.build_candidate_prompt(
         r["candidates"], r["flagged"], PROFILES, r["novelty_score"], r["tau_zd"],
-        variant=VARIANT)
+        variant=VARIANT, shuffle_seed=SHUFFLE_SEED)
     imgs = [os.path.join(BUNDLE, p) for p in r["images"]]
     rec = dict(r)
-    rec.update(options=options, user_prompt=user_prompt, template_hash=TEMPLATE_HASH,
+    rec.update(options=options, option_order=options, shuffle_seed=SHUFFLE_SEED,
+               position_of_nearest=options.index(r["retriever_top1"]) + 1,
+               user_prompt=user_prompt, template_hash=TEMPLATE_HASH,
                vlm_model=getattr(vlm, "model_id", config.VLM_MODEL_ID), run_error=None,
                started_at=pd.Timestamp.now().isoformat(timespec="seconds"))
     try:
