@@ -44,6 +44,15 @@ def load(results_path):
     d["sel_ok"] = [_norm(s) == _norm(t) for s, t in zip(sel, d["true_label"])]
     d["ret_ok"] = [_norm(s) == _norm(t) for s, t in zip(d["retriever_top1"], d["true_label"])]
 
+    # Thu tu in cac lua chon duoc hoan vi, nen vi tri khong con trung voi hang.
+    # Hai cot duoi tach "chon theo khoang cach nho nhat" khoi "chon muc dau danh
+    # sach": doc bang chung thi sel_pos rai deu ma sel_nearest cao; theo vi tri
+    # thi nguoc lai.
+    if "option_order" in d:
+        d["sel_pos"] = [(list(o).index(s) + 1) if (o is not None and s in list(o)) else None
+                        for s, o in zip(sel, d["option_order"])]
+    d["sel_nearest"] = [_norm(s) == _norm(t) for s, t in zip(sel, d["retriever_top1"])]
+
     raw = (d["raw_output"] if "raw_output" in d else pd.Series([""] * n)).fillna("")
     d["schema_ok"] = [sum(s in str(r).upper() for s in SECTIONS) == len(SECTIONS) for r in raw]
     # Grounding: ba chi bao hang dau phai co that trong 5 attribution lon nhat cua alert.
@@ -87,6 +96,13 @@ def score(results_path, bundle_dir, out_dir):
                    "grounding_top5": float(d["grounding_top5"].mean())},
         "parse_errors": perr, "run_errors": rerr,
     }
+    if "sel_pos" in d and d["sel_pos"].notna().any():
+        pos = d["sel_pos"].dropna().astype(int)
+        summary["position"] = {
+            "by_rank": {int(k): int(v) for k, v in pos.value_counts().sort_index().items()},
+            "picked_nearest": float(d["sel_nearest"].mean()),
+            "shuffle_seed": int(d["shuffle_seed"].iloc[0]) if "shuffle_seed" in d else None,
+        }
     per = (d.groupby("true_label")
              .agg(n=("sel_ok", "size"), vlm=("sel_ok", "mean"), retriever=("ret_ok", "mean"))
              .reset_index().sort_values("true_label"))
@@ -106,7 +122,17 @@ def score(results_path, bundle_dir, out_dir):
              f"- du 6 muc            : {fmt(int(d['schema_ok'].sum()), n)}",
              f"- grounding top-5     : {fmt(int(d['grounding_top5'].sum()), n)}",
              f"- parse error         : {perr}",
-             f"- run error           : {rerr}", "",
+             f"- run error           : {rerr}", ""]
+    if "position" in summary:
+        p = summary["position"]
+        k = sum(p["by_rank"].values())
+        lines += ["## Vi tri hay khoang cach", "",
+                  "Thu tu in da duoc hoan vi (seed "
+                  f"{p['shuffle_seed']}), nen hai dong duoi doc duoc rieng nhau.", "",
+                  "- chon theo vi tri    : "
+                  + ", ".join(f"#{r} {c}/{k} ({c / k:.1%})" for r, c in sorted(p["by_rank"].items())),
+                  f"- chon ung vien gan nhat: {fmt(int(d['sel_nearest'].sum()), n)}", ""]
+    lines += [
              "## Theo loai", "",
              per.to_string(index=False, float_format=lambda v: f"{v:.3f}")]
     if "t_vlm_s" in d and d["t_vlm_s"].notna().any():
@@ -120,8 +146,8 @@ def score(results_path, bundle_dir, out_dir):
     (out / "summary.json").write_text(json.dumps(summary, indent=1, default=float), encoding="utf-8")
     per.to_csv(out / "per_label.csv", index=False)
     keep = ["alert_id", "true_label", "retriever_top1", "selected", "selected_raw", "ret_ok",
-            "sel_ok", "tactic", "schema_ok", "grounding_top5", "novelty_score", "flagged",
-            "parse_error", "run_error", "t_vlm_s"]
+            "sel_ok", "sel_pos", "sel_nearest", "position_of_nearest", "tactic", "schema_ok",
+            "grounding_top5", "novelty_score", "flagged", "parse_error", "run_error", "t_vlm_s"]
     d[[c for c in keep if c in d]].to_csv(out / "per_alert.csv", index=False)
     print("\n".join(lines))
     return summary
