@@ -12,14 +12,9 @@
     "mitre_url": "https://attack.mitre.org/techniques/T1046/"
   },
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
-  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
+  "source_note": "observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant. Not shown to the model by default.",
   "description": "This dataset attack label spans two stages: a malicious file is opened to gain an initial foothold on the host, followed by internal network service scanning from the compromised machine. This can include buffer overflows, path traversal, or remote code execution as the initial vector.",
   "network_indicators": {
-    "key_features": [
-      "High Flow Duration",
-      "Variable Packet Length",
-      "Atypical Service Communication"
-    ],
     "traffic_pattern": "Initial exploit payload followed by persistent command and control traffic or data exfiltration.",
     "observed_features": {
       "ae_xgboost": [

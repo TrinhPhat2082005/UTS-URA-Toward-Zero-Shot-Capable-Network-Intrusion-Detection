@@ -6,14 +6,9 @@
   "mitre_tactic": "Initial Access",
   "mitre_url": "https://attack.mitre.org/techniques/T1190/",
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
-  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
+  "source_note": "observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant. Not shown to the model by default.",
   "description": "Adversaries may attempt to exploit vulnerabilities in internet-facing applications to gain access. SQL injection targets flaws in the database query logic of web applications.",
   "network_indicators": {
-    "key_features": [
-      "SQL Keywords in Payload",
-      "Variable Packet Length",
-      "Dst Port 80/443"
-    ],
     "traffic_pattern": "HTTP GET/POST requests containing encoded SQL syntax, unusual escape characters, or boolean logic probes.",
     "observed_features": {
       "ae_xgboost": [

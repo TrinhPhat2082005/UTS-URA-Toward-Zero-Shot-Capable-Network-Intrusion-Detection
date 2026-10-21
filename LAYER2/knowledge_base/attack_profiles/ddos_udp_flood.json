@@ -6,15 +6,9 @@
   "mitre_tactic": "Impact",
   "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
-  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
+  "source_note": "observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant. Not shown to the model by default.",
   "description": "A UDP flood is a type of denial-of-service attack in which a large number of User Datagram Protocol (UDP) packets are sent to a targeted server with the aim of overwhelming that device's ability to process and respond.",
   "network_indicators": {
-    "key_features": [
-      "High Flow Pkts/s",
-      "High Bwd Pkts/s",
-      "Low Flow IAT Mean",
-      "UDP Protocol"
-    ],
     "traffic_pattern": "Flood of UDP packets often with spoofed source IPs targeting random or specific ports.",
     "observed_features": {
       "ae_xgboost": [

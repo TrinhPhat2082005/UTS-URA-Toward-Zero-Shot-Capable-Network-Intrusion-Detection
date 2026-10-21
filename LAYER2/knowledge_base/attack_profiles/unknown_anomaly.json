@@ -8,11 +8,6 @@
   "source_note": "Not an ATT&CK technique. Used when the novelty flag is raised; asserts no technique and records N/A for both tactic and identifier.",
   "description": "This profile represents a network behavior that deviates significantly from the normal baseline but does not match any known attack signatures or MITRE ATT&CK techniques in the current database. This could indicate a zero-day exploit, a novel evasion technique, or a misconfigured internal service.",
   "network_indicators": {
-    "key_features": [
-      "High Feature Outlier Score",
-      "Atypical Protocol Use",
-      "Unique Flow Signatures"
-    ],
     "traffic_pattern": "Observed behavior is statistically improbable based on training data. Characteristics may include unusual packet size distributions, unconventional flag combinations, or unprecedented traffic volume for the target service."
   },
   "mitigation": [

@@ -6,15 +6,9 @@
   "mitre_tactic": "Impact",
   "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
-  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
+  "source_note": "observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant. Not shown to the model by default.",
   "description": "Adversaries may cause a DoS by exhausting resources on an endpoint service. Slowloris achieves this by opening many connections and keeping them open as long as possible by sending partial HTTP requests.",
   "network_indicators": {
-    "key_features": [
-      "High Flow Duration",
-      "Low Flow Pkts/s",
-      "High Flow IAT Mean",
-      "Low Packet Length"
-    ],
     "traffic_pattern": "Persistent connections with minimal data throughput, holding server threads open indefinitely to prevent legitimate users from connecting.",
     "observed_features": {
       "ae_xgboost": [

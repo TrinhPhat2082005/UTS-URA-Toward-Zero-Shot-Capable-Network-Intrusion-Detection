@@ -6,15 +6,9 @@
   "mitre_tactic": "Impact",
   "mitre_url": "https://attack.mitre.org/techniques/T1499/002/",
   "mitre_source": "Borisenko et al. (2022), DOI: 10.1109/SYNCHROINFO55067.2022.9840920, Table II",
-  "source_note": "key_features: expected salience from ATT&CK documentation, not measured on this dataset. observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant.",
+  "source_note": "observed_features: top-5 mean |SHAP| over the training reference set of the named Layer 1 variant. Not shown to the model by default.",
   "description": "Slowhttptest is a highly configurable tool that simulates some Application Layer Denial of Service attacks. It implements most common low-bandwidth Application Layer DoS attacks.",
   "network_indicators": {
-    "key_features": [
-      "High Flow Duration",
-      "Low Flow Pkts/s",
-      "High Flow IAT Mean",
-      "Low Packet Length"
-    ],
     "traffic_pattern": "In the CIC-IDS2018 dataset, all flows labeled DoS attacks-SlowHTTPTest target Dst Port 21 (not the tool's documented HTTP ports 80/443), making this label's traffic pattern near-indistinguishable from FTP-BruteForce at the flow-feature level (confirmed against the original CSE-CIC-IDS2018 source: 139,890/139,890 SlowHTTPTest-labeled flows on port 21).",
     "observed_features": {
       "ae_xgboost": [
