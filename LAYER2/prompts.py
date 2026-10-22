@@ -354,9 +354,10 @@ One bullet per evidence source (SHAP, flow charts, retrieved context). Close
 with one sentence stating whether the sources converge or conflict.
 
 ## 4. MITRE MAPPING
-If you selected a known attack type: its tactic and technique ID, taken from its
-profile. If you selected UNKNOWN: the tactic the observed behavior suggests, and
-"Technique: N/A".
+Two labelled lines, in this order. For a known attack type copy both from its
+profile; for UNKNOWN name the tactic the behaviour suggests and write N/A:
+Tactic: <the tactic name, for example Credential Access>
+Technique: <the identifier only, for example T1110.001, or N/A>
 
 ## 5. MITIGATIONS
 Ranked recommendations.
@@ -373,9 +374,10 @@ Rules:
 # Ban khong co UNKNOWN cua schema: muc 4 chi con nhanh "loai da biet". Hai dong
 # duoc dan nhan ro rang vi model tung dao chung - ghi technique ID vao o tactic.
 _CANDIDATE_SCHEMA_NO_UNKNOWN = _CANDIDATE_SCHEMA.replace(
-    'If you selected a known attack type: its tactic and technique ID, taken from its\n'
-    'profile. If you selected UNKNOWN: the tactic the observed behavior suggests, and\n'
-    '"Technique: N/A".',
+    "Two labelled lines, in this order. For a known attack type copy both from its\n"
+    "profile; for UNKNOWN name the tactic the behaviour suggests and write N/A:\n"
+    "Tactic: <the tactic name, for example Credential Access>\n"
+    "Technique: <the identifier only, for example T1110.001, or N/A>",
     "Copy both lines from the profile of the option you selected:\n"
     "Tactic: <the tactic name, for example Credential Access>\n"
     "Technique: <the identifier only, for example T1110.001>",
