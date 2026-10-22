@@ -116,9 +116,12 @@ def main():
         alert_idx = np.where(p >= thr)[0]
         st = {"n_test": int(len(zs)), "n_alerts": int(len(alert_idx)), "tau_alpha": thr, "tau_zd": tau,
               "zs_acc": float(len(alert_idx) / len(zs)), "twin": fold in paths.TWINS}
-        if fold in paths.TWINS or len(alert_idx) < MIN_ALERTS:
-            st["excluded"] = "twin (failed attack, duplicate flows)" if fold in paths.TWINS \
-                else f"fewer than {MIN_ALERTS} alerts"
+        # Hai loai song sinh duoc GIU lai: chung van du alert, va chi hoan vi lan
+        # nhau — khong tung lam ung vien hang dau o bat ky fold nao khac (0/220
+        # alert do duoc — nen khong lam nhieu cac fold con lai. Co "twin" o tren
+        # danh dau chung de bao cao rieng trong Discussion.
+        if len(alert_idx) < MIN_ALERTS:
+            st["excluded"] = f"fewer than {MIN_ALERTS} alerts"
             stats[fold] = st
             print(f"{fold:<26} bo qua: {st['excluded']} (alert = {len(alert_idx)})", flush=True)
             continue
@@ -166,7 +169,7 @@ def main():
     (OUT / "bundle_meta.json").write_text(json.dumps({
         "setup": "Setup 2 (Protocol A, leave-one-attack-out)", "variant": VARIANT, "alpha": float(ALPHA),
         "per_fold": PER_FOLD, "min_alerts": MIN_ALERTS, "seed": SEED, "k": config.RAG_NOVELTY_K,
-        "excluded_twins": sorted(paths.TWINS), "n_alerts": len(manifest),
+        "twins_kept": sorted(paths.TWINS), "n_alerts": len(manifest),
         "code_commit": git_commit(), "created_at": pd.Timestamp.now().isoformat(timespec="seconds"),
         "build_seconds": round(time.time() - t_start, 1),
     }, indent=1), encoding="utf-8")
