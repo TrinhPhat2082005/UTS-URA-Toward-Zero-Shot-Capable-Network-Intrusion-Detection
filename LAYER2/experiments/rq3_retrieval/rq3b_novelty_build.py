@@ -37,7 +37,7 @@ CLIP, K = 20.0, 10
 TB = dict(np.load(paths.OUT_L1 / "sweep_train_scores.npz"))  # tu rq1_rq2_layer1/02
 BS = "svdd_xgboost_bs"
 if BS in VARS:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rq1_rq2_baselines"))
+    sys.path.insert(0, str(paths.L1_EXP / "rq1_rq2_baselines"))   # LAYER1/experiments
     import baselines  # noqa: E402
     _bs = np.load(paths.OUT_BASE / "scores_svdd_xgboost.npz")
     TB.update({k.replace("svdd_xgboost|", f"{BS}|"): _bs[k] for k in _bs.files if k.endswith("|tb")})

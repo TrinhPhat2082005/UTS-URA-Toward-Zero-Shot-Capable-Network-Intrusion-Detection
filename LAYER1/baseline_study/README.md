@@ -3,7 +3,7 @@
 Training scripts of the extended Layer 1 baselines (Protocol A, 14 leave-one-attack-out folds),
 written and run by the teammates who produced the baseline checkpoints. Kept here as the record
 of how those checkpoints were trained; they are scored and compared by
-`LAYER2/experiments/rq1_rq2_baselines/`.
+`LAYER1/experiments/rq1_rq2_baselines/`.
 
 | Script | Model | Checkpoint folder (`UTS_BASELINE_ART`) |
 |---|---|---|
@@ -28,6 +28,6 @@ Notes for reuse:
 - Their own thresholds differ by model (mean of per-fold benign-train quantiles at 0.5% for the
   XGBoost family, LightGBM, k-NN; per-fold quantile for Random Forest and SVM; F1-max on
   `val_binary` for CLAD). The reported comparison re-thresholds every model with one rule; see
-  `LAYER2/experiments/rq1_rq2_baselines/README.md`.
+  `LAYER1/experiments/rq1_rq2_baselines/README.md`.
 - `train_vae_xgboost.py` uses its own XGBoost settings (`max_depth=5`, `min_child_weight=10`,
   `colsample_bytree=1.0`, `reg_alpha=1.0`); the other XGBoost models share `common/xgb_config_v5_mono.py`.

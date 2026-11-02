@@ -11,6 +11,7 @@ duong dan doc tu bien moi truong; mac dinh theo cau truc workspace:
   UTS_RESULTS      noi ghi ket qua thi nghiem            (mac dinh: LAYER2/output)
   UTS_DATA         du lieu Protocol B cua LAYER2 (doc trong config.py)
   UTS_BASELINE_ART checkpoint cac baseline Layer 1 mo rong (rq1_rq2_baselines/)
+  UTS_L1_RESULTS   ket qua thi nghiem Layer 1 (mac dinh: LAYER1/output cua repo)
 """
 import os
 import sys
@@ -29,11 +30,18 @@ ARTIFACTS = Path(os.environ.get("UTS_DATA", LAYER2)) / "artifacts"   # giong con
 LOAO_POOLS = ARTIFACTS / "loao_pools"           # R cua tung fold Protocol A
 
 OUT = Path(os.environ.get("UTS_RESULTS", LAYER2 / "output"))
-OUT_L1 = OUT / "rq1_rq2_layer1"                 # tab:res-known, tab:res-zs, tab:res-zs-type
-OUT_BASE = OUT / "rq1_rq2_baselines"            # bang baseline mo rong, cung quy tac nguong
 OUT_RQ3A = OUT / "rq3a_identify"                # tab:res-ident
 OUT_RQ3B = OUT / "rq3b_novelty"                 # tab:res-novelty, end-to-end zero-day
 OUT_RQ5 = OUT / "rq5_latency"                   # tab:res-latency, cot latency cua tab:res-known
+
+# Thi nghiem Layer 1 (RQ1, RQ2) nam o LAYER1/experiments, ket qua o LAYER1/output cua repo.
+# Chay tu repo thi LAYER1 la anh em cua LAYER2; ban sao workspace/LAYER2 tim repo o workspace/UTS_URA.
+L1_REPO = next((r / "LAYER1" for r in (LAYER2.parent, WS / "UTS_URA") if (r / "LAYER1" / "experiments").is_dir()),
+               LAYER2.parent / "LAYER1")
+L1_EXP = L1_REPO / "experiments"
+L1_OUT = Path(os.environ.get("UTS_L1_RESULTS", L1_REPO / "output"))
+OUT_L1 = L1_OUT / "rq1_rq2_layer1"              # sweep_*_scores.npz cua 6 model paper — RQ3b doc lai
+OUT_BASE = L1_OUT / "rq1_rq2_baselines"         # scores_<baseline>.npz — RQ3b doc scores_svdd_xgboost.npz
 
 # Bien the Layer 1 duoc bao cao trong paper (ten thu muc checkpoint trong L1_ART)
 SUPERVISED = ["xgboost_only", "ae_xgboost_mono", "svdd_xgboost_mono"]

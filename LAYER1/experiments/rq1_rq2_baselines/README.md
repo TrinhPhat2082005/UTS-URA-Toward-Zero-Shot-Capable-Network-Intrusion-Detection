@@ -20,7 +20,7 @@ models are read from that study's `sweep_all_scores.npz` and listed alongside.
 | Protocol A splits: `train_benign_only.csv`, `by_label/<fold>/{val_binary,test_zeroshot}.csv` | `UTS_BENCH` → `zeroshot_benchmark/03_splits_v2` |
 | Baseline checkpoints `<model>/<fold>/checkpoint/...`, `<model>/checkpoint/...`, `<model>/metrics.json` | `UTS_BASELINE_ART` → `<workspace>/baselines_friends/artifacts` |
 | Layer 1 model classes (`models/autoencoder.py`, `models/svdd.py`, `models/clad/`) | `UTS_LAYER1_CODE` → `zeroshot_benchmark/04_training_v2` (repo: `LAYER1/`) |
-| Paper models' scores `sweep_all_scores.npz` | `UTS_RESULTS/rq1_rq2_layer1` (made by `../rq1_rq2_layer1/01-03`) |
+| Paper models' scores `sweep_all_scores.npz` | `UTS_L1_RESULTS/rq1_rq2_layer1` = `LAYER1/output/rq1_rq2_layer1` (made by `../rq1_rq2_layer1/01-03`) |
 
 ## Run (in order)
 
@@ -38,7 +38,7 @@ python 05_plot_zs_vs_alpha.py           # figure: ZS-Acc vs alpha for five model
 ```
 
 `01` accepts model names (`python 01_score_baselines.py lgbm knn`) and skips models whose
-checkpoints are missing. Outputs go to `UTS_RESULTS/rq1_rq2_baselines/`.
+checkpoints are missing. Outputs go to `UTS_L1_RESULTS/rq1_rq2_baselines/` (`LAYER1/output/rq1_rq2_baselines/`).
 On a 16 GB machine set `OPENBLAS_NUM_THREADS=2`.
 
 ## Models (`baselines.py`)

@@ -9,3 +9,8 @@
 04_training_v2/artifacts/
 __pycache__/
 *.pyc
+
+# Ket qua thi nghiem Layer 1 (LAYER1/output): chi track bang ket qua chinh; file diem npz/npy nang
+output/**
+!output/**/
+!output/rq1_rq2_layer1/layer1_tables.md
