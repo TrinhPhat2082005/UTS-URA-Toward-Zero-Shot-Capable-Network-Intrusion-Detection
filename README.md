@@ -12,8 +12,7 @@ UTS_URA/
 ├── LAYER1/                    Layer 1, Protocol A (14 fold leave-one-attack-out) — Section 3.2–3.3
 │   ├── config/labels.json
 │   ├── 02_cleaning/           raw CSV → parquet đã làm sạch, theo nhãn
-│   ├── 03_splits/             split LOAO (bước 1)
-│   ├── 03_splits_v2/          split dùng trong paper: benign 700K → 560K train / 140K val (bước 2)
+│   ├── 03_splits/             split LOAO dùng trong paper (build_splits.py): benign 700K → 560K train / 140K val
 │   └── 04_training_v2/        train XGBoost-only, AE-only, SVDD-only, CLAD, AE-XGBoost, SVDD-XGBoost
 │                              (mono, config common/xgb_config_v5_mono.py)
 │

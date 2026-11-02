@@ -3,7 +3,7 @@
 Nguồn: `zeroshot_benchmark/04_training_v2/artifacts/<variant>/metrics.json`, đo trên bộ
 split leave-one-attack-out (14 fold, mỗi fold giữ lại 1 trong 14 loại tấn công
 CIC-IDS-2018), dùng data `03_splits_v2/` (không phải `03_splits/` gốc — xem
-`03_splits_v2/README.md` để biết đầy đủ lý do redesign).
+`03_splits/README.md` để biết đầy đủ lý do redesign).
 
 - **Zero-shot (ZS)**: đo trên `test_zeroshot.csv` — 100% mẫu của nhãn bị giữ lại, đo
   recall thuần trên tấn công chưa từng thấy trong huấn luyện.
