@@ -1,9 +1,9 @@
 """Phan phu cua danh gia Layer 1 (notebook layer1_extras.ipynb).
 
-    latency()               ms/flow cua moi model (cot ms/flow cua bang)        -> OUT_BASE/baseline_latency.json
-    plot_zs_vs_alpha()      hinh ZS-Acc theo alpha tu final/curve.csv           -> OUT_FINAL/zs_vs_alpha.pdf/.png
-    perfold_tables()        6 model cua paper, nguong rieng tung fold            -> OUT_L1/layer1_tables.md
-    verify_reproduction()   nguong rieng cua nguoi train -> so voi metrics.json  -> OUT_BASE/verify.md
+    latency()               ms/flow cua moi model (cot ms/flow cua bang)        -> OUT_TABLES/latency.json
+    plot_zs_vs_alpha()      hinh ZS-Acc theo alpha tu tables/curve.csv           -> OUT_TABLES/zs_vs_alpha.pdf/.png
+    perfold_tables()        6 model cua paper, nguong rieng tung fold            -> OUT_TABLES/layer1_tables.md
+    verify_reproduction()   nguong rieng cua nguoi train -> so voi metrics.json  -> OUT_TABLES/verify.md
     checkpoint_runs()       cung model, run cua paper vs run cua baseline study (vi sao chon checkpoint nao)
 """
 import json
@@ -44,7 +44,7 @@ def latency(keys=None):
     Xv, _, _ = data.fold_data(LAT_FOLD)
     idx = np.random.default_rng(0).choice(len(Xv), N_WARM + N_MEAS, replace=False)
     rows = [Xv[i:i + 1] for i in idx]
-    out_f = paths.ensure(paths.OUT_BASE) / "baseline_latency.json"
+    out_f = paths.ensure(paths.OUT_TABLES) / "latency.json"
     res = json.loads(out_f.read_text(encoding="utf-8")) if keys and out_f.exists() else {}
     res.update({"cpu": platform.processor(), "torch_threads": torch.get_num_threads(), "fold": LAT_FOLD,
                 "n_warmup": N_WARM, "n_measured": N_MEAS})
@@ -75,8 +75,8 @@ STYLE = {   # mau, do day net, marker; hai bien the cua paper ve dam hon
 }
 
 
-def plot_zs_vs_alpha(curve_csv=paths.OUT_FINAL / "curve.csv"):
-    """Hinh bao cao: final/curve.csv (tables.write_final) -> final/zs_vs_alpha.pdf/.png."""
+def plot_zs_vs_alpha(curve_csv=paths.OUT_TABLES / "curve.csv"):
+    """Hinh bao cao: tables/curve.csv (tables.write_final) -> tables/zs_vs_alpha.pdf/.png."""
     import matplotlib.pyplot as plt
     rows = pd.read_csv(curve_csv).to_dict("records")
     fig, ax = plt.subplots(figsize=(6.4, 4.5))
@@ -109,7 +109,7 @@ PERFOLD_ALPHAS = [0.001, 0.002, 0.004, 0.008, 0.010, 0.015, 0.020, 0.030]
 
 
 def perfold_tables():
-    """Bang cua 6 model cua paper voi quy tac "perfold" (tau_f rieng tung fold) -> OUT_L1/layer1_tables.md.
+    """Bang cua 6 model cua paper voi quy tac "perfold" (tau_f rieng tung fold) -> OUT_TABLES/layer1_tables.md.
     T-A ZS-Acc theo alpha + pAUC; T-B known-attack o alpha 0.4% / 1.5%; T-C nguong F1-max cua code train (chi de
     tham khao, khong phai nguong cua paper); T-D ZS-Acc tung loai bi giu lai."""
     S = {}
@@ -172,7 +172,7 @@ def perfold_tables():
         P("")
 
     txt = "\n".join(out)
-    (paths.ensure(paths.OUT_L1) / "layer1_tables.md").write_text(txt, encoding="utf-8")
+    (paths.ensure(paths.OUT_TABLES) / "layer1_tables.md").write_text(txt, encoding="utf-8")
     return txt
 
 
@@ -234,7 +234,7 @@ def verify_reproduction():
                      f"{rep['zs']:.4f} / {got['zs']:.4f} | {rep['f1']:.4f} / {got['f1']:.4f} | "
                      f"{rep['fpr']:.4f} / {got['fpr']:.4f} | {'yes' if ok else 'NO'} |")
     text = "## Reproduction of each trainer's own evaluation\n\n" + "\n".join(lines) + "\n"
-    (paths.ensure(paths.OUT_BASE) / "verify.md").write_text(text, encoding="utf-8")
+    (paths.ensure(paths.OUT_TABLES) / "verify.md").write_text(text, encoding="utf-8")
     return text
 
 

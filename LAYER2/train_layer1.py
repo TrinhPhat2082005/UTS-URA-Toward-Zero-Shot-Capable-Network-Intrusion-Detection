@@ -13,10 +13,10 @@ CHUOI 4 BUOC
   4. Train XGBoost tren [78 feature goc | feature tang cuong] (GPU).
 
 Kien truc encoder lay tu zeroshot_benchmark/04_training_v2/ (models/autoencoder.py,
-models/svdd.py). Config XGBoost lay TRUC TIEP tu LAYER1/common/xgb_config_v5_mono.py
+models/svdd.py). Config XGBoost lay TRUC TIEP tu LAYER1/03_training/common/xgb_config_mono.py
 (ban Layer 1 cuoi cung): cung tham so cay + rang buoc DON DIEU TANG tren feature
 augmented co ngu nghia "cang lon cang bat thuong" (AE: ae_recon_error; SVDD: K
-sphere dist + d_min). Bo cuc rang buoc giong het LAYER1/train_{ae,svdd}_xgboost.py.
+sphere dist + d_min). Bo cuc rang buoc giong het LAYER1/03_training/train_{ae,svdd}_xgboost_mono.py.
 Khac biet voi LAYER1: train mot lan tren tap full-label thay vi 14 fold, ep chay GPU,
 va KHONG early stopping (co dinh 500 cay) vi val_full la tap danh gia RAG/VLM
 (tren 42 checkpoint LOAO, early stopping cung khong bao gio cat qua 5 cay).
@@ -70,21 +70,22 @@ from models.svdd import MixtureSVDD                          # noqa: E402
 
 
 def _load_layer1_config():
-    """Nap common/xgb_config_v5_mono.py cua Layer 1 (cung config da train 14 fold
+    """Nap common/xgb_config_mono.py cua Layer 1 (cung config da train 14 fold
     LOAO) theo duong dan file.
 
     Khong import kieu `common.xxx` vi zeroshot_benchmark/04_training_v2 cung co
     package ten `common` (da nam tren sys.path) -> trung ten.
-    Tim theo thu tu: UTS_LAYER1_CODE, repo (UTS_URA/LAYER1/04_training_v2),
-    workspace (zeroshot_benchmark/04_training_v2, LAYER1).
+    Tim theo thu tu: UTS_LAYER1_CODE, repo (LAYER1/03_training, chay tu repo hoac tu
+    workspace), roi ban sao trong zeroshot_benchmark/04_training_v2 (giu ten cu
+    xgb_config_v5_mono.py).
     """
     import importlib.util
     import os
-    roots = [os.environ.get("UTS_LAYER1_CODE"), WS / "LAYER1" / "04_training_v2",
-             WS / "zeroshot_benchmark" / "04_training_v2", WS / "LAYER1"]
-    path = next(Path(r) / "common" / "xgb_config_v5_mono.py" for r in roots
-                if r and (Path(r) / "common" / "xgb_config_v5_mono.py").exists())
-    spec = importlib.util.spec_from_file_location("layer1_xgb_config_v5_mono", path)
+    roots = [os.environ.get("UTS_LAYER1_CODE"), WS / "LAYER1" / "03_training",
+             WS / "UTS_URA" / "LAYER1" / "03_training", WS / "zeroshot_benchmark" / "04_training_v2"]
+    path = next(Path(r) / "common" / n for r in roots if r
+                for n in ("xgb_config_mono.py", "xgb_config_v5_mono.py") if (Path(r) / "common" / n).exists())
+    spec = importlib.util.spec_from_file_location("layer1_xgb_config_mono", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -370,7 +371,7 @@ def train_xgb(Xtr, ytr, Xva, yva, names, tag, out_dir, mono):
         "n_trees": int(n_trees),
         "early_stopping": False,
         "monotone_constraints": list(mono),
-        "xgb_config": "LAYER1/common/xgb_config_v5_mono.py",
+        "xgb_config": "LAYER1/03_training/common/xgb_config_mono.py",
         "train_seconds": round(dt, 1),
         "scale_pos_weight": round(spw, 4),
         "val": {**val_by_alpha[f"{OPERATING_ALPHA:.3f}"],

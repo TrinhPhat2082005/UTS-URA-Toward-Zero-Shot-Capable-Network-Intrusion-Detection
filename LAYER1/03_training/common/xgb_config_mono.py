@@ -1,5 +1,5 @@
 """
-Config XGBoost v5-mono — GIONG HET xgb_config_v4_new_data.py ve moi tham so cay,
+Config XGBoost mono — GIONG HET xgb_config.py ve moi tham so cay,
 CHI THEM 1 thu: bat rang buoc DON DIEU (monotone constraint) cho cac feature
 augmented co ngu nghia "cang lon cang bat thuong".
 
@@ -103,7 +103,7 @@ XGB_PARAMS = dict(
     early_stopping_rounds=50,
 )
 
-# Giu nguyen divisor=2.0 nhu xgb_config_v4_new_data.py de so sanh SACH: chi co
+# Giu nguyen divisor=2.0 nhu xgb_config.py de so sanh SACH: chi co
 # monotone constraint la bien so thay doi duy nhat so voi ban v4-new-data.
 XGB_SCALE_POS_DIVISOR = 2.0
 

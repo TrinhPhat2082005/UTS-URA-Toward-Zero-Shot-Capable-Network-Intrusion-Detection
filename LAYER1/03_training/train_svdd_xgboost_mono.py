@@ -1,46 +1,47 @@
 """
-[BAN _mono] Train AE+XGBoost VOI RANG BUOC DON DIEU tren ae_recon_error.
+[BAN _mono] Train SVDD+XGBoost VOI RANG BUOC DON DIEU tren feature SVDD.
 
-Khac ban goc train_ae_xgboost.py DUNG 3 diem (moi thu khac giu nguyen 100% de
-so sanh sach — cung data v2, cung AE encoder, cung threshold-averaging):
-  1. Import config tu common/xgb_config_v5_mono.py (thay vi xgb_config_v4_new_data.py)
-  2. Them monotone_constraints: CHI ae_recon_error bi ep DON DIEU TANG
-     (recon_error tang => P(attack) khong duoc giam). 16 ae_latent va 78 feature
-     goc giu TU DO — latent la toa do khong gian nen, khong co ngu nghia don dieu.
-  3. Ghi ra artifacts/ae_xgboost_mono/ (khong de len ket qua cu)
+Khac ban goc train_svdd_xgboost.py DUNG 3 diem (moi thu khac giu nguyen 100%
+de so sanh sach — cung data v2, cung encoder SVDD, cung threshold-averaging):
+  1. Import config tu common/xgb_config_mono.py (thay vi xgb_config.py)
+  2. Them monotone_constraints: k_in sphere_dist + d_min bi ep DON DIEU TANG
+     (svdd_dist tang => P(attack) khong duoc giam). 78 feature goc giu tu do.
+  3. Ghi ra artifacts/svdd_xgboost_mono/ (khong de len ket qua cu)
 
-LY DO: tren data v2, AE+XGBoost (ZS-F1 0.574) con THAP HON XGBoost-only (0.586)
-du SHAP xac nhan ae_recon_error XEP HANG 1 (0.79, vuot ca Dst Port 0.78).
-Nguyen nhan: XGBoost hoc LUAT LIEN HOP "recon_error cao NHUNG cac feature goc
-trong quen => benign", lam mat tin hieu one-class tren attack chua tung thay.
-Xem docstring common/xgb_config_v5_mono.py de biet chi tiet co che va danh doi.
+LY DO: tren data v2, SVDD+XGBoost (ZS-F1 0.592) gan nhu y het XGBoost-only
+(0.586) du SHAP xac nhan XGBoost DUNG RAT NHIEU feature svdd_dist (5-6/15 top).
+Nguyen nhan: XGBoost hoc LUAT LIEN HOP "svdd_dist cao NHUNG Dst Port quen =>
+benign", lam mat tin hieu one-class tren attack chua tung thay. Bang chung:
+SSH_Bruteforce SVDD-Only=1.0000 nhung SVDD+XGB=0.0001.
+Xem docstring common/xgb_config_mono.py de biet chi tiet co che va danh doi.
 
 --- Docstring goc ---
-Train AE+XGBoost (augmented) — train RIENG 14 lan, moi lan 1 held-out label.
-Tai su dung AE checkpoint DA TRAIN SAN o artifacts/ae_only/checkpoint/ (khong train
-lai AE — AE chi hoc Benign 1 lan duy nhat, dung chung cho ca 14 fold, dung thiet ke
-da chot voi AE-Only). AE CHI dong vai tro feature encoder: latent_z (16) + recon_error
-(1) duoc noi vao 78 feature goc = 95 feature cho XGBoost. XGBoost la diem quyet dinh
-DUY NHAT — khong co nguong AE rieng, khong OR-Fusion (dung thiet ke notebook goc
-UTS_Layer1/AE_XGBoost/autoencoder_xgboost_ids_v2.ipynb).
+Train SVDD+XGBoost (augmented) — train RIENG 14 lan, moi lan 1 held-out label.
+Tai su dung SVDD checkpoint DA TRAIN SAN o artifacts/svdd_only/checkpoint/ (khong
+train lai SVDD — SVDD chi hoc Benign 1 lan duy nhat, K_IN sphere dung chung cho ca
+14 fold). SVDD CHI dong vai tro feature encoder: K sphere distance + d_min duoc noi
+vao 78 feature goc. XGBoost la diem quyet dinh DUY NHAT — khong co nguong SVDD
+rieng, khong OR-Fusion (dung thiet ke notebook goc
+UTS_Layer1/SVDD_XGBoost/svdd_xgboost_ids.ipynb).
 
 DUNG CHUNG config XGBoost voi train_xgboost_only.py (common/xgb_config.py) de so
-sanh cong bang — chi khac o feature input (78 vs 95).
+sanh cong bang — chi khac o feature input (78 vs 78+K_IN+1).
 
 Pipeline (moi held-out label):
   1. Doc train_benign_attack.csv/val_binary.csv/test_zeroshot.csv cua label do.
-  2. Dung CHUNG 1 scaler (ae_scaler, fit tren benign-only, tai su dung tu
-     artifacts/ae_only/) cho CA XGBoost input LAN AE encoder input — dung dung
-     pattern notebook goc UTS_Layer1/AE_XGBoost/autoencoder_xgboost_ids_v2.ipynb
-     (Cell 3+11: 1 scaler.transform() duy nhat cho ca X_ae_train_s va X_xgb_train_s,
-     KHONG co scaler rieng cho XGBoost). Ban truoc dung 2 scaler khac nhau (mot fit
-     tren train_benign_attack, mot fit tren benign-only) cho cung 1 tap X_train_raw —
-     loi kien truc tuong tu da phat hien va sua trong train_svdd_xgboost.py, khien
-     AE-encoder va XGBoost nhin thay 2 phien ban du lieu qua bien doi phan phoi khac
-     nhau.
-  3. Dung AE (da load, eval mode) tinh latent_z + recon_error tren CHINH du lieu da
-     scale o buoc 2 (khong con 2 phien ban rieng biet nua).
-  4. Ghep [X_scaled | latent_z | recon_error] = 95 feature, train XGBClassifier.
+  2. Dung CHUNG 1 scaler (svdd_scaler, fit tren benign-only, tai su dung tu
+     artifacts/svdd_only/) cho CA XGBoost input LAN SVDD encoder input — dung dung
+     pattern notebook goc (Cell 6+20: scaler.fit_transform tren benign, sau do
+     scaler.transform() 1 lan duy nhat, KHONG co scaler rieng cho XGBoost). Ban truoc
+     dung 2 scaler khac nhau (mot fit tren train_benign_attack, mot fit tren
+     benign-only) — day la loi kien truc khien SVDD-encoder va XGBoost nhin thay 2
+     phien ban du lieu da qua bien doi phan phoi khac nhau tren cung 1 tap X_raw,
+     khien XGBoost khong hoc duoc cach dung sphere-distance feature (da xac nhan qua
+     thuc nghiem: chi them clip [-20,20] KHONG giai quyet duoc — SVDD+XGBoost van
+     fail y het cac nhan ma XGBoost-only (khong SVDD) cung fail).
+  3. Dung SVDD (da load K_IN sphere) tinh sphere distances (K_IN feature) + d_min (1)
+     tren CHINH du lieu da scale o buoc 2 (khong con 2 phien ban rieng biet nua).
+  4. Ghep [X_scaled | sphere_dists(K_IN) | d_min] feature, train XGBClassifier.
   5. Tune threshold F1-max tren TRAIN (train_benign_attack.csv), khong phai val —
      vi val_binary.csv la tap DUNG DE BAO CAO known-attack F1/recall/FPR; tune
      threshold tren chinh tap eval se lam ket qua bi thoi phong (data leak kieu
@@ -48,8 +49,8 @@ Pipeline (moi held-out label):
      BINH 14 threshold nay thanh 1 threshold duy nhat, roi dung LAI threshold
      chung do de eval lai toan bo 14 fold (known-attack + zero-shot) — mo phong
      dung mot nguong quyet dinh co dinh nhu khi trien khai thuc te.
-  6. Luu checkpoint (model.pkl) vao artifacts/ae_xgboost/<label>/checkpoint/ (khong
-     con scaler rieng — dung chung ae_scaler tu artifacts/ae_only/).
+  6. Luu checkpoint (model.pkl) vao artifacts/svdd_xgboost/<label>/checkpoint/
+     (khong con scaler rieng — dung chung svdd_scaler tu artifacts/svdd_only/).
 """
 from __future__ import annotations
 
@@ -64,41 +65,42 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import torch
 import xgboost as xgb
 from sklearn.metrics import confusion_matrix, f1_score
-from torch.utils.data import DataLoader, TensorDataset
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common.xgb_config_v5_mono import (  # noqa: E402
+from common.xgb_config_mono import (  # noqa: E402
     XGB_PARAMS,
     XGB_SCALE_POS_DIVISOR,
     XGB_MONOTONE_AUGMENTED,
     build_monotone_constraints,
 )
-from models.autoencoder import BenignAutoencoder  # noqa: E402
+from models.svdd import MixtureSVDD  # noqa: E402
 from models.clad.util.metrics import best_f1_threshold  # noqa: E402
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SPLITS_DIR = BASE_DIR / "03_splits_v2"
 LABELS_CONFIG_PATH = BASE_DIR / "config" / "labels.json"
 
-AE_ONLY_CKPT_DIR = Path(__file__).resolve().parent / "artifacts" / "ae_only" / "checkpoint"
-AE_SCALER_PATH = AE_ONLY_CKPT_DIR / "scaler.pkl"
-AE_MODEL_PATH = AE_ONLY_CKPT_DIR / "ae_best.pt"
+SVDD_ONLY_CKPT_DIR = Path(__file__).resolve().parent / "artifacts" / "svdd_only" / "checkpoint"
+SVDD_SCALER_PATH = SVDD_ONLY_CKPT_DIR / "scaler.pkl"
+SVDD_ELBOW_CACHE_PATH = SVDD_ONLY_CKPT_DIR / "elbow_cache.json"
+SVDD_MODEL_DIR = SVDD_ONLY_CKPT_DIR / "svdd_model"
 
-ARTIFACTS_ROOT = Path(__file__).resolve().parent / "artifacts" / "ae_xgboost_mono"
+ARTIFACTS_ROOT = Path(__file__).resolve().parent / "artifacts" / "svdd_xgboost_mono"
 METRICS_PATH = ARTIFACTS_ROOT / "metrics.json"
 
 SEED = 42
 np.random.seed(SEED)
-torch.manual_seed(SEED)
 
-BOTTLENECK_DIM = 16
 CLIP_VAL = 20.0
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-XGB_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+try:
+    import torch
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+except ImportError:
+    DEVICE = "cpu"
+XGB_DEVICE = DEVICE
 
 
 def load_split_csv(path: Path) -> pd.DataFrame:
@@ -129,22 +131,7 @@ def evaluate(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     }
 
 
-def get_ae_features(ae_model: BenignAutoencoder, X_ae_scaled: np.ndarray, batch_size: int = 4096) -> tuple[np.ndarray, np.ndarray]:
-    """Tra ve (latent_z, recon_error) cho input DA QUA AE'S SCALER (khac scaler XGB)."""
-    ae_model.eval()
-    loader = DataLoader(TensorDataset(torch.tensor(X_ae_scaled, dtype=torch.float32)), batch_size=batch_size, shuffle=False)
-    latents, errors = [], []
-    with torch.no_grad():
-        for (xb,) in loader:
-            xb = xb.to(DEVICE)
-            x_hat, z = ae_model(xb)
-            err = ((xb - x_hat) ** 2).mean(dim=1)
-            latents.append(z.cpu().numpy())
-            errors.append(err.cpu().numpy())
-    return np.concatenate(latents), np.concatenate(errors)
-
-
-def train_one_label(label: str, feature_cols: list[str], ae_model: BenignAutoencoder, ae_scaler) -> dict:
+def train_one_label(label: str, feature_cols: list[str], svdd: MixtureSVDD, svdd_scaler, k_in: int) -> dict:
     label_artifacts_dir = ARTIFACTS_ROOT / label
     images_dir = label_artifacts_dir / "images"
     ckpt_dir = label_artifacts_dir / "checkpoint"
@@ -164,38 +151,40 @@ def train_one_label(label: str, feature_cols: list[str], ae_model: BenignAutoenc
     X_test_raw = test_df[feature_cols].values.astype("float32")
     y_test = test_df["Label"].values
 
-    # Dung CHUNG 1 scaler (ae_scaler, fit tren benign-only, tai su dung tu
-    # artifacts/ae_only/) cho CA XGBoost input LAN AE encoder input — dung dung
-    # pattern notebook goc UTS_Layer1/AE_XGBoost Cell 3+11 (mot scaler.transform() duy
-    # nhat cho ca X_ae_train_s va X_xgb_train_s, KHONG co scaler rieng cho XGBoost).
-    # Ban truoc dung 2 scaler khac nhau (scaler_xgb fit tren train_benign_attack,
-    # ae_scaler fit tren benign-only) cho cung 1 tap X_train_raw — loi kien truc
-    # tuong tu da phat hien va sua trong train_svdd_xgboost.py.
-    X_train_xgb_s = np.clip(ae_scaler.transform(X_train_raw), -CLIP_VAL, CLIP_VAL)
-    X_val_xgb_s = np.clip(ae_scaler.transform(X_val_raw), -CLIP_VAL, CLIP_VAL)
-    X_test_xgb_s = np.clip(ae_scaler.transform(X_test_raw), -CLIP_VAL, CLIP_VAL)
+    # Dung CHUNG 1 scaler (svdd_scaler, fit tren benign-only tu svdd_only) cho CA
+    # XGBoost input LAN SVDD encoder input — dung 100% pattern cua notebook goc
+    # UTS_Layer1/SVDD_XGBoost/svdd_xgboost_ids.ipynb Cell 6+20 (scaler.fit_transform
+    # tren benign, roi scaler.transform() DUY NHAT MOT LAN cho ca X_xgb_train VA lam
+    # input tinh sphere distance — KHONG co "scaler_xgb" rieng biet).
+    #
+    # Ban truoc cua file nay dung 2 scaler khac nhau (scaler_xgb fit tren
+    # train_benign_attack, svdd_scaler fit tren benign-only) cho 2 nhanh feature khac
+    # nhau tren CUNG 1 tap X_train_raw — khien SVDD-encoder nhin thay du lieu qua 1
+    # phep bien doi phan phoi khac voi XGBoost, dan den XGBoost khong hoc duoc cach
+    # dung dung sphere-distance feature (da xac nhan bang thuc nghiem: chi them clip
+    # khong giai quyet duoc van de, SVDD+XGBoost van fail y het XGBoost-only tren
+    # cung nhung nhan — dau hieu ro rang day la loi kien truc scaler, khong phai loi
+    # outlier/scale bien do).
+    X_train_xgb_s = np.clip(svdd_scaler.transform(X_train_raw), -CLIP_VAL, CLIP_VAL)
+    X_val_xgb_s = np.clip(svdd_scaler.transform(X_val_raw), -CLIP_VAL, CLIP_VAL)
+    X_test_xgb_s = np.clip(svdd_scaler.transform(X_test_raw), -CLIP_VAL, CLIP_VAL)
 
-    z_train, err_train = get_ae_features(ae_model, X_train_xgb_s)
-    z_val, err_val = get_ae_features(ae_model, X_val_xgb_s)
-    z_test, err_test = get_ae_features(ae_model, X_test_xgb_s)
+    dists_train = svdd.all_sphere_distances(X_train_xgb_s)
+    dists_val = svdd.all_sphere_distances(X_val_xgb_s)
+    dists_test = svdd.all_sphere_distances(X_test_xgb_s)
 
-    X_train_aug = np.concatenate([X_train_xgb_s, z_train, err_train.reshape(-1, 1)], axis=1)
-    X_val_aug = np.concatenate([X_val_xgb_s, z_val, err_val.reshape(-1, 1)], axis=1)
-    X_test_aug = np.concatenate([X_test_xgb_s, z_test, err_test.reshape(-1, 1)], axis=1)
+    X_train_aug = np.concatenate([X_train_xgb_s, dists_train, dists_train.min(axis=1, keepdims=True)], axis=1)
+    X_val_aug = np.concatenate([X_val_xgb_s, dists_val, dists_val.min(axis=1, keepdims=True)], axis=1)
+    X_test_aug = np.concatenate([X_test_xgb_s, dists_test, dists_test.min(axis=1, keepdims=True)], axis=1)
 
     scale_pos = float((y_train == 0).sum()) / float((y_train == 1).sum())
 
-    # Monotone constraint: thu tu cot la [78 goc | 16 ae_latent | 1 ae_recon_error]
-    # (khop chinh xac voi np.concatenate o tren). CHI ae_recon_error bi rang buoc
-    # +1 (tai tao cang te => cang bat thuong). 16 ae_latent KHONG rang buoc vi
-    # chung la toa do trong khong gian nen — gia tri cao/thap deu co the la benign,
-    # khong co ngu nghia don dieu. 78 feature goc cung giu tu do (0).
+    # Monotone constraint: thu tu cot la [78 goc | k_in sphere_dist | 1 d_min]
+    # (khop chinh xac voi np.concatenate o tren). Ca k_in sphere_dist LAN d_min
+    # deu co ngu nghia "cang xa vung benign => cang bat thuong" nen deu rang
+    # buoc +1; 78 feature goc giu tu do (0).
     n_base = len(feature_cols)
-    mono = build_monotone_constraints(
-        n_base=n_base,
-        n_augmented_free=BOTTLENECK_DIM,   # 16 latent: tu do
-        n_augmented_monotone=1,            # 1 recon_error: don dieu tang
-    )
+    mono = build_monotone_constraints(n_base=n_base, n_augmented_monotone=k_in + 1)
     assert mono is None or len(mono) == X_train_aug.shape[1], (
         f"monotone_constraints do dai {len(mono)} != so cot {X_train_aug.shape[1]}"
     )
@@ -227,26 +216,26 @@ def train_one_label(label: str, feature_cols: list[str], ae_model: BenignAutoenc
     print(f"    [Train] best-F1 threshold={threshold:.4f}  F1={f1_train_opt:.4f}  "
           f"P={prec_train_opt:.4f}  R={rec_train_opt:.4f}")
 
-    # SHAP top-15 (danh dau ro feature nao la AE-augmented)
+    # SHAP top-15 (danh dau ro feature nao la SVDD-augmented)
     shap_path = images_dir / "shap_bar_top15.png"
     if not shap_path.exists():
         try:
             import shap
-            augmented_feature_names = feature_cols + [f"ae_latent_{i}" for i in range(BOTTLENECK_DIM)] + ["ae_recon_error"]
+            augmented_feature_names = feature_cols + [f"svdd_dist_{k}" for k in range(k_in)] + ["svdd_dmin"]
             shap_idx = np.random.choice(len(X_val_aug), min(2000, len(X_val_aug)), replace=False)
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(X_val_aug[shap_idx])
             mean_abs_shap = np.abs(shap_values).mean(axis=0)
             top15_idx = np.argsort(mean_abs_shap)[::-1][:15]
             top15_features = [augmented_feature_names[i] for i in top15_idx]
-            colors = ["#e74c3c" if "ae_" in f else "#3498db" for f in top15_features]
+            colors = ["#e74c3c" if "svdd_" in f else "#3498db" for f in top15_features]
 
             fig, ax = plt.subplots(figsize=(9, 6))
             ax.barh(range(len(top15_features)), mean_abs_shap[top15_idx][::-1], color=colors[::-1])
             ax.set_yticks(range(len(top15_features)))
             ax.set_yticklabels(top15_features[::-1], fontsize=9)
             ax.set_xlabel("Mean |SHAP value|")
-            ax.set_title(f"AE+XGBoost SHAP Top 15 — held-out={label}\nRed = AE feature, Blue = original")
+            ax.set_title(f"SVDD+XGBoost SHAP Top 15 — held-out={label}\nRed = SVDD feature, Blue = original")
             ax.grid(axis="x", alpha=0.3)
             plt.tight_layout()
             plt.savefig(shap_path, dpi=150, bbox_inches="tight")
@@ -268,34 +257,41 @@ def main() -> None:
         labels_cfg = json.load(f)
     attack_labels = labels_cfg["attack_labels"]
 
-    assert AE_SCALER_PATH.exists() and AE_MODEL_PATH.exists(), (
-        f"Khong tim thay AE checkpoint tai {AE_ONLY_CKPT_DIR} — chay train_ae_only.py truoc."
+    assert SVDD_SCALER_PATH.exists() and SVDD_ELBOW_CACHE_PATH.exists(), (
+        f"Khong tim thay SVDD checkpoint tai {SVDD_ONLY_CKPT_DIR} — chay train_svdd_only.py truoc."
     )
-    print(f"Dang load AE checkpoint tu {AE_ONLY_CKPT_DIR} ...")
-    ae_scaler = joblib.load(AE_SCALER_PATH)
+    print(f"Dang load SVDD checkpoint tu {SVDD_ONLY_CKPT_DIR} ...")
+    svdd_scaler = joblib.load(SVDD_SCALER_PATH)
+
+    with open(SVDD_ELBOW_CACHE_PATH, "r", encoding="utf-8") as f:
+        elbow_cache = json.load(f)
+    k_chosen = elbow_cache["k_chosen"]
 
     sample_df = load_split_csv(SPLITS_DIR / "by_label" / attack_labels[0] / "train_benign_attack.csv")
     feature_cols = get_feature_cols(sample_df)
 
-    ae_model = BenignAutoencoder(input_dim=len(feature_cols), bottleneck_dim=BOTTLENECK_DIM).to(DEVICE)
-    ae_model.load_state_dict(torch.load(AE_MODEL_PATH, map_location=DEVICE))
-    ae_model.eval()
-    print(f"XGBoost device: {XGB_DEVICE}  |  {len(feature_cols)} feature goc + {BOTTLENECK_DIM}+1 AE feature")
+    # k_in (so sphere sau khi tach cluster lon nhat) suy tu so file encoder_*.pt da luu
+    encoder_files = sorted(SVDD_MODEL_DIR.glob("encoder_*.pt"))
+    k_in = len(encoder_files)
+    assert k_in > 0, f"Khong tim thay encoder nao trong {SVDD_MODEL_DIR}"
 
-    results: dict = {"xgb_params": XGB_PARAMS,
-                     "monotone_augmented": XGB_MONOTONE_AUGMENTED,
-                     "monotone_n_constrained": 1 if XGB_MONOTONE_AUGMENTED else 0,
-                     "monotone_note": "chi ae_recon_error bi rang buoc; 16 ae_latent tu do",
-                     "scale_pos_divisor": XGB_SCALE_POS_DIVISOR,
-                     "zero_shot_per_label": {}, "known_attack_per_label": {}}
+    svdd = MixtureSVDD(K=k_in, input_dim=len(feature_cols), embed_dim=64, device=DEVICE)
+    svdd.load(str(SVDD_MODEL_DIR))
+    print(f"XGBoost device: {XGB_DEVICE}  |  {len(feature_cols)} feature goc + {k_in} sphere-dist + 1 d_min")
+
+    results: dict = {"xgb_params": XGB_PARAMS, "k_chosen": k_chosen, "k_in": k_in,
+                      "monotone_augmented": XGB_MONOTONE_AUGMENTED,
+                      "monotone_n_constrained": (k_in + 1) if XGB_MONOTONE_AUGMENTED else 0,
+                      "scale_pos_divisor": XGB_SCALE_POS_DIVISOR,
+                      "zero_shot_per_label": {}, "known_attack_per_label": {}}
     print(f"Monotone constraint: {'BAT' if XGB_MONOTONE_AUGMENTED else 'TAT'} "
-          f"(chi ae_recon_error rang buoc don dieu; {BOTTLENECK_DIM} latent tu do)")
+          f"({k_in + 1} feature SVDD bi rang buoc don dieu tang)")
 
     # Phase 1: train tat ca 14 fold, chi thu threshold+proba tho, chua eval.
     raw_results: dict[str, dict] = {}
     for label in attack_labels:
         print(f"\n=== held-out = {label} ===")
-        raw_results[label] = train_one_label(label, feature_cols, ae_model, ae_scaler)
+        raw_results[label] = train_one_label(label, feature_cols, svdd, svdd_scaler, k_in)
 
     # Phase 2: tinh threshold trung binh tu 14 fold, danh gia lai CA 14 fold voi
     # CUNG 1 threshold nay (mo phong deployment thuc te chi co 1 nguong co dinh).

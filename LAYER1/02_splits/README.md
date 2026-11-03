@@ -1,4 +1,4 @@
-# 03_splits — split leave-one-attack-out (Protocol A)
+# 02_splits — split leave-one-attack-out (Protocol A)
 
 Một script duy nhất, `build_splits.py`, thay cho hai bước cũ (`03_splits/build_leave_one_out_splits.py`
 rồi `03_splits_v2/build_v2_from_v1.py`). Script cho ra **đúng từng byte** bộ split đang dùng để train

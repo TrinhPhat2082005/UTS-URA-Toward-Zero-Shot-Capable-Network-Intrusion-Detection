@@ -52,7 +52,7 @@ from sklearn.metrics import confusion_matrix, f1_score
 from sklearn.preprocessing import RobustScaler
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common.xgb_config_v4_new_data import XGB_PARAMS, XGB_SCALE_POS_DIVISOR  # noqa: E402
+from common.xgb_config import XGB_PARAMS, XGB_SCALE_POS_DIVISOR  # noqa: E402
 from models.clad.util.metrics import best_f1_threshold  # noqa: E402
 
 BASE_DIR = Path(__file__).resolve().parent.parent

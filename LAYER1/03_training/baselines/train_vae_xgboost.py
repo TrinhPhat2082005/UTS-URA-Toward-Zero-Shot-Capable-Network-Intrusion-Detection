@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from common.vae_config import VAE_PARAMS
-from common.xgb_config_v5_mono import (
+from common.xgb_config_mono import (
     XGB_PARAMS,
     XGB_SCALE_POS_DIVISOR,
     XGB_MONOTONE_AUGMENTED,

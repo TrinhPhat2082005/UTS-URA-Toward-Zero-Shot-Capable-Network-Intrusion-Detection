@@ -11,12 +11,13 @@ bên dưới).
 UTS_URA/
 ├── LAYER1/                    Layer 1, Protocol A (14 fold leave-one-attack-out) — Section 3.2–3.3
 │   ├── config/labels.json
-│   ├── 02_cleaning/           raw CSV → parquet đã làm sạch, theo nhãn
-│   ├── 03_splits/             split LOAO dùng trong paper (build_splits.py): benign 700K → 560K train / 140K val
-│   ├── 04_training_v2/        train XGBoost-only, AE-only, SVDD-only, CLAD, AE-XGBoost, SVDD-XGBoost
-│   │                          (mono, config common/xgb_config_v5_mono.py)
-│   ├── experiments/           đánh giá RQ1/RQ2 (ngưỡng theo ngân sách FPR, baseline mở rộng) — xem experiments/README.md
-│   └── output/                kết quả RQ1/RQ2
+│   ├── 01_cleaning/           raw CSV → parquet đã làm sạch, theo nhãn
+│   ├── 02_splits/             split LOAO dùng trong paper (build_splits.py): benign 700K → 560K train / 140K val
+│   ├── 03_training/           train XGBoost-only, AE-only, SVDD-only, CLAD, AE-XGBoost, SVDD-XGBoost
+│   │   │                      (config common/xgb_config.py, hybrid: common/xgb_config_mono.py)
+│   │   └── baselines/         code train các baseline mở rộng (baseline study)
+│   ├── 04_experiments/        đánh giá RQ1/RQ2: layer1_results.ipynb (bảng), layer1_extras.ipynb — xem 04_experiments/README.md
+│   └── output/                scores/ (cache điểm), tables/ (bảng, hình, verify, latency)
 │
 ├── LAYER2/                    Retrieval + VLM, Protocol B — Section 3.4–3.7
 │   ├── train_layer1.py        Layer 1 Protocol B, ngưỡng theo ngân sách FPR
@@ -34,7 +35,7 @@ UTS_URA/
 
 ## Tra từ paper sang code
 
-`LAYER1/experiments/README.md` (RQ1, RQ2) và `LAYER2/experiments/README.md` (RQ3–RQ5) liệt kê
+`LAYER1/04_experiments/README.md` (RQ1, RQ2) và `LAYER2/experiments/README.md` (RQ3–RQ5) liệt kê
 từng bảng của Section 5 cùng script và file output sinh ra nó.
 
 ## Biến môi trường
@@ -43,7 +44,7 @@ từng bảng của Section 5 cùng script và file output sinh ra nó.
 |---|---|---|
 | `UTS_DATA` | `data/` và `artifacts/` của LAYER2 | `D:\UTS_RS\workspace\LAYER2` |
 | `UTS_BENCH` | split và checkpoint Protocol A | `D:\UTS_RS\workspace\zeroshot_benchmark` |
-| `UTS_LAYER1_CODE` | `models/`, `common/` của Layer 1 | `<repo>\LAYER1\04_training_v2` |
+| `UTS_LAYER1_CODE` | `models/`, `common/` của Layer 1 | `<repo>\LAYER1\03_training` |
 | `UTS_RESULTS` | nơi ghi kết quả thí nghiệm RQ3–RQ5 | mặc định `LAYER2/output` |
 | `UTS_L1_RESULTS` | nơi ghi kết quả RQ1/RQ2 | mặc định `LAYER1/output` |
 

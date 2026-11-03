@@ -8,7 +8,8 @@ Chi doc checkpoint + CSV; ghi r3_full/<variant>__<label>.npz. Khong sua gi trong
     python LAYER2/experiments/rq3_retrieval/rq3b_novelty_build.py                          # 3 bien the cua paper
     python LAYER2/experiments/rq3_retrieval/rq3b_novelty_build.py --variants svdd_xgboost_bs
 svdd_xgboost_bs = SVDD-XGBoost cua baseline study (UTS_BASELINE_ART/svdd_xgboost, encoder svdd_only cua ho),
-ban duoc chon trong rq1_rq2_baselines/final_selection.py; diem benign train lay tu scores_svdd_xgboost.npz."""
+ban duoc chon trong bang Layer 1 (LAYER1/04_experiments/layer1_eval/tables.py, ROWS); diem benign train lay tu
+LAYER1/output/scores/baseline_svdd_xgboost.npz."""
 import argparse
 import sys
 from pathlib import Path
@@ -34,12 +35,13 @@ ap.add_argument("--variants", nargs="+", default=["xgboost_only", "ae_xgboost_mo
 VARS = ap.parse_args().variants
 BUDGETS = [0.004, 0.015]
 CLIP, K = 20.0, 10
-TB = dict(np.load(paths.OUT_L1 / "sweep_train_scores.npz"))  # tu rq1_rq2_layer1/02
+with np.load(paths.L1_SCORES / "paper.npz") as _z:            # diem benign train, tu LAYER1/04_experiments
+    TB = {k: _z[k] for k in _z.files if k.endswith("|tb")}
 BS = "svdd_xgboost_bs"
 if BS in VARS:
-    sys.path.insert(0, str(paths.L1_EXP / "rq1_rq2_baselines"))   # LAYER1/experiments
-    import baselines  # noqa: E402
-    _bs = np.load(paths.OUT_BASE / "scores_svdd_xgboost.npz")
+    sys.path.insert(0, str(paths.L1_EXP))                       # LAYER1/04_experiments
+    from layer1_eval import scorers  # noqa: E402
+    _bs = np.load(paths.L1_SCORES / "baseline_svdd_xgboost.npz")
     TB.update({k.replace("svdd_xgboost|", f"{BS}|"): _bs[k] for k in _bs.files if k.endswith("|tb")})
 
 
@@ -71,7 +73,7 @@ def build_input(var, lab, X):
     if var == "ae_xgboost_mono":
         return ae_aug(np.clip(ae_sc.transform(X), -CLIP, CLIP).astype("float32"))
     if var == BS:
-        Xs, d = baselines._svdd()(X)
+        Xs, d = scorers.svdd_encoder(scorers.ROOT["baseline-study"])(X)
         return np.concatenate([Xs, d, d.min(1, keepdims=True)], 1)
     Xs = np.clip(sv_sc.transform(X), -CLIP, CLIP)
     d = svdd.all_sphere_distances(Xs)

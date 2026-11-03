@@ -13,29 +13,42 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import confusion_matrix, f1_score
-from sklearn.preprocessing import RobustScaler
 
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
-from common.xgb_config_v4_new_data import XGB_PARAMS, XGB_SCALE_POS_DIVISOR  # noqa: E402
+from common.xgb_config_mono import (  # noqa: E402
+    XGB_PARAMS,
+    XGB_SCALE_POS_DIVISOR,
+    XGB_MONOTONE_AUGMENTED,
+    build_monotone_constraints,
+)
+from models.svdd import MixtureSVDD  # noqa: E402
 from models.clad.util.metrics import best_f1_threshold, threshold_by_fpr  # noqa: E402
 
 SPLITS_DIR = Path(os.environ.get("SPLITS_DIR", BASE_DIR / "data" / "CICIDS2018"))
 LABELS_CONFIG_PATH = Path(os.environ.get("LABELS_CONFIG_PATH", BASE_DIR / "config" / "labels.json"))
 
-ARTIFACTS_ROOT = BASE_DIR / "artifacts" / "xgboost_only"
+SVDD_ONLY_CKPT_DIR = BASE_DIR / "artifacts" / "svdd_only" / "checkpoint"
+SVDD_SCALER_PATH = SVDD_ONLY_CKPT_DIR / "scaler.pkl"
+SVDD_ELBOW_CACHE_PATH = SVDD_ONLY_CKPT_DIR / "elbow_cache.json"
+SVDD_MODEL_DIR = SVDD_ONLY_CKPT_DIR / "svdd_model"
+
+ARTIFACTS_ROOT = BASE_DIR / "artifacts" / "svdd_xgboost"
 METRICS_PATH = ARTIFACTS_ROOT / "metrics.json"
 
 SEED = 42
 np.random.seed(SEED)
 
+CLIP_VAL = 20.0
+
 try:
     import torch
-    XGB_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 except ImportError:
-    XGB_DEVICE = "cpu"
+    DEVICE = "cpu"
+XGB_DEVICE = DEVICE
 
 
 def load_split_csv(path: Path) -> pd.DataFrame:
@@ -67,20 +80,18 @@ def evaluate(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
 
 def evaluate_zero_shot(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     # test_zeroshot.csv la 100% attack (khong co Benign) nen f1/precision/fpr
-    # khong co y nghia thong ke that (fpr luon=0, precision luon=1 neu co bat
-    # ky TP nao) — accuracy o day chinh la recall ve mat toan hoc.
+    # khong co y nghia thong ke that — accuracy o day chinh la recall.
     acc = float((y_true == y_pred).mean())
     return {"accuracy": acc, "n_samples": int(len(y_true))}
 
 
-def train_one_label(label: str, feature_cols: list[str]) -> dict:
+def train_one_label(label: str, feature_cols: list[str], svdd: MixtureSVDD, svdd_scaler, k_in: int) -> dict:
     label_artifacts_dir = ARTIFACTS_ROOT / label
     images_dir = label_artifacts_dir / "images"
     ckpt_dir = label_artifacts_dir / "checkpoint"
     images_dir.mkdir(parents=True, exist_ok=True)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    scaler_path = ckpt_dir / "scaler.pkl"
     model_path = ckpt_dir / "model.pkl"
 
     train_df = load_split_csv(SPLITS_DIR / "by_label" / label / "train_benign_attack.csv")
@@ -94,31 +105,46 @@ def train_one_label(label: str, feature_cols: list[str]) -> dict:
     X_test_raw = test_df[feature_cols].values.astype("float32")
     y_test = test_df["Label"].values
 
-    if scaler_path.exists():
-        scaler = joblib.load(scaler_path)
-    else:
-        scaler = RobustScaler()
-        scaler.fit(X_train_raw)
-        joblib.dump(scaler, scaler_path)
+    X_train_xgb_s = np.clip(svdd_scaler.transform(X_train_raw), -CLIP_VAL, CLIP_VAL)
+    X_val_xgb_s = np.clip(svdd_scaler.transform(X_val_raw), -CLIP_VAL, CLIP_VAL)
+    X_test_xgb_s = np.clip(svdd_scaler.transform(X_test_raw), -CLIP_VAL, CLIP_VAL)
 
-    X_train_s = scaler.transform(X_train_raw)
-    X_val_s = scaler.transform(X_val_raw)
-    X_test_s = scaler.transform(X_test_raw)
+    dists_train = svdd.all_sphere_distances(X_train_xgb_s)
+    dists_val = svdd.all_sphere_distances(X_val_xgb_s)
+    dists_test = svdd.all_sphere_distances(X_test_xgb_s)
+
+    X_train_aug = np.concatenate([X_train_xgb_s, dists_train, dists_train.min(axis=1, keepdims=True)], axis=1)
+    X_val_aug = np.concatenate([X_val_xgb_s, dists_val, dists_val.min(axis=1, keepdims=True)], axis=1)
+    X_test_aug = np.concatenate([X_test_xgb_s, dists_test, dists_test.min(axis=1, keepdims=True)], axis=1)
 
     scale_pos = float((y_train == 0).sum()) / float((y_train == 1).sum())
+
+    # Monotone constraint: thu tu cot [78 goc | k_in sphere_dist | 1 d_min].
+    # Ca k_in sphere_dist LAN d_min co ngu nghia "cang xa vung benign => cang
+    # bat thuong" nen deu rang buoc +1; 78 feature goc giu tu do (0).
+    n_base = len(feature_cols)
+    mono = build_monotone_constraints(n_base=n_base, n_augmented_monotone=k_in + 1)
+    assert mono is None or len(mono) == X_train_aug.shape[1], (
+        f"monotone_constraints do dai {len(mono)} != so cot {X_train_aug.shape[1]}"
+    )
 
     if model_path.exists():
         model = joblib.load(model_path)
     else:
-        model = xgb.XGBClassifier(**XGB_PARAMS, scale_pos_weight=scale_pos / XGB_SCALE_POS_DIVISOR, device=XGB_DEVICE)
+        model = xgb.XGBClassifier(
+            **XGB_PARAMS,
+            scale_pos_weight=scale_pos / XGB_SCALE_POS_DIVISOR,
+            monotone_constraints=mono,
+            device=XGB_DEVICE,
+        )
         t0 = time.time()
-        model.fit(X_train_s, y_train, eval_set=[(X_val_s, y_val)], verbose=False)
+        model.fit(X_train_aug, y_train, eval_set=[(X_val_aug, y_val)], verbose=False)
         print(f"    Training time: {time.time()-t0:.1f}s")
         joblib.dump(model, model_path)
 
-    proba_train = model.predict_proba(X_train_s)[:, 1]
-    proba_val = model.predict_proba(X_val_s)[:, 1]
-    proba_test = model.predict_proba(X_test_s)[:, 1]
+    proba_train = model.predict_proba(X_train_aug)[:, 1]
+    proba_val = model.predict_proba(X_val_aug)[:, 1]
+    proba_test = model.predict_proba(X_test_aug)[:, 1]
 
     TARGET_FPR = float(os.environ.get("TARGET_FPR", 0.005))
     proba_train_benign = proba_train[y_train == 0]
@@ -131,19 +157,21 @@ def train_one_label(label: str, feature_cols: list[str]) -> dict:
     if not shap_path.exists():
         try:
             import shap
-            shap_idx = np.random.choice(len(X_val_s), min(2000, len(X_val_s)), replace=False)
+            augmented_feature_names = feature_cols + [f"svdd_dist_{k}" for k in range(k_in)] + ["svdd_dmin"]
+            shap_idx = np.random.choice(len(X_val_aug), min(2000, len(X_val_aug)), replace=False)
             explainer = shap.TreeExplainer(model)
-            shap_values = explainer.shap_values(X_val_s[shap_idx])
+            shap_values = explainer.shap_values(X_val_aug[shap_idx])
             mean_abs_shap = np.abs(shap_values).mean(axis=0)
             top15_idx = np.argsort(mean_abs_shap)[::-1][:15]
-            top15_features = [feature_cols[i] for i in top15_idx]
+            top15_features = [augmented_feature_names[i] for i in top15_idx]
+            colors = ["#e74c3c" if "svdd_" in f else "#3498db" for f in top15_features]
 
             fig, ax = plt.subplots(figsize=(9, 6))
-            ax.barh(range(len(top15_features)), mean_abs_shap[top15_idx][::-1], color="#3498db")
+            ax.barh(range(len(top15_features)), mean_abs_shap[top15_idx][::-1], color=colors[::-1])
             ax.set_yticks(range(len(top15_features)))
             ax.set_yticklabels(top15_features[::-1], fontsize=9)
             ax.set_xlabel("Mean |SHAP value|")
-            ax.set_title(f"XGBoost-only SHAP Top 15 — held-out={label}")
+            ax.set_title(f"SVDD+XGBoost SHAP Top 15 — held-out={label}\nRed = SVDD feature, Blue = original")
             ax.grid(axis="x", alpha=0.3)
             plt.tight_layout()
             plt.savefig(shap_path, dpi=150, bbox_inches="tight")
@@ -165,16 +193,41 @@ def main() -> None:
         labels_cfg = json.load(f)
     attack_labels = labels_cfg["attack_labels"]
 
+    assert SVDD_SCALER_PATH.exists() and SVDD_ELBOW_CACHE_PATH.exists(), (
+        f"SVDD checkpoint not found at {SVDD_ONLY_CKPT_DIR} — train the benign-only Mixture SVDD first."
+    )
+    print(f"Dang load SVDD checkpoint tu {SVDD_ONLY_CKPT_DIR} ...")
+    svdd_scaler = joblib.load(SVDD_SCALER_PATH)
+
+    with open(SVDD_ELBOW_CACHE_PATH, "r", encoding="utf-8") as f:
+        elbow_cache = json.load(f)
+    k_chosen = elbow_cache["k_chosen"]
+
     sample_df = load_split_csv(SPLITS_DIR / "by_label" / attack_labels[0] / "train_benign_attack.csv")
     feature_cols = get_feature_cols(sample_df)
-    print(f"XGBoost device: {XGB_DEVICE}  |  {len(feature_cols)} feature")
 
-    results: dict = {"xgb_params": XGB_PARAMS, "zero_shot_per_label": {}, "known_attack_per_label": {}}
+    encoder_files = sorted(SVDD_MODEL_DIR.glob("encoder_*.pt"))
+    k_in = len(encoder_files)
+    assert k_in > 0, f"No encoder found in {SVDD_MODEL_DIR}"
+
+    svdd = MixtureSVDD(K=k_in, input_dim=len(feature_cols), embed_dim=64, device=DEVICE)
+    svdd.load(str(SVDD_MODEL_DIR))
+    print(f"XGBoost device: {XGB_DEVICE}  |  {len(feature_cols)} feature goc + {k_in} sphere-dist + 1 d_min")
+
+    results: dict = {
+        "xgb_params": XGB_PARAMS, "k_chosen": k_chosen, "k_in": k_in,
+        "monotone_augmented": XGB_MONOTONE_AUGMENTED,
+        "monotone_n_constrained": (k_in + 1) if XGB_MONOTONE_AUGMENTED else 0,
+        "scale_pos_divisor": XGB_SCALE_POS_DIVISOR,
+        "zero_shot_per_label": {}, "known_attack_per_label": {},
+    }
+    print(f"Monotone constraint: {'BAT' if XGB_MONOTONE_AUGMENTED else 'TAT'} "
+          f"({k_in + 1} feature SVDD bi rang buoc don dieu tang)")
 
     raw_results: dict[str, dict] = {}
     for label in attack_labels:
         print(f"\n=== held-out = {label} ===")
-        raw_results[label] = train_one_label(label, feature_cols)
+        raw_results[label] = train_one_label(label, feature_cols, svdd, svdd_scaler, k_in)
 
     threshold_per_label = {label: float(r["threshold_from_train"]) for label, r in raw_results.items()}
     threshold_mean = float(np.mean(list(threshold_per_label.values())))

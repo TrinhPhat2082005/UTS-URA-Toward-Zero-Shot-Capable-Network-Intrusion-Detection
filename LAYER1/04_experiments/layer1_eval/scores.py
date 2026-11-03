@@ -5,8 +5,8 @@ Moi model co 4 phan diem cho moi fold, luu voi khoa "<key>|<fold>|<phan>":
     vb  benign cua val_binary    -> FPR thuc te
     va  attack cua val_binary    -> recall / F1 loai da biet
     zs  test_zeroshot            -> ZS-Acc
-Cache: model cua paper           -> OUT_L1/sweep_all_scores.npz (mot file chung, RQ3b cua LAYER2 cung doc file nay)
-       model cua baseline study  -> OUT_BASE/scores_<key>.npz
+Cache: model cua paper           -> OUT_SCORES/paper.npz (mot file chung, RQ3b cua LAYER2 cung doc file nay)
+       model cua baseline study  -> OUT_SCORES/baseline_<key>.npz
 Diem cua baseline study duoc ep float32, diem cua paper giu kieu goc, dung nhu luc tao cache: doi kieu co the
 lam lech cac flow nam dung tren nguong, va bang se khong con khop tung chu so.
 """
@@ -18,11 +18,11 @@ import numpy as np
 from . import data, paths, scorers
 
 PAPER, BASE = "paper", "baseline-study"
-PAPER_FILE = paths.OUT_L1 / "sweep_all_scores.npz"
+PAPER_FILE = paths.OUT_SCORES / "paper.npz"
 
 
 def cache_file(key, source):
-    return PAPER_FILE if source == PAPER else paths.OUT_BASE / f"scores_{key}.npz"
+    return PAPER_FILE if source == PAPER else paths.OUT_SCORES / f"baseline_{key}.npz"
 
 
 def load(key, source):

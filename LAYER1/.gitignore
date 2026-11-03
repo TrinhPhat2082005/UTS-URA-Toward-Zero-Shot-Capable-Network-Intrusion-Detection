@@ -1,16 +1,14 @@
 # Du lieu va checkpoint nam o workspace (zeroshot_benchmark/), khong commit
 01_raw_data/
-02_cleaning/clean_data/
-03_splits/by_label/
-03_splits/*.csv
-03_splits_v2/by_label/
-03_splits_v2/*.csv
-03_splits_v2/*.zip
-04_training_v2/artifacts/
+01_cleaning/clean_data/
+02_splits/by_label/
+02_splits/*.csv
+02_splits/*.zip
+03_training/artifacts/
 __pycache__/
 *.pyc
 
-# Ket qua thi nghiem Layer 1 (LAYER1/output): chi track bang ket qua chinh; file diem npz/npy nang
+# Ket qua thi nghiem Layer 1 (LAYER1/output): chi track bang ket qua chinh; file diem npz nang
 output/**
 !output/**/
-!output/rq1_rq2_layer1/layer1_tables.md
+!output/tables/layer1_tables.md

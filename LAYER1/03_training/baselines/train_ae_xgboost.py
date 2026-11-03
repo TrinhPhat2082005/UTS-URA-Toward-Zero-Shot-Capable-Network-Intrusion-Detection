@@ -11,44 +11,43 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import torch
 import xgboost as xgb
 from sklearn.metrics import confusion_matrix, f1_score
+from torch.utils.data import DataLoader, TensorDataset
 
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
-from common.xgb_config_v5_mono import (  # noqa: E402
+from common.xgb_config_mono import (  # noqa: E402
     XGB_PARAMS,
     XGB_SCALE_POS_DIVISOR,
     XGB_MONOTONE_AUGMENTED,
     build_monotone_constraints,
 )
-from models.svdd import MixtureSVDD  # noqa: E402
+from models.autoencoder import BenignAutoencoder  # noqa: E402
 from models.clad.util.metrics import best_f1_threshold, threshold_by_fpr  # noqa: E402
 
 SPLITS_DIR = Path(os.environ.get("SPLITS_DIR", BASE_DIR / "data" / "CICIDS2018"))
 LABELS_CONFIG_PATH = Path(os.environ.get("LABELS_CONFIG_PATH", BASE_DIR / "config" / "labels.json"))
 
-SVDD_ONLY_CKPT_DIR = BASE_DIR / "artifacts" / "svdd_only" / "checkpoint"
-SVDD_SCALER_PATH = SVDD_ONLY_CKPT_DIR / "scaler.pkl"
-SVDD_ELBOW_CACHE_PATH = SVDD_ONLY_CKPT_DIR / "elbow_cache.json"
-SVDD_MODEL_DIR = SVDD_ONLY_CKPT_DIR / "svdd_model"
+AE_ONLY_CKPT_DIR = BASE_DIR / "artifacts" / "ae_only" / "checkpoint"
+AE_SCALER_PATH = AE_ONLY_CKPT_DIR / "scaler.pkl"
+AE_MODEL_PATH = AE_ONLY_CKPT_DIR / "ae_best.pt"
 
-ARTIFACTS_ROOT = BASE_DIR / "artifacts" / "svdd_xgboost"
+ARTIFACTS_ROOT = BASE_DIR / "artifacts" / "ae_xgboost"
 METRICS_PATH = ARTIFACTS_ROOT / "metrics.json"
 
 SEED = 42
 np.random.seed(SEED)
+torch.manual_seed(SEED)
 
+BOTTLENECK_DIM = 16
 CLIP_VAL = 20.0
 
-try:
-    import torch
-    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-except ImportError:
-    DEVICE = "cpu"
-XGB_DEVICE = DEVICE
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+XGB_DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def load_split_csv(path: Path) -> pd.DataFrame:
@@ -85,7 +84,21 @@ def evaluate_zero_shot(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     return {"accuracy": acc, "n_samples": int(len(y_true))}
 
 
-def train_one_label(label: str, feature_cols: list[str], svdd: MixtureSVDD, svdd_scaler, k_in: int) -> dict:
+def get_ae_features(ae_model: BenignAutoencoder, X_ae_scaled: np.ndarray, batch_size: int = 4096) -> tuple[np.ndarray, np.ndarray]:
+    ae_model.eval()
+    loader = DataLoader(TensorDataset(torch.tensor(X_ae_scaled, dtype=torch.float32)), batch_size=batch_size, shuffle=False)
+    latents, errors = [], []
+    with torch.no_grad():
+        for (xb,) in loader:
+            xb = xb.to(DEVICE)
+            x_hat, z = ae_model(xb)
+            err = ((xb - x_hat) ** 2).mean(dim=1)
+            latents.append(z.cpu().numpy())
+            errors.append(err.cpu().numpy())
+    return np.concatenate(latents), np.concatenate(errors)
+
+
+def train_one_label(label: str, feature_cols: list[str], ae_model: BenignAutoencoder, ae_scaler) -> dict:
     label_artifacts_dir = ARTIFACTS_ROOT / label
     images_dir = label_artifacts_dir / "images"
     ckpt_dir = label_artifacts_dir / "checkpoint"
@@ -105,25 +118,29 @@ def train_one_label(label: str, feature_cols: list[str], svdd: MixtureSVDD, svdd
     X_test_raw = test_df[feature_cols].values.astype("float32")
     y_test = test_df["Label"].values
 
-    X_train_xgb_s = np.clip(svdd_scaler.transform(X_train_raw), -CLIP_VAL, CLIP_VAL)
-    X_val_xgb_s = np.clip(svdd_scaler.transform(X_val_raw), -CLIP_VAL, CLIP_VAL)
-    X_test_xgb_s = np.clip(svdd_scaler.transform(X_test_raw), -CLIP_VAL, CLIP_VAL)
+    X_train_xgb_s = np.clip(ae_scaler.transform(X_train_raw), -CLIP_VAL, CLIP_VAL)
+    X_val_xgb_s = np.clip(ae_scaler.transform(X_val_raw), -CLIP_VAL, CLIP_VAL)
+    X_test_xgb_s = np.clip(ae_scaler.transform(X_test_raw), -CLIP_VAL, CLIP_VAL)
 
-    dists_train = svdd.all_sphere_distances(X_train_xgb_s)
-    dists_val = svdd.all_sphere_distances(X_val_xgb_s)
-    dists_test = svdd.all_sphere_distances(X_test_xgb_s)
+    z_train, err_train = get_ae_features(ae_model, X_train_xgb_s)
+    z_val, err_val = get_ae_features(ae_model, X_val_xgb_s)
+    z_test, err_test = get_ae_features(ae_model, X_test_xgb_s)
 
-    X_train_aug = np.concatenate([X_train_xgb_s, dists_train, dists_train.min(axis=1, keepdims=True)], axis=1)
-    X_val_aug = np.concatenate([X_val_xgb_s, dists_val, dists_val.min(axis=1, keepdims=True)], axis=1)
-    X_test_aug = np.concatenate([X_test_xgb_s, dists_test, dists_test.min(axis=1, keepdims=True)], axis=1)
+    X_train_aug = np.concatenate([X_train_xgb_s, z_train, err_train.reshape(-1, 1)], axis=1)
+    X_val_aug = np.concatenate([X_val_xgb_s, z_val, err_val.reshape(-1, 1)], axis=1)
+    X_test_aug = np.concatenate([X_test_xgb_s, z_test, err_test.reshape(-1, 1)], axis=1)
 
     scale_pos = float((y_train == 0).sum()) / float((y_train == 1).sum())
 
-    # Monotone constraint: thu tu cot [78 goc | k_in sphere_dist | 1 d_min].
-    # Ca k_in sphere_dist LAN d_min co ngu nghia "cang xa vung benign => cang
-    # bat thuong" nen deu rang buoc +1; 78 feature goc giu tu do (0).
+    # Monotone constraint: thu tu cot [78 goc | 16 ae_latent | 1 ae_recon_error].
+    # Chi ae_recon_error bi rang buoc +1 (tai tao cang te => cang bat thuong);
+    # 16 ae_latent (toa do khong gian nen) va 78 feature goc giu tu do (0).
     n_base = len(feature_cols)
-    mono = build_monotone_constraints(n_base=n_base, n_augmented_monotone=k_in + 1)
+    mono = build_monotone_constraints(
+        n_base=n_base,
+        n_augmented_free=BOTTLENECK_DIM,
+        n_augmented_monotone=1,
+    )
     assert mono is None or len(mono) == X_train_aug.shape[1], (
         f"monotone_constraints do dai {len(mono)} != so cot {X_train_aug.shape[1]}"
     )
@@ -157,21 +174,21 @@ def train_one_label(label: str, feature_cols: list[str], svdd: MixtureSVDD, svdd
     if not shap_path.exists():
         try:
             import shap
-            augmented_feature_names = feature_cols + [f"svdd_dist_{k}" for k in range(k_in)] + ["svdd_dmin"]
+            augmented_feature_names = feature_cols + [f"ae_latent_{i}" for i in range(BOTTLENECK_DIM)] + ["ae_recon_error"]
             shap_idx = np.random.choice(len(X_val_aug), min(2000, len(X_val_aug)), replace=False)
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(X_val_aug[shap_idx])
             mean_abs_shap = np.abs(shap_values).mean(axis=0)
             top15_idx = np.argsort(mean_abs_shap)[::-1][:15]
             top15_features = [augmented_feature_names[i] for i in top15_idx]
-            colors = ["#e74c3c" if "svdd_" in f else "#3498db" for f in top15_features]
+            colors = ["#e74c3c" if "ae_" in f else "#3498db" for f in top15_features]
 
             fig, ax = plt.subplots(figsize=(9, 6))
             ax.barh(range(len(top15_features)), mean_abs_shap[top15_idx][::-1], color=colors[::-1])
             ax.set_yticks(range(len(top15_features)))
             ax.set_yticklabels(top15_features[::-1], fontsize=9)
             ax.set_xlabel("Mean |SHAP value|")
-            ax.set_title(f"SVDD+XGBoost SHAP Top 15 — held-out={label}\nRed = SVDD feature, Blue = original")
+            ax.set_title(f"AE+XGBoost SHAP Top 15 — held-out={label}\nRed = AE feature, Blue = original")
             ax.grid(axis="x", alpha=0.3)
             plt.tight_layout()
             plt.savefig(shap_path, dpi=150, bbox_inches="tight")
@@ -193,41 +210,35 @@ def main() -> None:
         labels_cfg = json.load(f)
     attack_labels = labels_cfg["attack_labels"]
 
-    assert SVDD_SCALER_PATH.exists() and SVDD_ELBOW_CACHE_PATH.exists(), (
-        f"SVDD checkpoint not found at {SVDD_ONLY_CKPT_DIR} — train the benign-only Mixture SVDD first."
+    assert AE_SCALER_PATH.exists() and AE_MODEL_PATH.exists(), (
+        f"AE checkpoint not found at {AE_ONLY_CKPT_DIR} — train the benign-only autoencoder first."
     )
-    print(f"Dang load SVDD checkpoint tu {SVDD_ONLY_CKPT_DIR} ...")
-    svdd_scaler = joblib.load(SVDD_SCALER_PATH)
-
-    with open(SVDD_ELBOW_CACHE_PATH, "r", encoding="utf-8") as f:
-        elbow_cache = json.load(f)
-    k_chosen = elbow_cache["k_chosen"]
+    print(f"Dang load AE checkpoint tu {AE_ONLY_CKPT_DIR} ...")
+    ae_scaler = joblib.load(AE_SCALER_PATH)
 
     sample_df = load_split_csv(SPLITS_DIR / "by_label" / attack_labels[0] / "train_benign_attack.csv")
     feature_cols = get_feature_cols(sample_df)
 
-    encoder_files = sorted(SVDD_MODEL_DIR.glob("encoder_*.pt"))
-    k_in = len(encoder_files)
-    assert k_in > 0, f"No encoder found in {SVDD_MODEL_DIR}"
-
-    svdd = MixtureSVDD(K=k_in, input_dim=len(feature_cols), embed_dim=64, device=DEVICE)
-    svdd.load(str(SVDD_MODEL_DIR))
-    print(f"XGBoost device: {XGB_DEVICE}  |  {len(feature_cols)} feature goc + {k_in} sphere-dist + 1 d_min")
+    ae_model = BenignAutoencoder(input_dim=len(feature_cols), bottleneck_dim=BOTTLENECK_DIM).to(DEVICE)
+    ae_model.load_state_dict(torch.load(AE_MODEL_PATH, map_location=DEVICE))
+    ae_model.eval()
+    print(f"XGBoost device: {XGB_DEVICE}  |  {len(feature_cols)} feature goc + {BOTTLENECK_DIM}+1 AE feature")
 
     results: dict = {
-        "xgb_params": XGB_PARAMS, "k_chosen": k_chosen, "k_in": k_in,
+        "xgb_params": XGB_PARAMS,
         "monotone_augmented": XGB_MONOTONE_AUGMENTED,
-        "monotone_n_constrained": (k_in + 1) if XGB_MONOTONE_AUGMENTED else 0,
+        "monotone_n_constrained": 1 if XGB_MONOTONE_AUGMENTED else 0,
+        "monotone_note": "chi ae_recon_error bi rang buoc; 16 ae_latent tu do",
         "scale_pos_divisor": XGB_SCALE_POS_DIVISOR,
         "zero_shot_per_label": {}, "known_attack_per_label": {},
     }
     print(f"Monotone constraint: {'BAT' if XGB_MONOTONE_AUGMENTED else 'TAT'} "
-          f"({k_in + 1} feature SVDD bi rang buoc don dieu tang)")
+          f"(chi ae_recon_error rang buoc don dieu; {BOTTLENECK_DIM} latent tu do)")
 
     raw_results: dict[str, dict] = {}
     for label in attack_labels:
         print(f"\n=== held-out = {label} ===")
-        raw_results[label] = train_one_label(label, feature_cols, svdd, svdd_scaler, k_in)
+        raw_results[label] = train_one_label(label, feature_cols, ae_model, ae_scaler)
 
     threshold_per_label = {label: float(r["threshold_from_train"]) for label, r in raw_results.items()}
     threshold_mean = float(np.mean(list(threshold_per_label.values())))

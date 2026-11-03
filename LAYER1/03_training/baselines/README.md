@@ -3,7 +3,7 @@
 Training scripts of the extended Layer 1 baselines (Protocol A, 14 leave-one-attack-out folds),
 written and run by the teammates who produced the baseline checkpoints. Kept here as the record
 of how those checkpoints were trained; they are scored and compared by
-`LAYER1/experiments/layer1_eval/` (notebook `LAYER1/experiments/layer1_results.ipynb`).
+`LAYER1/04_experiments/layer1_eval/` (notebook `LAYER1/04_experiments/layer1_results.ipynb`).
 
 | Script | Model | Checkpoint folder (`UTS_BASELINE_ART`) |
 |---|---|---|
@@ -22,12 +22,12 @@ of how those checkpoints were trained; they are scored and compared by
 Notes for reuse:
 
 - The scripts expect the layout of the original project: `config/labels.json`, `common/`
-  (XGBoost configs, also in `LAYER1/`), `models/` (autoencoder, SVDD, CLAD as in `LAYER1/`, plus a
+  (XGBoost configs, = `LAYER1/03_training/common/`), `models/` (autoencoder, SVDD, CLAD as in `LAYER1/03_training/models/`, plus a
   VAE module and `models/clad/util/metrics.threshold_by_fpr`, not included here) and
   `data/CICIDS2018/by_label/<fold>/` (= `03_splits_v2/by_label`, override with `SPLITS_DIR`).
 - Their own thresholds differ by model (mean of per-fold benign-train quantiles at 0.5% for the
   XGBoost family, LightGBM, k-NN; per-fold quantile for Random Forest and SVM; F1-max on
   `val_binary` for CLAD). The reported comparison re-thresholds every model with one rule; see
-  `LAYER1/experiments/README.md`.
+  `LAYER1/04_experiments/README.md`.
 - `train_vae_xgboost.py` uses its own XGBoost settings (`max_depth=5`, `min_child_weight=10`,
-  `colsample_bytree=1.0`, `reg_alpha=1.0`); the other XGBoost models share `common/xgb_config_v5_mono.py`.
+  `colsample_bytree=1.0`, `reg_alpha=1.0`); the other XGBoost models share `common/xgb_config_mono.py`.

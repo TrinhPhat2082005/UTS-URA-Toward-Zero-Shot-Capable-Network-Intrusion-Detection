@@ -1,8 +1,8 @@
 """Moi model Layer 1: checkpoint -> ham score(X), X = 78 feature CICFlowMeter tho, diem cao = attack.
 
 Hai bo checkpoint, cung bo cuc thu muc:
-    "paper"           paths.L1_ART    run cua paper (04_training_v2)
-    "baseline-study"  paths.BASE_ART  run cua teammate (LAYER1/baseline_study)
+    "paper"           paths.L1_ART    run cua paper (LAYER1/03_training)
+    "baseline-study"  paths.BASE_ART  run cua teammate (LAYER1/03_training/baselines)
         <dir>/<fold>/checkpoint/...   model train rieng moi fold
         <dir>/checkpoint/...          model one-class, mot checkpoint cho ca 14 fold
 Tien xu ly giong luc train: moi model dung scaler cua chinh no; XGBoost-only, LightGBM, KNN, SVM,

@@ -6,7 +6,7 @@ Mac dinh: alpha = 0.4% va 1.5%, nguong rieng tung fold (nhu paper).
 Ngan sach / quy tac khac (alert da luu o nguong thap nhat cua build, nen chi can alpha <= 1.5%):
     python LAYER2/experiments/rq3_retrieval/rq3b_novelty_score.py --alpha 0.005 --rule meanfold
   meanfold = trung binh 14 nguong Q_(1-alpha) cua benign train, mot nguong cho moi fold
-  (quy tac cua rq1_rq2_baselines/final_selection.py). Output: R3_full_tables_alpha0.5_meanfold.md"""
+  (quy tac cua bang Layer 1, LAYER1/04_experiments/layer1_eval/tables.py). Output: R3_full_tables_alpha0.5_meanfold.md"""
 import argparse
 import sys
 from pathlib import Path
@@ -25,14 +25,14 @@ from shap_knn_retriever import LABEL_TO_PROFILE_ID  # noqa: E402
 PROF = paths.PROFILES
 TAC = {l: json.loads((PROF / f"{p}.json").read_text(encoding="utf-8"))["mitre_tactic"]
        for l, p in LABEL_TO_PROFILE_ID.items() if (PROF / f"{p}.json").exists()}
-S = dict(np.load(paths.OUT_L1 / "sweep_all_scores.npz"))  # tu rq1_rq2_layer1/03
+S = dict(np.load(paths.L1_SCORES / "paper.npz"))  # diem 6 model paper, tu LAYER1/04_experiments
 VARS = ["xgboost_only", "ae_xgboost_mono", "svdd_xgboost_mono"]
 NAME = {"xgboost_only": "XGBoost-only", "ae_xgboost_mono": "AE-XGBoost", "svdd_xgboost_mono": "SVDD-XGBoost",
         "svdd_xgboost_bs": "SVDD-XGBoost (baseline study)"}
-# SVDD-XGBoost cua baseline study (rq3b_novelty_build.py --variants svdd_xgboost_bs), diem tu rq1_rq2_baselines
+# SVDD-XGBoost cua baseline study (rq3b_novelty_build.py --variants svdd_xgboost_bs), diem tu LAYER1/output/scores
 if any((paths.OUT_RQ3B / "r3_full").glob("svdd_xgboost_bs__*.npz")):
     VARS.append("svdd_xgboost_bs")
-    _bs = np.load(paths.OUT_BASE / "scores_svdd_xgboost.npz")
+    _bs = np.load(paths.L1_SCORES / "baseline_svdd_xgboost.npz")
     S.update({k.replace("svdd_xgboost|", "svdd_xgboost_bs|"): _bs[k] for k in _bs.files})
 TW = {"DoS_attacks_SlowHTTPTest", "FTP_BruteForce"}
 KEYS = [("full", "SHAP day du"), ("b78", "SHAP 78"), ("raw", "Feature tho")]

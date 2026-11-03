@@ -10,7 +10,7 @@ Cau hinh cua bang (ROWS):
     lam feature cho XGBoost; dung mot minh thi yeu, nen dat canh dang hybrid cua no.
   - OptiForest cham bang code cua tac gia (UTS_OPTIFOREST), xem scores._compute_optiforest.
 
-Trong notebook: results[role] = tables.run(role) cho moi dong, roi tables.write_final(results) ghi OUT_FINAL/:
+Trong notebook: results[role] = tables.run(role) cho moi dong, roi tables.write_final(results) ghi OUT_TABLES/:
     table_main.csv       moi model mot dong o ALPHA_TABLE (+ pAUC, latency)        -> bang tren slide
     curve.csv            ZS-Acc va FPR thuc te cua cac model CURVE o ALPHA_GRID    -> hinh ZS-Acc theo alpha
     thresholds_main.csv  nguong ap dung o tung fold tai ALPHA_TABLE, kem FPR / recall / ZS-Acc cua fold
@@ -138,12 +138,12 @@ def _versions():
     return out
 
 
-def write_final(results, out=paths.OUT_FINAL):
+def write_final(results, out=paths.OUT_TABLES):
     """Ghi bang cuoi cung tu results = {role: run(role)} cua du 14 dong."""
     missing = [role for role in ROW if role not in results]
     assert not missing, f"chua chay cac dong: {missing}"
     out = paths.ensure(out)
-    lat_file = paths.OUT_BASE / "baseline_latency.json"
+    lat_file = paths.OUT_TABLES / "latency.json"
     lat = json.loads(lat_file.read_text(encoding="utf-8")) if lat_file.exists() else {}
 
     main_rows, curve_rows, thr_rows = [], [], []

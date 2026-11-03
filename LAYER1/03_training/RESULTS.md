@@ -128,7 +128,7 @@ cây sai vì các feature gốc đi kèm không khớp pattern đã học → b�
 ### 4.3. Thử sửa bằng Monotonic Constraint — cải thiện rất nhỏ, không đủ
 
 Ép ràng buộc đơn điệu (`monotone_constraints`, XGBoost API): feature augmented tăng →
-P(attack) không được giảm. Xem `common/xgb_config_v5_mono.py`,
+P(attack) không được giảm. Xem `common/xgb_config_mono.py`,
 `train_ae_xgboost_mono.py`, `train_svdd_xgboost_mono.py`.
 
 | Model | ZS-F1 base | ZS-F1 mono | Δ | KA-F1 | KA-FPR |
@@ -185,7 +185,7 @@ chỉnh. Hai hướng khả thi còn lại (chưa triển khai, xem
 
 ## 5. Ghi chú phương pháp
 
-- **XGBoost config**: `common/xgb_config_v4_new_data.py` — kiến trúc giống v1
+- **XGBoost config**: `common/xgb_config.py` — kiến trúc giống v1
   (`n_estimators=500, max_depth=6, learning_rate=0.03`, regularization đầy đủ), CHỈ khác
   `XGB_SCALE_POS_DIVISOR=2.0` (khôi phục chia đôi `scale_pos_weight` — v1 dùng 1.0 vì tỷ
   lệ lớp gần 1:1, nhưng v2 có tỷ lệ benign thật ~5:1 nên cần chia bớt để không lệch quá
@@ -212,10 +212,10 @@ chỉnh. Hai hướng khả thi còn lại (chưa triển khai, xem
 ## 6. File liên quan
 
 ```
-04_training_v2/
+03_training/
 ├── common/
-│   ├── xgb_config_v4_new_data.py    # config chính (divisor=2.0)
-│   └── xgb_config_v5_mono.py        # + monotone constraint
+│   ├── xgb_config.py    # config chính (divisor=2.0)
+│   └── xgb_config_mono.py        # + monotone constraint
 ├── train_xgboost_only.py            # baseline, không augment
 ├── train_ae_only.py / train_svdd_only.py
 ├── train_ae_xgboost.py / train_svdd_xgboost.py

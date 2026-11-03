@@ -2,16 +2,16 @@
 
 Đánh giá Layer 1 trên Protocol A (14 fold leave-one-attack-out). Code ở đây **không train lại**:
 nó nạp checkpoint đã có, chấm điểm, rồi áp ngưỡng theo ngân sách FPR. Ngưỡng in trong các script
-`04_training_v2/train_*.py` (F1-max trên val) chỉ để tham khảo, không phải ngưỡng của paper.
+`03_training/train_*.py` (F1-max trên val) chỉ để tham khảo, không phải ngưỡng của paper.
 
 ## Chạy
 
 | Notebook | Kết quả |
 |---|---|
-| `layer1_results.ipynb` | Mỗi cell một model, in một dòng của bảng RQ1/RQ2 trên slide và bảng từng fold của model đó. Cell cuối ghi `output/rq1_rq2_baselines/final/`: `table_main.csv`, `curve.csv`, `thresholds_main.csv`, `final_results.md`, `manifest.json` |
-| `layer1_extras.ipynb` | `verify.md` (tái hiện đánh giá của từng người train), so sánh hai run train, `rq1_rq2_layer1/layer1_tables.md` (6 model của paper, ngưỡng riêng từng fold), hình `final/zs_vs_alpha.pdf`, latency `baseline_latency.json` |
+| `layer1_results.ipynb` | Mỗi cell một model, in một dòng của bảng RQ1/RQ2 trên slide và bảng từng fold của model đó. Cell cuối ghi `output/tables/`: `table_main.csv`, `curve.csv`, `thresholds_main.csv`, `final_results.md`, `manifest.json` |
+| `layer1_extras.ipynb` | `verify.md` (tái hiện đánh giá của từng người train), so sánh hai run train, `tables/layer1_tables.md` (6 model của paper, ngưỡng riêng từng fold), hình `tables/zs_vs_alpha.pdf`, latency `tables/latency.json` |
 
-Chạy `layer1_results.ipynb` trước, vì hình trong `layer1_extras.ipynb` đọc `final/curve.csv`.
+Chạy `layer1_results.ipynb` trước, vì hình trong `layer1_extras.ipynb` đọc `tables/curve.csv`.
 Mặc định điểm được đọc từ cache trong `output/`. Đặt `RECOMPUTE = True` để chấm lại từ checkpoint,
 mất từ vài phút đến vài chục phút mỗi model; OptiForest mất khoảng 25 phút. Chạy bằng conda env `ai_env`.
 
@@ -51,7 +51,7 @@ mất từ vài phút đến vài chục phút mỗi model; OptiForest mất kho
 `extras.checkpoint_runs()` so sánh hai run của sáu model có ở cả hai. Train lại encoder AE/SVDD trên máy
 khác cho trọng số khác (GPU không tất định; K-Means cũng khác giữa scikit-learn 1.8 và 1.9), và ZS-Acc
 của các hybrid khi đó dịch tới khoảng 0.05, chủ yếu qua vài fold như DDOS_attack_HOIC.
-Code train của baseline study nằm ở `LAYER1/baseline_study/`.
+Code train của baseline study nằm ở `LAYER1/03_training/baselines/`.
 
 ## Các model được dựng lại
 
@@ -72,9 +72,9 @@ nên không kiểm theo cách này.
 
 ## Cache và tái lập
 
-- Điểm của các model của paper nằm trong `output/rq1_rq2_layer1/sweep_all_scores.npz` (một file chung;
+- Điểm của các model của paper nằm trong `output/scores/paper.npz` (một file chung;
   RQ3b của LAYER2 cũng đọc file này) và giữ kiểu dữ liệu gốc. Điểm của baseline study nằm trong
-  `output/rq1_rq2_baselines/scores_<model>.npz`, ép float32. Đổi kiểu dữ liệu có thể làm lệch các flow nằm
+  `output/scores/baseline_<model>.npz`, ép float32. Đổi kiểu dữ liệu có thể làm lệch các flow nằm
   đúng trên ngưỡng.
 - `thresholds_main.csv` lưu ngưỡng chính xác (`repr`) của mọi model ở mọi fold, kèm FPR, recall và ZS-Acc của fold.
   `manifest.json` lưu phiên bản code, phiên bản thư viện, MD5 của mọi checkpoint và mọi file điểm.
@@ -91,8 +91,12 @@ nên không kiểm theo cách này.
 |---|---|---|
 | `UTS_WS` | cha của repo (`workspace/`) | Thư mục gốc workspace |
 | `UTS_BENCH` | `$UTS_WS/zeroshot_benchmark` | Split `03_splits_v2` và checkpoint Protocol A |
-| `UTS_LAYER1_CODE` | `LAYER1/04_training_v2` | `models/`, `common/` của Layer 1 |
+| `UTS_LAYER1_CODE` | `LAYER1/03_training` | `models/`, `common/` của Layer 1 |
 | `UTS_LAYER1_ART` | `$UTS_BENCH/04_training_v2/artifacts` | Checkpoint 14 fold của paper |
 | `UTS_BASELINE_ART` | `$UTS_WS/baselines_friends/artifacts` | Checkpoint của baseline study |
 | `UTS_OPTIFOREST` | `<cha của workspace>/isolation_forest` | Thư mục chứa package `detectors/` của OptIForest |
 | `UTS_L1_RESULTS` | `LAYER1/output` | Nơi ghi kết quả |
+
+Thư mục dữ liệu trong `zeroshot_benchmark/` giữ tên cũ (`02_cleaning/clean_data`, `03_splits_v2`,
+`04_training_v2/artifacts`): mọi checkpoint đã được train từ đó, và các dataset Kaggle cũng dùng đúng các tên này.
+Code đọc chúng qua các biến môi trường ở bảng trên.

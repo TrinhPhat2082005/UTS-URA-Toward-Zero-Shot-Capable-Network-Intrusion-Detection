@@ -4,7 +4,7 @@ Build split leave-one-attack-out (Protocol A) — MOT script duy nhat, thay cho 
 Cho ra dung tung byte bo split dang dung de train checkpoint (zeroshot_benchmark/03_splits_v2/):
 cuoi script so sha256 voi split_manifest_reference.json (manifest goc, sinh tren Kaggle).
 
-Input : <UTS_BENCH>/02_cleaning/clean_data/by_label/<label>.parquet   (output cua 02_cleaning)
+Input : <UTS_BENCH>/02_cleaning/clean_data/by_label/<label>.parquet   (output cua LAYER1/01_cleaning/clean_and_relabel.ipynb)
         config/labels.json
 Output: <UTS_BENCH>/03_splits_v2/
           train_benign_only.csv            benign train pool (560,000 dong) — train AE/SVDD/CLAD
@@ -96,7 +96,7 @@ def read_parquet_sample(path: Path, n: int, seed: int) -> pd.DataFrame:
 def load_capped(path: Path, cap: int, always_sample: bool) -> tuple[pd.DataFrame, int]:
     """Cap mot nhan. v1 (attack, benign 100K) chi sample khi vuot cap; v2 (benign 700K) luon
     sample min(cap, n) — giu dung ca hai hanh vi de ket qua khop byte."""
-    assert path.exists(), f"Khong tim thay {path} — chay 02_cleaning/clean_and_relabel.ipynb truoc."
+    assert path.exists(), f"Khong tim thay {path} — chay LAYER1/01_cleaning/clean_and_relabel.ipynb truoc."
     n_before = pq.ParquetFile(path).metadata.num_rows
     if always_sample or n_before > cap:
         df = read_parquet_sample(path, min(cap, n_before), RANDOM_SEED)
