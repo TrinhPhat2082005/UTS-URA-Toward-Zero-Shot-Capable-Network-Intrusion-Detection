@@ -8,8 +8,10 @@ CHAY:  python LAYER2/experiments/rq3_retrieval/02_calibrate_novelty.py          
   tau_zd = Q_0.95 cua s tren alert da biet giu ngoai R: moi alert TP tren val_full o nguong
            van hanh cua Layer 1 (R chi chua flow attack cua train_full).
 
-Ghi vao artifacts/shap_pool_<variant>.meta.json, khoa "novelty" (retriever doc khi tau_zd=None).
-Fold LOAO (Setup 2) hieu chinh rieng tren alert da biet cua val_binary tung fold.
+Ghi vao meta cua tap R (reference_sets/protocol_b/<variant>.meta.json), khoa "novelty"
+(retriever doc khi tau_zd=None; quy tac co o retrieval/novelty.py).
+Fold LOAO (Setup 2) hieu chinh rieng tren alert da biet cua val_binary tung fold
+(reference_sets/protocol_a/<fold>/<variant>.meta.json).
 """
 from __future__ import annotations
 
@@ -27,10 +29,11 @@ import paths  # noqa: E402
 
 paths.use_layer2_code()
 import config     # noqa: E402
-import pipeline   # noqa: E402
-from shap_knn_retriever import SHAPKNNRetriever  # noqa: E402
+from layer1.engine import Layer1Engine            # noqa: E402
+from retrieval import novelty, reference_set      # noqa: E402
+from retrieval.retriever import SHAPKNNRetriever  # noqa: E402
 
-QUANTILE = 0.95
+QUANTILE = novelty.QUANTILE
 
 
 def known_alerts(l1, thr):
@@ -56,15 +59,15 @@ def calibrate_loao(variant, alpha):
     (output/rq3b_novelty/r3_full/<variant>__<fold>.npz), nen chi can lay phan vi.
     Cung quy uoc voi Detect@5% trong tab:res-novelty (np.quantile mac dinh).
     """
-    for meta_path in sorted(paths.LOAO_POOLS.glob(f"*/shap_pool_{variant}.meta.json")):
-        fold = meta_path.parent.name
+    for fold, npz in reference_set.protocol_a_folds(variant):
+        meta_path = novelty.meta_path(npz)
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         thr = float(meta["layer1_thresholds_by_alpha"][alpha])
         D = np.load(paths.OUT_RQ3B / "r3_full" / f"{variant}__{fold}.npz", allow_pickle=True)
         j = [f"{b:.3f}" for b in D["thr_budgets"]].index(alpha)
         assert abs(float(D["thr_values"][j]) - thr) < 1e-6, f"{fold}: nguong r3_full != nguong pool"
         s = D["s_full_known"][D["p_known"] >= thr]
-        tau = float(np.quantile(s, QUANTILE))
+        tau = novelty.calibrate_tau(s, QUANTILE)
         meta["novelty"] = {
             "score": f"mean L2 distance to the {config.RAG_NOVELTY_K} nearest reference vectors",
             "k": config.RAG_NOVELTY_K, "quantile": QUANTILE, "tau_zd": tau, "alpha": float(alpha),
@@ -92,16 +95,16 @@ def main():
 
     for v in args.variants or ["ae_xgboost", "svdd_xgboost"]:
         t0 = time.time()
-        npz = Path(config.ARTIFACTS_DIR) / f"shap_pool_{v}.npz"
-        l1 = pipeline.Layer1Engine(v)
+        npz = reference_set.protocol_b_path(v)
+        l1 = Layer1Engine(v)
         Q = known_alerts(l1, config.layer1_threshold(v))
         l1 = None
         ret = SHAPKNNRetriever(str(npz), config.ATTACK_PROFILES_DIR, tau_zd=float("inf"),
                                k=config.RAG_NOVELTY_K)
         s = ret.novelty_scores(Q, chunk=16)
-        tau = float(np.quantile(s, QUANTILE))
+        tau = novelty.calibrate_tau(s, QUANTILE)
 
-        meta_path = npz.with_suffix(".meta.json")
+        meta_path = novelty.meta_path(npz)
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         meta["novelty"] = {
             "score": f"mean L2 distance to the {config.RAG_NOVELTY_K} nearest reference vectors",

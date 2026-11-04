@@ -1,9 +1,9 @@
 """
 Train Layer 1 cho thi nghiem Layer 2 — 2 bien the XGBoost tang cuong.
 
-CHAY:  python train_layer1.py            # ca AE lan SVDD
-       python train_layer1.py --only ae
-       python train_layer1.py --only svdd
+CHAY:  python LAYER2/layer1/train.py            # ca AE lan SVDD
+       python LAYER2/layer1/train.py --only ae
+       python LAYER2/layer1/train.py --only svdd
 
 CHUOI 4 BUOC
 ------------
@@ -12,8 +12,8 @@ CHUOI 4 BUOC
   3. Dung AE/SVDD sinh feature tang cuong.
   4. Train XGBoost tren [78 feature goc | feature tang cuong] (GPU).
 
-Kien truc encoder lay tu zeroshot_benchmark/04_training_v2/ (models/autoencoder.py,
-models/svdd.py). Config XGBoost lay TRUC TIEP tu LAYER1/03_training/common/xgb_config_mono.py
+Kien truc encoder lay tu layer1/models/ (autoencoder.py, svdd.py; giong het
+LAYER1/03_training/models). Config XGBoost lay TRUC TIEP tu LAYER1/03_training/common/xgb_config_mono.py
 (ban Layer 1 cuoi cung): cung tham so cay + rang buoc DON DIEU TANG tren feature
 augmented co ngu nghia "cang lon cang bat thuong" (AE: ae_recon_error; SVDD: K
 sphere dist + d_min). Bo cuc rang buoc giong het LAYER1/03_training/train_{ae,svdd}_xgboost_mono.py.
@@ -60,21 +60,21 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import RobustScaler
 from torch.utils.data import DataLoader, TensorDataset
 
-HERE = Path(__file__).resolve().parent
-WS = HERE.parent
-BENCH = WS / "zeroshot_benchmark" / "04_training_v2"
+LAYER2 = Path(__file__).resolve().parents[1]
+WS = LAYER2.parent
 
-sys.path.insert(0, str(BENCH))
-from models.autoencoder import BenignAutoencoder            # noqa: E402
-from models.svdd import MixtureSVDD                          # noqa: E402
+sys.path.insert(0, str(LAYER2))
+import config                                                    # noqa: E402
+from layer1.models.autoencoder import BenignAutoencoder          # noqa: E402
+from layer1.models.svdd import MixtureSVDD                       # noqa: E402
 
 
 def _load_layer1_config():
     """Nap common/xgb_config_mono.py cua Layer 1 (cung config da train 14 fold
     LOAO) theo duong dan file.
 
-    Khong import kieu `common.xxx` vi zeroshot_benchmark/04_training_v2 cung co
-    package ten `common` (da nam tren sys.path) -> trung ten.
+    Khong import kieu `common.xxx`: ban repo va ban zeroshot_benchmark deu co
+    package ten `common`, import theo ten de nham ban.
     Tim theo thu tu: UTS_LAYER1_CODE, repo (LAYER1/03_training, chay tu repo hoac tu
     workspace), roi ban sao trong zeroshot_benchmark/04_training_v2 (giu ten cu
     xgb_config_v5_mono.py).
@@ -101,9 +101,9 @@ ALPHAS = [0.001, 0.002, 0.004, 0.008, 0.010, 0.015, 0.020, 0.030]
 OPERATING_ALPHA = 0.004
 
 # --------------------------------------------------------------------------
-TRAIN_CSV = HERE / "data" / "train_full.csv"
-VAL_CSV = HERE / "data" / "val_full.csv"
-OUT = HERE / "artifacts" / "layer1"
+TRAIN_CSV = Path(config.TRAIN_FULL_CSV)
+VAL_CSV = Path(config.VAL_BINARY_CSV)
+OUT = Path(config.ARTIFACTS_DIR) / "layer1"
 
 SEED = 42
 CLIP_VAL = 20.0

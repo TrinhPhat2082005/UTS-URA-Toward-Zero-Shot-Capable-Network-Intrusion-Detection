@@ -21,7 +21,7 @@ from scipy.stats import wilcoxon
 HERE = paths.ensure(paths.OUT_RQ3B)
 F = HERE / "r3_full"
 paths.use_layer2_code()
-from shap_knn_retriever import LABEL_TO_PROFILE_ID  # noqa: E402
+from knowledge_base.profiles import LABEL_TO_PROFILE_ID  # noqa: E402
 PROF = paths.PROFILES
 TAC = {l: json.loads((PROF / f"{p}.json").read_text(encoding="utf-8"))["mitre_tactic"]
        for l, p in LABEL_TO_PROFILE_ID.items() if (PROF / f"{p}.json").exists()}

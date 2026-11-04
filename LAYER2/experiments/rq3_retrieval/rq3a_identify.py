@@ -2,10 +2,10 @@
 RQ3a — nhan dien loai tan cong da biet (paper: Section 5.3.1, Table tab:res-ident).
 
 Protocol B: query = moi alert TP tren val_full o nguong van hanh cua Layer 1; tap tham
-chieu R = shap_pool_<variant>.npz (moi flow attack cua train_full, 122,090 vector).
+chieu R = reference_sets/protocol_b/<variant>.npz (moi flow attack cua train_full, 122,090 vector).
 Ba luat tren cung tap alert, cho hai khoa (vector SHAP / 78 feature da scale):
 
-  l2      luat cua pipeline (Eq. type-dist, shap_knn_retriever.py): d_l = min L2 toi R_l,
+  l2      luat cua pipeline (Eq. type-dist, retrieval/retriever.py): d_l = min L2 toi R_l,
           top-3 = 3 loai co d_l nho nhat                       -> Top-1, Hit@3, Technique
   cosine  baseline: S_l = max cosine toi R_l                    -> Top-1, Technique
   vote    baseline: da so phieu trong 10 lang gieng L2           -> Top-1, Technique,
@@ -20,7 +20,7 @@ Output: output/rq3a_identify/rq3a_<variant>.json
 
 Ngan sach FPR khac nguong van hanh (mac dinh: "threshold" cua metrics.json, alpha = 0.4%):
     python LAYER2/experiments/rq3_retrieval/rq3a_identify.py ae_xgboost --alpha 0.005   (x2 nhu tren)
-  tau = Q_(1-alpha) (method="higher") cua p tren benign cua TRAIN, nhu train_layer1.py; lay tu
+  tau = Q_(1-alpha) (method="higher") cua p tren benign cua TRAIN, nhu layer1/train.py; lay tu
   thresholds_by_alpha neu co, neu khong thi tinh lai. Output: cache/rq3a_<variant>_alpha0.5.*
 Luon ghi them tau_zd = Q_0.95 cua s(q) (TB L2 toi 10 NN, khoa SHAP) tren cung tap alert,
 dung cach hieu chinh cua 02_calibrate_novelty.py (khong ghi vao meta cua pipeline).
@@ -40,7 +40,8 @@ import paths  # noqa: E402
 
 paths.use_layer2_code()
 import config  # noqa: E402
-from shap_knn_retriever import LABEL_TO_PROFILE_ID  # noqa: E402
+from knowledge_base.profiles import LABEL_TO_PROFILE_ID  # noqa: E402
+from retrieval import reference_set  # noqa: E402
 
 K = 10
 OUT = paths.ensure(paths.OUT_RQ3A)
@@ -74,8 +75,8 @@ def layer1_tau(v, l1, f, alpha):
 
 def build_cache(v, cache, alpha=None):
     """SHAP + feature da scale cua alert TP va cua R. Khong cham gi o buoc nay."""
-    import pipeline
-    l1 = pipeline.Layer1Engine(v)
+    from layer1.engine import Layer1Engine
+    l1 = Layer1Engine(v)
     cols = list(pd.read_csv(config.VAL_BINARY_CSV, nrows=0).columns)
     f = l1.base_feature_columns(pd.DataFrame(columns=cols))
     tau = layer1_tau(v, l1, f, alpha)
@@ -89,7 +90,7 @@ def build_cache(v, cache, alpha=None):
     X = None
     gc.collect()
 
-    npz = np.load(Path(config.ARTIFACTS_DIR) / f"shap_pool_{v}.npz", allow_pickle=True)
+    npz = np.load(reference_set.protocol_b_path(v), allow_pickle=True)
     keys = [k for k in npz.files if k.startswith("label__")]
     labs = np.array([k[len("label__"):] for k in keys])
     sizes = np.array([len(npz[k]) for k in keys])

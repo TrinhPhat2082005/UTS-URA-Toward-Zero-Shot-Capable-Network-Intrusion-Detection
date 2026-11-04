@@ -176,11 +176,59 @@ PROMPT_VARIANTS = {
 DEFAULT_VARIANT = "neutral"
 
 
+def format_retrieval_context(retrieval_result: dict, k: int, tau_zd, unknown_profile: dict) -> str:
+    """Context block: three candidate profiles, nearest first, each labelled with its
+    attack type and distance. Every alert gets the novelty score as a distance
+    scale; when the flag is raised, the unknown_anomaly profile is added first
+    under the attack type UNKNOWN.
+
+    Args:
+        retrieval_result: mot phan tu cua SHAPKNNRetriever.retrieve_batch().
+        k, tau_zd, unknown_profile: retriever.k, retriever.tau_zd, retriever.unknown_profile.
+    """
+    flagged = retrieval_result["is_potential_zero_day"]
+    context = "### RETRIEVED CONTEXT (MITRE ATT&CK PROFILES)\n"
+
+    if not flagged:
+        context += (f"Novelty: mean L2 distance to the {k} nearest known attack flows = "
+                    f"{retrieval_result['novelty_score']:.3f}"
+                    + (f" (threshold {tau_zd:.3f})" if tau_zd is not None else "") + "\n\n")
+
+    if flagged:
+        doc = unknown_profile
+        context += (f"NOVELTY FLAG RAISED: the mean L2 distance from this flow to its {k} "
+                    f"nearest known attack flows is {retrieval_result['novelty_score']:.3f}"
+                    + (f", above the threshold {tau_zd:.3f}" if tau_zd is not None else "")
+                    + ". The flow lies outside the region occupied by known attack types and "
+                    "may be a novel attack.\n\n")
+        context += "#### Attack type: UNKNOWN\n"
+        context += f"- **Profile:** {doc['title']}\n"
+        context += f"- **Description:** {doc['description']}\n"
+        context += f"- **Typical Pattern:** {doc['network_indicators']['traffic_pattern']}\n"
+        context += f"- **Mitigation:** {', '.join([m['name'] for m in doc['mitigation']])}\n\n"
+
+    context += "Candidates are listed nearest first.\n\n"
+    for i, match in enumerate(retrieval_result["matches"]):
+        doc = match["doc"]
+        context += (f"#### Candidate {i+1} - Attack type: {match['matched_label']} "
+                    f"(distance to nearest known flow: {match['distance']:.3f})\n")
+        context += f"- **Technique:** {doc['title']} ({doc['mitre_id']})\n"
+        context += f"- **Tactic:** {doc['mitre_tactic']}\n"
+        context += f"- **Description:** {doc['description']}\n"
+        context += f"- **Typical Pattern:** {doc['network_indicators']['traffic_pattern']}\n"
+        context += f"- **Mitigation:** {', '.join([m['name'] for m in doc['mitigation']])}\n"
+        if doc.get("mitre_url") and doc["mitre_url"] != "N/A":
+            context += f"- **Reference:** {doc['mitre_url']}\n"
+        context += "\n"
+
+    return context
+
+
 def build_user_prompt(rag_context: str, variant: str = DEFAULT_VARIANT) -> str:
     """Ghep prompt gui kem anh.
 
     Args:
-        rag_context: khoi text tu retriever.format_context_for_vlm().
+        rag_context: khoi text tu format_retrieval_context().
         variant: khoa trong PROMPT_VARIANTS.
     """
     if variant not in PROMPT_VARIANTS:
@@ -289,7 +337,7 @@ def parse_report(raw: str) -> dict:
 #   - Khong co co zero-day: 3 ung vien (co profile) roi UNKNOWN o cuoi, khong profile.
 #   - Co co zero-day: profile unknown_anomaly va canh bao dat LEN DAU, roi 3 ung vien.
 # Context duoc dung tu du lieu co cau truc (nhan, khoang cach, id profile) chu khong
-# tu chuoi format_context_for_vlm(), nen sua prompt khong phai dung lai evidence.
+# tu chuoi format_retrieval_context(), nen sua prompt khong phai dung lai evidence.
 # ==========================================================================
 UNKNOWN = "UNKNOWN"
 

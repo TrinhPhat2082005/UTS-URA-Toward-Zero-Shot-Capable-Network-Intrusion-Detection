@@ -10,21 +10,23 @@ chạy theo thứ tự; file trung gian và kết quả ghi vào `output/<thư m
 | Cột latency của `tab:res-known`, `tab:res-ident`; `tab:res-latency` (RQ5) | `rq5_latency/latency_detection_path.py` | `rq5_latency/latency.json` |
 | `tab:res-ident` (RQ3a) | `rq3_retrieval/rq3a_identify.py <variant>` (chạy 2 lần) | `rq3a_identify/rq3a_<variant>.json` |
 | `tab:res-novelty`, tỉ lệ end-to-end zero-day (RQ3b) | `rq3_retrieval/rq3b_novelty_build.py` → `rq3b_novelty_score.py` (cần cache điểm của RQ1/RQ2 trong `LAYER1/output/scores/`) | `rq3b_novelty/R3_full_tables.md` |
-| Ngưỡng τ_zd của pipeline (Eq. `zeroday-flag`) | `rq3_retrieval/02_calibrate_novelty.py` | khoá `novelty` trong `artifacts/shap_pool_<variant>.meta.json` |
-| Tập tham chiếu R từng fold (Setup 2) | `rq3_retrieval/01_build_loao_pools.py` | `artifacts/loao_pools/<fold>/` |
+| Ngưỡng τ_zd của pipeline (Eq. `zeroday-flag`) | `rq3_retrieval/02_calibrate_novelty.py` | khoá `novelty` trong `artifacts/reference_sets/protocol_b/<variant>.meta.json` |
+| Tập tham chiếu R từng fold (Setup 2) | `rq3_retrieval/01_build_loao_pools.py` | `artifacts/reference_sets/protocol_a/<fold>/<variant>.npz` |
 | `tab:res-pilot` (RQ4) | `run_layer2.ipynb` (dùng `pipeline.py`) + `metrics.py` | `rq4_vlm/pilot_results_ae_xgboost_neutral_v1.jsonl`, `rq4_vlm/PILOT_RESULTS.md` |
 | `tab:res-vlm-zeroday` (RQ4, Setup 2) | `rq3_retrieval/02_calibrate_novelty.py --protocol A` → `rq4_vlm/setup2_build_evidence.py` (local) → `rq4_vlm/setup2_vlm.ipynb` (Kaggle, VLM) → `rq4_vlm/setup2_score.py` | `rq4_vlm/setup2_bundle/` (evidence), `setup2_out/` trên Kaggle: `results.jsonl`, `run_meta.json`, `prompt_template.txt`, `scored/` |
-| `tab:res-ablation` (RQ4, Setup 1) | chưa viết | `rq4_vlm/` |
+| `tab:res-ablation` (RQ4, Setup 1) | `rq4_vlm/setup1_build_evidence.py` (local) → `rq4_vlm/setup1_vlm.ipynb` (Kaggle, VLM) → `rq4_vlm/setup1_score.py` | `rq4_vlm/setup1_bundle/<variant>/` (evidence), `setup1_out/` trên Kaggle |
 
 ## Thành phần pipeline mà các thí nghiệm dùng
 
 | Paper | Code |
 |---|---|
 | Layer 1 Protocol A (14 fold LOAO), Section 3.3 | `zeroshot_benchmark/04_training_v2/train_*.py` (repo: `LAYER1/03_training/`) |
-| Layer 1 Protocol B, ngưỡng τ_α (Eq. `tau-alpha`) | `LAYER2/train_layer1.py` |
-| Tập tham chiếu R Protocol B | `LAYER2/build_shap_pool.py` |
-| SHAP-KNN Retriever (Eq. `type-dist`, `novelty`, `zeroday-flag`) | `LAYER2/shap_knn_retriever.py` |
-| Báo cáo VLM, schema 6 mục (Fig. `vlmio`) | `LAYER2/pipeline.py`, `LAYER2/prompts.py` |
+| Layer 1 Protocol B, ngưỡng τ_α (Eq. `tau-alpha`) | `LAYER2/layer1/train.py` |
+| Vector SHAP (cả hai protocol) | `LAYER2/layer1/engine.py` (`Layer1Engine`, `Layer1Engine.from_fold`) |
+| Tập tham chiếu R | `LAYER2/retrieval/reference_set.py` (Protocol B), `rq3_retrieval/01_build_loao_pools.py` (Protocol A) |
+| SHAP-KNN Retriever (Eq. `type-dist`, `novelty`, `zeroday-flag`) | `LAYER2/retrieval/retriever.py`, `LAYER2/retrieval/novelty.py` |
+| Evidence và bundle gửi VLM | `LAYER2/evidence/build.py`, `LAYER2/evidence/bundle.py` |
+| Báo cáo VLM (Fig. `vlmio`) | `LAYER2/vlm/runner.py`, `LAYER2/prompts.py` (bật/tắt UNKNOWN: `allow_unknown`) |
 
 ## Biến môi trường
 

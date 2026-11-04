@@ -10,9 +10,10 @@ doc tu mot file ket qua cu, de con so moi so sanh truc tiep duoc voi chung.
 Moi variant Layer 1 dung mot bundle rieng: AE va SVDD co khong gian attribution khac
 nhau (95 va 90 chieu), nen bieu do SHAP va ten feature khong dung chung duoc.
 
-Chi chay CPU, khong goi VLM. Output moi variant:
+Chi chay CPU, khong goi VLM (chang A; dinh dang bundle o evidence/bundle.py). Output moi variant:
   output/rq4_vlm/setup1_bundle/<variant>/
     manifest.jsonl      mot dong / alert: nhan that, Layer 1, 3 ung vien, anh
+    phi.npy             vector SHAP cua cac alert, cung thu tu voi manifest
     bundle_meta.json    cau hinh, phien ban code, thoi diem tao
     images/<alert_id>/  5 anh (SHAP waterfall + 4 bieu do luong)
 
@@ -20,21 +21,23 @@ CHAY:  python LAYER2/experiments/rq4_vlm/setup1_build_evidence.py
        python LAYER2/experiments/rq4_vlm/setup1_build_evidence.py ae_xgboost
 """
 import json
-import subprocess
 import sys
 import time
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import paths  # noqa: E402
 
 paths.use_layer2_code()
-import config     # noqa: E402
-import pipeline   # noqa: E402
-from shap_knn_retriever import SHAPKNNRetriever, LABEL_TO_PROFILE_ID  # noqa: E402
+import config  # noqa: E402
+from evidence import bundle  # noqa: E402
+from evidence.build import EvidenceBuilder, candidates, top_features  # noqa: E402
+from layer1.engine import Layer1Engine  # noqa: E402
+from retrieval import novelty, reference_set  # noqa: E402
+from retrieval.retriever import SHAPKNNRetriever  # noqa: E402
+from utils.io import git_commit  # noqa: E402
 
 VARIANTS = ["ae_xgboost", "svdd_xgboost"]
 # Cac lan chay truoc (v1-v3) deu dung dung tap nay; giu nguyen de so sanh duoc.
@@ -53,34 +56,16 @@ def reference_alerts():
     return sorted(out)
 
 
-def git_commit():
-    for d in (paths.LAYER2, paths.WS / "UTS_URA"):
-        try:
-            c = subprocess.run(["git", "-C", str(d), "rev-parse", "--short", "HEAD"],
-                               capture_output=True, text=True).stdout.strip()
-            if c:
-                return c
-        except Exception:
-            pass
-    return None
-
-
-def pool_paths(variant):
-    npz = Path(config.SHAP_POOL_NPZ).with_name(f"shap_pool_{variant}.npz")
-    return npz, npz.with_name(npz.stem + ".meta.json")
-
-
 def build(variant, alerts, val_df):
     t0 = time.time()
     out = paths.ensure(OUT_ROOT / variant)
-    l1 = pipeline.Layer1Engine(variant)
+    l1 = Layer1Engine(variant)
 
-    npz, meta_path = pool_paths(variant)
-    assert npz.exists(), f"Thieu {npz} (chay build_shap_pool.py truoc)"
-    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
-    tau_zd = (meta.get("novelty") or {}).get("tau_zd")
+    npz = reference_set.protocol_b_path(variant)
+    assert npz.exists(), f"Thieu {npz} (chay retrieval/reference_set.py truoc)"
+    tau_zd = novelty.read_tau(npz)
     ret = SHAPKNNRetriever(str(npz), str(paths.PROFILES), tau_zd=tau_zd, k=config.RAG_NOVELTY_K)
-    ev = pipeline.EvidenceBuilder(ret)
+    ev = EvidenceBuilder(ret)
 
     base = l1.base_feature_columns(val_df)
     idx = [i for i, _ in alerts]
@@ -93,31 +78,25 @@ def build(variant, alerts, val_df):
     manifest = []
     for j, (row_idx, true_label) in enumerate(alerts):
         aid = f"{true_label}__{row_idx}"
-        shap_vec = phi[j]
         r = results[j]
-        cands = [{"label": m["matched_label"], "distance": m["distance"],
-                  "profile_id": LABEL_TO_PROFILE_ID[m["matched_label"]]} for m in r["matches"]]
-        imgs, _ = ev.make_images(val_df.loc[row_idx], shap_vec, names,
+        cands = candidates([m["matched_label"] for m in r["matches"]], [m["distance"] for m in r["matches"]])
+        imgs, _ = ev.make_images(val_df.loc[row_idx], phi[j], names,
                                  str(out / "images" / aid), float(proba[j]), model_input=A[j])
-        top = np.argsort(-np.abs(shap_vec))[:5]
         manifest.append({
             "alert_id": aid, "row_idx": row_idx, "true_label": true_label,
             "layer1_proba": float(proba[j]), "layer1_threshold": float(l1.threshold),
             "novelty_score": float(r["novelty_score"]), "tau_zd": tau_zd,
             "flagged": bool(r["is_potential_zero_day"]),
             "candidates": cands, "retriever_top1": cands[0]["label"],
-            "shap_top_features": [{"name": names[k], "value": float(shap_vec[k])} for k in top],
-            "images": [str(Path(x).relative_to(out)).replace("\\", "/") for x in imgs],
+            "shap_top_features": top_features(phi[j], names),
+            "images": [bundle.rel(x, out) for x in imgs],
         })
         if (j + 1) % 20 == 0:
             print(f"  {j + 1:>3}/{len(alerts)}", flush=True)
 
-    with (out / "manifest.jsonl").open("w", encoding="utf-8") as f:
-        for rec in manifest:
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     top1 = sum(m["retriever_top1"] == m["true_label"] for m in manifest)
     hit3 = sum(m["true_label"] in [c["label"] for c in m["candidates"]] for m in manifest)
-    (out / "bundle_meta.json").write_text(json.dumps({
+    bundle.write(out, manifest, {
         "setup": "Setup 1 (Protocol B, known attack types)", "variant": variant,
         "n_alerts": len(manifest), "source": "val_full.csv",
         "alert_selection": f"the {len(manifest)} alerts of {REFERENCE_RUN.name}",
@@ -125,9 +104,10 @@ def build(variant, alerts, val_df):
         "retriever_hit_at_3": round(hit3 / len(manifest), 4),
         "n_flagged": int(sum(m["flagged"] for m in manifest)),
         "tau_zd": tau_zd, "k": config.RAG_NOVELTY_K,
-        "code_commit": git_commit(), "created_at": pd.Timestamp.now().isoformat(timespec="seconds"),
+        "code_commit": git_commit(paths.LAYER2, paths.WS / "UTS_URA"),
+        "created_at": pd.Timestamp.now().isoformat(timespec="seconds"),
         "build_seconds": round(time.time() - t0, 1),
-    }, indent=1), encoding="utf-8")
+    }, phi=phi)
     print(f"{variant}: {len(manifest)} alert | retriever top-1 {top1}/{len(manifest)} "
           f"({top1 / len(manifest):.1%}) | Hit@3 {hit3 / len(manifest):.1%} -> {out}", flush=True)
 

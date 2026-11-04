@@ -27,7 +27,7 @@ L1_ART = Path(os.environ.get("UTS_LAYER1_ART", BENCH / "04_training_v2" / "artif
 BASE_ART = Path(os.environ.get("UTS_BASELINE_ART", WS / "baselines_friends" / "artifacts"))
 PROFILES = LAYER2 / "knowledge_base" / "attack_profiles"
 ARTIFACTS = Path(os.environ.get("UTS_DATA", LAYER2)) / "artifacts"   # giong config.ARTIFACTS_DIR
-LOAO_POOLS = ARTIFACTS / "loao_pools"           # R cua tung fold Protocol A
+# Tap R cua ca hai protocol: retrieval/reference_set.py (protocol_b_path, protocol_a_path)
 
 OUT = Path(os.environ.get("UTS_RESULTS", LAYER2 / "output"))
 OUT_RQ3A = OUT / "rq3a_identify"                # tab:res-ident
@@ -55,7 +55,7 @@ def use_layer1_code():
 
 
 def use_layer2_code():
-    """Cho phep `import config, pipeline, shap_knn_retriever` cua LAYER2."""
+    """Cho phep `import config, pipeline, prompts` va cac goi layer1, retrieval, evidence, vlm, utils cua LAYER2."""
     if str(LAYER2) not in sys.path:
         sys.path.insert(0, str(LAYER2))
 

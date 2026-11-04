@@ -20,11 +20,13 @@ UTS_URA/
 │   └── output/                scores/ (cache điểm), tables/ (bảng, hình, verify, latency)
 │
 ├── LAYER2/                    Retrieval + VLM, Protocol B — Section 3.4–3.7
-│   ├── train_layer1.py        Layer 1 Protocol B, ngưỡng theo ngân sách FPR
-│   ├── build_shap_pool.py     tập tham chiếu R
-│   ├── shap_knn_retriever.py  một lần tính L2 → top-3 + cờ zero-day
-│   ├── pipeline.py, prompts.py, flow_visualizer.py, metrics.py
-│   ├── knowledge_base/        profile MITRE ATT&CK
+│   ├── layer1/                engine.py (p(x) + TreeSHAP, cả hai protocol), train.py (Protocol B), models/
+│   ├── retrieval/             reference_set.py (tập R), retriever.py (L2 → top-3 + novelty), novelty.py (cờ zero-day)
+│   ├── evidence/              build.py (context + 5 ảnh của một alert), bundle.py (bundle gửi Kaggle)
+│   ├── vlm/                   runner.py (Qwen2.5-VL)
+│   ├── utils/                 plot_shap.py, plot_flow.py, io.py
+│   ├── pipeline.py, prompts.py, config.py, metrics.py
+│   ├── knowledge_base/        profile MITRE ATT&CK + profiles.py (nhãn → profile)
 │   ├── experiments/           thí nghiệm theo RQ — xem experiments/README.md (bảng paper → script)
 │   └── output/                kết quả đã chạy, theo RQ
 │

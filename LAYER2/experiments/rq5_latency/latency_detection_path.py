@@ -35,7 +35,8 @@ paths.use_layer2_code()
 paths.use_layer1_code()
 import config    # noqa: E402
 import pipeline  # noqa: E402
-from shap_knn_retriever import SHAPKNNRetriever       # noqa: E402
+from retrieval import reference_set                   # noqa: E402
+from retrieval.retriever import SHAPKNNRetriever      # noqa: E402
 from models.autoencoder import BenignAutoencoder       # noqa: E402
 from models.svdd import MixtureSVDD                    # noqa: E402
 from models.clad.model import build_model              # noqa: E402
@@ -129,7 +130,7 @@ def main():
         Xq = va[f78].to_numpy("float64")[idx]
         SQ = np.vstack([np.asarray(l1.score(Xq[i:i + 1])[1], dtype="float32") for i in range(len(Xq))])
         RQ = l1.preprocess(Xq).astype("float32")
-        npz = Path(config.ARTIFACTS_DIR) / f"shap_pool_{v}.npz"
+        npz = reference_set.protocol_b_path(v)
         ret = SHAPKNNRetriever(str(npz), config.ATTACK_PROFILES_DIR, k=config.RAG_NOVELTY_K)
         tr = pd.read_csv(config.TRAIN_FULL_CSV, usecols=list(f78) + ["Label", "Label_Text"])
         tr = tr[tr["Label"] == 1]

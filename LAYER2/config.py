@@ -33,7 +33,7 @@ DATA_ROOT = os.environ.get("UTS_DATA", LAYER2_DIR)
 # --------------------------------------------------------------------------
 VARIANT = "ae_xgboost"            # "ae_xgboost" | "svdd_xgboost"
 
-# Checkpoint train boi train_layer1.py tren LAYER2/data/train_full.csv.
+# Checkpoint train boi layer1/train.py tren LAYER2/data/train_full.csv.
 # Moi thu muc co: model.pkl, scaler.pkl, feature_names.json, metrics.json
 # va encoder tuong ung (ae_model.pt hoac svdd/).
 _L1 = os.path.join(DATA_ROOT, "artifacts", "layer1")
@@ -55,11 +55,11 @@ LAYER1_ARTIFACTS = {
     },
 }
 
-# Gia tri clip cua RobustScaler - phai khop train_layer1.py.
+# Gia tri clip cua RobustScaler - phai khop layer1/train.py.
 CLIP_VAL = 20.0
 
 # Nguong Layer 1: None = doc "threshold" tu metrics.json, la nguong theo ngan sach
-# FPR alpha = 0.4% tren benign cua TRAIN (train_layer1.py; metrics.json con luu
+# FPR alpha = 0.4% tren benign cua TRAIN (layer1/train.py; metrics.json con luu
 # thresholds_by_alpha cho cac alpha khac). Khong tune tren val, vi val la tap bao
 # cao TP/FP cho Layer 2. Dat mot so cu the de ghi de.
 LAYER1_THRESHOLD = None
@@ -87,17 +87,19 @@ META_COLS = ["Label", "Label_Text", "Flow ID", "Src IP", "Src Port", "Dst IP",
 # --------------------------------------------------------------------------
 # RAG: SHAP k-NN
 # --------------------------------------------------------------------------
-SHAP_POOL_NPZ = os.path.join(
-    DATA_ROOT, "artifacts", f"shap_pool_{VARIANT}.npz"
-)
+# Tap tham chieu R (retrieval/reference_set.py):
+#   reference_sets/protocol_b/<variant>.npz          Protocol B (pipeline trien khai)
+#   reference_sets/protocol_a/<fold>/<variant>.npz   Protocol A, tung fold LOAO (R3, Setup 2)
+REFERENCE_SETS_DIR = os.path.join(DATA_ROOT, "artifacts", "reference_sets")
+REFERENCE_SET_NPZ = os.path.join(REFERENCE_SETS_DIR, "protocol_b", f"{VARIANT}.npz")
 ATTACK_PROFILES_DIR = os.path.join(
     LAYER2_DIR, "knowledge_base", "attack_profiles"
 )
 
 RAG_TOP_K = 3                     # 3 loai co khoang cach L2 toi flow gan nhat nho nhat
 RAG_NOVELTY_K = 10                # s(q) = trung binh L2 toi 10 lang gieng gan nhat
-# tau_zd: None -> doc tu shap_pool_<variant>.meta.json ("novelty" -> "tau_zd"),
-# hieu chinh boi experiments/rq3_retrieval/02_calibrate_novelty.py (Q_0.95 tren alert da biet).
+# tau_zd: None -> doc tu <tap R>.meta.json ("novelty" -> "tau_zd"), hieu chinh boi
+# experiments/rq3_retrieval/02_calibrate_novelty.py (Q_0.95 tren alert da biet).
 RAG_ZERODAY_THRESHOLD = None
 
 # Khong loai nhan nao: tap Layer 2 co du 14 loai tan cong, Infiltration gio la
@@ -176,7 +178,7 @@ def describe():
         ("L1 encoder", art["encoder"], os.path.exists(art["encoder"])),
         ("train_full", TRAIN_FULL_CSV, os.path.exists(TRAIN_FULL_CSV)),
         ("val_full", VAL_BINARY_CSV, os.path.exists(VAL_BINARY_CSV)),
-        ("SHAP pool", SHAP_POOL_NPZ, os.path.exists(SHAP_POOL_NPZ)),
+        ("reference R", REFERENCE_SET_NPZ, os.path.exists(REFERENCE_SET_NPZ)),
         ("profiles", ATTACK_PROFILES_DIR, os.path.isdir(ATTACK_PROFILES_DIR)),
     ]
     missing = []
@@ -191,7 +193,7 @@ def describe():
     except Exception:
         thr = "chua co metrics.json"
     print(f"\n  threshold={thr}  top_k={RAG_TOP_K}  "
-          f"zero_day_thr={RAG_ZERODAY_THRESHOLD if RAG_ZERODAY_THRESHOLD is not None else 'doc tu shap_pool_*.meta.json'}")
+          f"zero_day_thr={RAG_ZERODAY_THRESHOLD if RAG_ZERODAY_THRESHOLD is not None else 'doc tu meta.json cua tap R'}")
     print(f"  mau: {PER_CLASS}/nhan x 14 nhan = {PER_CLASS * 14}  seed={SAMPLE_SEED}")
     print(f"  ghi ket qua vao: {OUT_DIR}")
     if missing:

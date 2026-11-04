@@ -39,11 +39,12 @@ def load_layer2(variant, with_vlm):
     sys.path.insert(0, os.path.abspath(LAYER2_DIR))
     import config
     import pipeline
-    from shap_knn_retriever import SHAPKNNRetriever
+    from retrieval import reference_set
+    from retrieval.retriever import SHAPKNNRetriever
 
     l1 = pipeline.Layer1Engine(variant)
     retriever = SHAPKNNRetriever(
-        npz_path=os.path.join(config.ARTIFACTS_DIR, f"shap_pool_{variant}.npz"),
+        npz_path=str(reference_set.protocol_b_path(variant)),
         profiles_dir=config.ATTACK_PROFILES_DIR,
         tau_zd=config.RAG_ZERODAY_THRESHOLD,
         k=config.RAG_NOVELTY_K,
