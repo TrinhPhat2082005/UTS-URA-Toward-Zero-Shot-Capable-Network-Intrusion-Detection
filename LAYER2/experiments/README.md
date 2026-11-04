@@ -42,3 +42,37 @@ chạy theo thứ tự; file trung gian và kết quả ghi vào `output/<thư m
 
 Máy 16 GB RAM: đặt `OPENBLAS_NUM_THREADS=2` và `CUDA_VISIBLE_DEVICES=` khi chạy
 `rq3a_identify.py`, `02_calibrate_novelty.py` nếu gặp lỗi cấp phát bộ nhớ.
+
+## Tái lập kết quả đã báo cáo
+
+Mỗi bundle ghi commit của code đã tạo ra nó (`code_commit` trong `bundle_meta.json`); meta của tập R
+ghi thời điểm build.
+
+LAYER2 được tái cấu trúc ở commit `2435dd5` (2026-11-04). Đã kiểm tra: code mới cho kết quả trùng khớp
+với code cũ ở các phần sau:
+- xác suất Layer 1, vector SHAP, 3 ứng viên, novelty, cờ và context gửi VLM của 140 alert Setup 1 (cả hai variant);
+- bundle Setup 1 dựng lại: manifest và meta;
+- tập R Protocol B (`ae_xgboost`);
+- tập R Protocol A của fold Bot (3 variant) và ngưỡng τ_α của fold này.
+
+Có hai chỗ khác:
+
+1. **Fold Infiltration (Protocol A)**: hai checkpoint dừng sớm.
+   - `xgboost_only` dùng 499/500 cây; `ae_xgboost_mono` dùng 496/500 cây.
+   - Code mới tính SHAP bằng `TreeExplainer` trên đúng số cây mà quyết định của Layer 1 dùng.
+   - Các artifact hiện có được build bằng `pred_contribs` trên cả 500 cây: tập R Infiltration của hai
+     variant này, τ_zd của fold, 10 alert Infiltration của bundle Setup 2, và `r3_full` của RQ3b.
+   - Hai cách cho kết quả giống hệt nhau ở 40/42 checkpoint còn lại.
+   - Muốn tái lập đúng từng số các artifact này, dùng commit `13772d7` (trước khi tái cấu trúc).
+   - `rq3b_novelty_build.py` vẫn dùng `pred_contribs`, nên tái lập đúng bảng RQ3b hiện tại.
+2. **Ảnh waterfall đầu tiên mỗi lần chạy**: code cũ vẽ ảnh này trước khi nạp style của biểu đồ luồng,
+   nên nó khác style các ảnh còn lại. Code mới vẽ mọi ảnh cùng style. Các ảnh còn lại trùng từng byte.
+
+Commit này cũng đổi tên artifact (nội dung giữ nguyên):
+
+| Tên cũ (commit `13772d7` trở về trước) | Tên mới |
+|---|---|
+| `artifacts/shap_pool_<variant>.npz` (+ `.meta.json`) | `artifacts/reference_sets/protocol_b/<variant>.npz` |
+| `artifacts/loao_pools/<fold>/shap_pool_<variant>.npz` (+ `.meta.json`) | `artifacts/reference_sets/protocol_a/<fold>/<variant>.npz` |
+
+Muốn chạy lại một commit cũ thì đặt lại tên cũ theo bảng trên.
