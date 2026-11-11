@@ -4,7 +4,7 @@ loai tan cong CHUA TUNG THAY, theo tung fold leave-one-attack-out (Protocol A).
 
 Moi fold giu lai loai h, moi thanh phan la cua RIENG fold do (nhu khi trien khai):
   Layer 1   : checkpoint ae_xgboost_mono cua fold (Layer1Engine.from_fold), nguong tau_alpha (alpha = 0.4%)
-  SHAP      : TreeSHAP chinh xac — cung cach build tap R (layer1/engine.py)
+  SHAP      : TreeSHAP chinh xac — cung cach build tap R (gate/engine.py)
   Retriever : R = reference_sets/protocol_a/<fold>/ (13 loai, khong co h), tau_zd cua fold
               (02_calibrate_novelty.py --protocol A)
 Alert     : flow cua h trong test_zeroshot.csv co p >= tau_alpha.
@@ -38,7 +38,7 @@ import config  # noqa: E402
 from evidence import bundle  # noqa: E402
 from evidence.build import EvidenceBuilder, candidates, top_features  # noqa: E402
 from knowledge_base.profiles import LABEL_TO_PROFILE_ID, load_profiles  # noqa: E402
-from layer1.engine import Layer1Engine  # noqa: E402
+from gate.engine import Layer1Engine  # noqa: E402
 from retrieval import novelty, reference_set  # noqa: E402
 from retrieval.retriever import SHAPKNNRetriever  # noqa: E402
 from utils.io import git_commit  # noqa: E402

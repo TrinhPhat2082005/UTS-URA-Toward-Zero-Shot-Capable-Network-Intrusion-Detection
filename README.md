@@ -15,12 +15,14 @@ UTS_URA/
 │   ├── 02_splits/             split LOAO dùng trong paper (build_splits.py): benign 700K → 560K train / 140K val
 │   ├── 03_training/           train XGBoost-only, AE-only, SVDD-only, CLAD, AE-XGBoost, SVDD-XGBoost
 │   │   │                      (config common/xgb_config.py, hybrid: common/xgb_config_mono.py)
+│   │   │                      train_protocol_b.py: model Layer 1 triển khai (Protocol B, full label),
+│   │   │                      ngưỡng FPR α = 0.5% → $UTS_DATA/artifacts/layer1/<variant>/
 │   │   └── baselines/         code train các baseline mở rộng (baseline study)
 │   ├── 04_experiments/        đánh giá RQ1/RQ2: layer1_results.ipynb (bảng), layer1_extras.ipynb — xem 04_experiments/README.md
 │   └── output/                scores/ (cache điểm), tables/ (bảng, hình, verify, latency)
 │
 ├── LAYER2/                    Retrieval + VLM, Protocol B — Section 3.4–3.7
-│   ├── layer1/                engine.py (p(x) + TreeSHAP, cả hai protocol), train.py (Protocol B), models/
+│   ├── gate/                  engine.py: nạp checkpoint Layer 1 → p(x) + TreeSHAP (cả hai protocol); không train
 │   ├── retrieval/             reference_set.py (tập R), retriever.py (L2 → top-3 + novelty), novelty.py (cờ zero-day)
 │   ├── evidence/              build.py (context + 5 ảnh của một alert), bundle.py (bundle gửi Kaggle)
 │   ├── vlm/                   runner.py (Qwen2.5-VL)

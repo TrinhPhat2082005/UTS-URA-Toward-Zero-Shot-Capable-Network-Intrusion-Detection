@@ -29,7 +29,7 @@ import paths  # noqa: E402
 
 paths.use_layer2_code()
 import config     # noqa: E402
-from layer1.engine import Layer1Engine            # noqa: E402
+from gate.engine import Layer1Engine            # noqa: E402
 from retrieval import novelty, reference_set      # noqa: E402
 from retrieval.retriever import SHAPKNNRetriever  # noqa: E402
 

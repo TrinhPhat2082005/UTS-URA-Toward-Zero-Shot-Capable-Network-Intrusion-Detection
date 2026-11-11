@@ -55,7 +55,7 @@ def use_layer1_code():
 
 
 def use_layer2_code():
-    """Cho phep `import config, pipeline, prompts` va cac goi layer1, retrieval, evidence, vlm, utils cua LAYER2."""
+    """Cho phep `import config, pipeline, prompts` va cac goi gate, retrieval, evidence, vlm, utils cua LAYER2."""
     if str(LAYER2) not in sys.path:
         sys.path.insert(0, str(LAYER2))
 

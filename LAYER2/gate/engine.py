@@ -1,12 +1,15 @@
 """
-Layer 1: X tho (78 feature) -> xac suat tan cong p(x) va vector SHAP. Day la noi DUY NHAT tinh SHAP
-(pipeline, tap R ca hai protocol, bundle Setup 1/2, demo live).
+Gate (Layer 1 at inference time): X tho (78 feature) -> xac suat tan cong p(x) va vector SHAP.
+Day la noi DUY NHAT tinh SHAP (pipeline, tap R ca hai protocol, bundle Setup 1/2, demo live).
+LAYER2 chi NAP checkpoint Layer 1 da train; moi code train nam o LAYER1/03_training.
 
 Hai bo checkpoint, cung mot giao dien (build_input, predict_proba, shap_values, score):
     Layer1Engine(variant)                                Protocol B: <UTS_DATA>/artifacts/layer1/<variant>/
-                                                         (layer1/train.py tren train_full.csv)
+                                                         (LAYER1/03_training/train_protocol_b.py)
     Layer1Engine.from_fold(variant, fold, root, base)    Protocol A: checkpoint 14 fold LOAO cua LAYER1
                                                          (zeroshot_benchmark/04_training_v2/artifacts)
+Kien truc AE/SVDD import tu LAYER1/03_training/models (config.LAYER1_CODE_DIR, bien UTS_LAYER1_CODE).
+Nguong Protocol B: "threshold" trong metrics.json = ngan sach FPR 0.5% tren benign train.
 
 SHAP = shap.TreeExplainer tren XGBoost cuoi cung (TreeSHAP chinh xac, path-dependent). Voi XGBoost, shap goi
 pred_contribs cua chinh xgboost, nen ket qua trung tung bit voi booster.predict(pred_contribs=True)[:, :-1]
@@ -26,7 +29,7 @@ AE_BOTTLENECK = 16
 class Layer1Engine:
     """XGBoost tang cuong + TreeExplainer.
 
-    Protocol B: duong di phai khop CHINH XAC voi layer1/train.py, neu khong model se
+    Protocol B: duong di phai khop CHINH XAC voi LAYER1/03_training/train_protocol_b.py, neu khong model se
     nhin thay du lieu khac luc train:
 
         X tho (78) -> RobustScaler -> clip(+-20) -> [78 | feature tang cuong]
@@ -82,8 +85,9 @@ class Layer1Engine:
         import joblib
         import torch
 
-        from layer1.models.autoencoder import BenignAutoencoder
-        from layer1.models.svdd import MixtureSVDD
+        config.use_layer1_code()
+        from models.autoencoder import BenignAutoencoder
+        from models.svdd import MixtureSVDD
 
         self = cls.__new__(cls)
         self.variant, self.fold, self.threshold = variant, fold, threshold
@@ -129,10 +133,11 @@ class Layer1Engine:
     def _load_encoder(self, path):
         """Protocol B: nap AE hoac SVDD tuy variant."""
         self.ae = self.svdd = None
+        config.use_layer1_code()
 
         if self.variant.startswith("ae"):
             import torch
-            from layer1.models.autoencoder import BenignAutoencoder
+            from models.autoencoder import BenignAutoencoder
             n_aug = self.n_features - self.n_base          # 16 latent + 1 error
             self.ae = BenignAutoencoder(input_dim=self.n_base,
                                         bottleneck_dim=n_aug - 1)
@@ -141,7 +146,7 @@ class Layer1Engine:
             self.ae.eval()
             self.torch = torch
         else:
-            from layer1.models.svdd import MixtureSVDD
+            from models.svdd import MixtureSVDD
             K = self.n_features - self.n_base - 1          # K sphere + 1 d_min
             self.svdd = MixtureSVDD(K=K, input_dim=self.n_base, device="cpu")
             self.svdd.load(path)
@@ -160,7 +165,7 @@ class Layer1Engine:
     feature_columns = base_feature_columns
 
     def preprocess(self, X):
-        """Protocol B: X tho -> scale -> clip. Khop layer1/train.py."""
+        """Protocol B: X tho -> scale -> clip. Khop LAYER1/03_training/train_protocol_b.py."""
         X = np.nan_to_num(np.asarray(X, dtype="float64"),
                           nan=0.0, posinf=0.0, neginf=0.0)
         return np.clip(self.scaler.transform(X), -config.CLIP_VAL, config.CLIP_VAL)

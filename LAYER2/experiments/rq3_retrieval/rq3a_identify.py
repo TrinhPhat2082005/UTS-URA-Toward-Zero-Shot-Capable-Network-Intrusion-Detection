@@ -20,7 +20,7 @@ Output: output/rq3a_identify/rq3a_<variant>.json
 
 Ngan sach FPR khac nguong van hanh (mac dinh: "threshold" cua metrics.json, alpha = 0.4%):
     python LAYER2/experiments/rq3_retrieval/rq3a_identify.py ae_xgboost --alpha 0.005   (x2 nhu tren)
-  tau = Q_(1-alpha) (method="higher") cua p tren benign cua TRAIN, nhu layer1/train.py; lay tu
+  tau = Q_(1-alpha) (method="higher") cua p tren benign cua TRAIN, nhu LAYER1/03_training/train_protocol_b.py; lay tu
   thresholds_by_alpha neu co, neu khong thi tinh lai. Output: cache/rq3a_<variant>_alpha0.5.*
 Luon ghi them tau_zd = Q_0.95 cua s(q) (TB L2 toi 10 NN, khoa SHAP) tren cung tap alert,
 dung cach hieu chinh cua 02_calibrate_novelty.py (khong ghi vao meta cua pipeline).
@@ -75,7 +75,7 @@ def layer1_tau(v, l1, f, alpha):
 
 def build_cache(v, cache, alpha=None):
     """SHAP + feature da scale cua alert TP va cua R. Khong cham gi o buoc nay."""
-    from layer1.engine import Layer1Engine
+    from gate.engine import Layer1Engine
     l1 = Layer1Engine(v)
     cols = list(pd.read_csv(config.VAL_BINARY_CSV, nrows=0).columns)
     f = l1.base_feature_columns(pd.DataFrame(columns=cols))

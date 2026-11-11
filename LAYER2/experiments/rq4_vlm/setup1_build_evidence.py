@@ -34,7 +34,7 @@ paths.use_layer2_code()
 import config  # noqa: E402
 from evidence import bundle  # noqa: E402
 from evidence.build import EvidenceBuilder, candidates, top_features  # noqa: E402
-from layer1.engine import Layer1Engine  # noqa: E402
+from gate.engine import Layer1Engine  # noqa: E402
 from retrieval import novelty, reference_set  # noqa: E402
 from retrieval.retriever import SHAPKNNRetriever  # noqa: E402
 from utils.io import git_commit  # noqa: E402

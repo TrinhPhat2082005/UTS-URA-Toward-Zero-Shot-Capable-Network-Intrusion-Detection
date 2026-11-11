@@ -1,7 +1,7 @@
 """
 Duong di mot alert qua Layer 2, va noi gom cac thanh phan cho notebook / demo live.
 
-    row -> Layer 1 (p, SHAP)        layer1/engine.py      Layer1Engine
+    row -> Layer 1 (p, SHAP)        gate/engine.py      Layer1Engine
         -> retriever (top-3, co)    retrieval/            SHAPKNNRetriever, novelty
         -> context + 5 anh          evidence/build.py     EvidenceBuilder      } chang A (CPU)
         -> VLM -> bao cao           vlm/runner.py         VLMRunner            } chang B (GPU)
@@ -19,7 +19,7 @@ import pandas as pd
 
 import config
 from evidence.build import EvidenceBuilder  # noqa: F401  (pipeline.EvidenceBuilder)
-from layer1.engine import Layer1Engine      # noqa: F401  (pipeline.Layer1Engine)
+from gate.engine import Layer1Engine      # noqa: F401  (pipeline.Layer1Engine)
 from utils.io import append_jsonl           # noqa: F401  (pipeline.append_jsonl)
 from vlm.runner import VLMRunner            # noqa: F401  (pipeline.VLMRunner)
 

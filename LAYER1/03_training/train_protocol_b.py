@@ -1,47 +1,48 @@
 """
-Train Layer 1 cho thi nghiem Layer 2 — 2 bien the XGBoost tang cuong.
+Train Layer 1 for Protocol B (full label): the deployed model used by LAYER2
+(reference set R, RQ3a, Setup 1, live demo). Two variants: AE-XGBoost and SVDD-XGBoost.
 
-CHAY:  python LAYER2/layer1/train.py            # ca AE lan SVDD
-       python LAYER2/layer1/train.py --only ae
-       python LAYER2/layer1/train.py --only svdd
+RUN (from the repo root):
+    python LAYER1/03_training/train_protocol_b.py                    # AE and SVDD
+    python LAYER1/03_training/train_protocol_b.py --only ae
+    python LAYER1/03_training/train_protocol_b.py --thresholds-only  # recompute tau_alpha, no retraining
 
-CHUOI 4 BUOC
-------------
-  1. Loc benign-only tu train_full.csv (Label == 0), bo het dong attack.
-  2. Train AE va SVDD tren CHI benign do (GPU).
-  3. Dung AE/SVDD sinh feature tang cuong.
-  4. Train XGBoost tren [78 feature goc | feature tang cuong] (GPU).
+PATHS
+-----
+  code    LAYER1/03_training/            models/ (AE, SVDD) and common/xgb_config_mono.py, imported
+                                         from this folder - the same code as the 14 Protocol A folds
+  input   $UTS_DATA/data/train_full.csv   (682,090 rows)    default UTS_DATA = <workspace>/LAYER2
+          $UTS_DATA/data/val_full.csv     (170,523 rows)    reporting set for Layer 2, never tunes anything
+  output  $UTS_DATA/artifacts/layer1/<variant>/   model.pkl, scaler.pkl, feature_names.json, metrics.json,
+          and the encoder (ae_model.pt or svdd/). LAYER2/gate/engine.py loads from here.
 
-Kien truc encoder lay tu layer1/models/ (autoencoder.py, svdd.py; giong het
-LAYER1/03_training/models). Config XGBoost lay TRUC TIEP tu LAYER1/03_training/common/xgb_config_mono.py
-(ban Layer 1 cuoi cung): cung tham so cay + rang buoc DON DIEU TANG tren feature
-augmented co ngu nghia "cang lon cang bat thuong" (AE: ae_recon_error; SVDD: K
-sphere dist + d_min). Bo cuc rang buoc giong het LAYER1/03_training/train_{ae,svdd}_xgboost_mono.py.
-Khac biet voi LAYER1: train mot lan tren tap full-label thay vi 14 fold, ep chay GPU,
-va KHONG early stopping (co dinh 500 cay) vi val_full la tap danh gia RAG/VLM
-(tren 42 checkpoint LOAO, early stopping cung khong bao gio cat qua 5 cay).
+FOUR STEPS
+----------
+  1. Keep the benign rows of train_full.csv (Label == 0).
+  2. Train the AE and the Mixture SVDD on those benign rows only.
+  3. Use them to compute the augmented features.
+  4. Train XGBoost on [78 base features | augmented features]: the config and the monotone +1
+     constraints of common/xgb_config_mono.py, exactly as train_{ae,svdd}_xgboost_mono.py.
+  Differences from the Protocol A trainers: one full-label training run instead of 14 folds, and no
+  early stopping (fixed 500 trees), so val_full never influences the model.
 
-Encoder (AE/SVDD) mac dinh DUNG LAI ban da train trong thu muc artifact (rang buoc
-don dieu chi doi XGBoost). --retrain-encoders de train lai tu dau.
+ONE SCALER
+----------
+One RobustScaler fitted on benign train only, shared by the encoder input and the XGBoost input.
+Encoders are reused from the artifact folder unless --retrain-encoders is given.
 
-MOT SCALER DUY NHAT
--------------------
-RobustScaler fit tren benign-only, roi dung CHUNG cho ca encoder input lan
-XGBoost input. Day la loi kien truc da tung mac o ban v1 (2 scaler khac nhau
-cho cung mot tap) — xem docstring train_ae_xgboost.py. Giu dung mot scaler.
-
-THRESHOLD
----------
-Theo NGAN SACH FPR tren benign cua TRAIN: tau = Q_{1-alpha}(p(x), x benign train),
-alpha = OPERATING_ALPHA (0.4%). Giong quy trinh danh gia Layer 1 cua paper (§4.4).
-Val khong tham gia chon nguong (val la tap bao cao TP/FP cho Layer 2). metrics.json
-luu them nguong cho moi alpha trong ALPHAS va nguong F1-max tren train de tham chieu;
-key "threshold" (pipeline doc key nay) = nguong tai OPERATING_ALPHA.
+THRESHOLD (FPR budget)
+----------------------
+tau_alpha = Q_{1-alpha}( p(x) : x benign in train_full ),  alpha = OPERATING_ALPHA = 0.005 (FPR 0.5%).
+val_full takes no part in it. metrics.json stores the thresholds for every alpha in ALPHAS
+("thresholds_by_alpha", so the earlier 0.4% runs stay reproducible); the key "threshold", read by
+LAYER2/config.layer1_threshold(), is the one at OPERATING_ALPHA.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -60,50 +61,26 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import RobustScaler
 from torch.utils.data import DataLoader, TensorDataset
 
-LAYER2 = Path(__file__).resolve().parents[1]
-WS = LAYER2.parent
+HERE = Path(__file__).resolve().parent                     # LAYER1/03_training
+sys.path.insert(0, str(HERE))
+from common.xgb_config_mono import (                       # noqa: E402
+    XGB_PARAMS,
+    XGB_SCALE_POS_DIVISOR,
+    build_monotone_constraints,
+)
+from models.autoencoder import BenignAutoencoder           # noqa: E402
+from models.svdd import MixtureSVDD                        # noqa: E402
 
-sys.path.insert(0, str(LAYER2))
-import config                                                    # noqa: E402
-from layer1.models.autoencoder import BenignAutoencoder          # noqa: E402
-from layer1.models.svdd import MixtureSVDD                       # noqa: E402
-
-
-def _load_layer1_config():
-    """Nap common/xgb_config_mono.py cua Layer 1 (cung config da train 14 fold
-    LOAO) theo duong dan file.
-
-    Khong import kieu `common.xxx`: ban repo va ban zeroshot_benchmark deu co
-    package ten `common`, import theo ten de nham ban.
-    Tim theo thu tu: UTS_LAYER1_CODE, repo (LAYER1/03_training, chay tu repo hoac tu
-    workspace), roi ban sao trong zeroshot_benchmark/04_training_v2 (giu ten cu
-    xgb_config_v5_mono.py).
-    """
-    import importlib.util
-    import os
-    roots = [os.environ.get("UTS_LAYER1_CODE"), WS / "LAYER1" / "03_training",
-             WS / "UTS_URA" / "LAYER1" / "03_training", WS / "zeroshot_benchmark" / "04_training_v2"]
-    path = next(Path(r) / "common" / n for r in roots if r
-                for n in ("xgb_config_mono.py", "xgb_config_v5_mono.py") if (Path(r) / "common" / n).exists())
-    spec = importlib.util.spec_from_file_location("layer1_xgb_config_mono", path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-_L1CFG = _load_layer1_config()
-XGB_PARAMS = _L1CFG.XGB_PARAMS
-XGB_SCALE_POS_DIVISOR = _L1CFG.XGB_SCALE_POS_DIVISOR
-build_monotone_constraints = _L1CFG.build_monotone_constraints
-
-# Nguong theo ngan sach FPR tren benign cua train
-ALPHAS = [0.001, 0.002, 0.004, 0.008, 0.010, 0.015, 0.020, 0.030]
-OPERATING_ALPHA = 0.004
+# Threshold = FPR budget on the benign rows of train_full
+ALPHAS = [0.001, 0.002, 0.004, 0.005, 0.008, 0.010, 0.015, 0.020, 0.030]
+OPERATING_ALPHA = 0.005                                    # FPR 0.5%, primary operating point
 
 # --------------------------------------------------------------------------
-TRAIN_CSV = Path(config.TRAIN_FULL_CSV)
-VAL_CSV = Path(config.VAL_BINARY_CSV)
-OUT = Path(config.ARTIFACTS_DIR) / "layer1"
+# Data and output: $UTS_DATA, default <workspace>/LAYER2 (the repo sits in <workspace>/UTS_URA)
+DATA_ROOT = Path(os.environ.get("UTS_DATA", HERE.parents[2] / "LAYER2"))
+TRAIN_CSV = DATA_ROOT / "data" / "train_full.csv"
+VAL_CSV = DATA_ROOT / "data" / "val_full.csv"
+OUT = DATA_ROOT / "artifacts" / "layer1"
 
 SEED = 42
 CLIP_VAL = 20.0
@@ -330,6 +307,37 @@ def _val_metrics(yva, p_va, thr):
     }
 
 
+def threshold_metrics(p_tr, ytr, p_va, yva):
+    """tau_alpha for every alpha in ALPHAS from the benign rows of TRAIN only, plus val metrics at each.
+
+    Returns the threshold fields of metrics.json; "threshold" is the one at OPERATING_ALPHA.
+    """
+    p_ben = p_tr[ytr == 0]
+    thr_by_alpha = {f"{a:.3f}": float(np.quantile(p_ben, 1 - a, method="higher")) for a in ALPHAS}
+    thr = thr_by_alpha[f"{OPERATING_ALPHA:.3f}"]
+    thr_f1, _ = best_f1_threshold(ytr, p_tr)
+    print(f"  threshold (FPR budget {OPERATING_ALPHA:.1%} on benign TRAIN) = {thr:.4f}   "
+          f"[reference: F1-max on TRAIN = {thr_f1:.4f}]")
+
+    val_by_alpha = {k: _val_metrics(yva, p_va, t) for k, t in thr_by_alpha.items()}
+    print(f"  {'alpha':>6} {'thr':>7} {'F1':>7} {'P':>7} {'R':>7} {'FPR':>8} {'TP':>7} {'FP':>6}")
+    for k, v in val_by_alpha.items():
+        print(f"  {float(k):>6.1%} {thr_by_alpha[k]:>7.4f} {v['f1']:>7.4f} {v['precision']:>7.4f} "
+              f"{v['recall']:>7.4f} {v['fpr']:>8.5f} {v['tp']:>7,} {v['fp']:>6,}")
+    val = {**val_by_alpha[f"{OPERATING_ALPHA:.3f}"],
+           "auroc": float(roc_auc_score(yva, p_va)), "auprc": float(average_precision_score(yva, p_va))}
+    print(f"  VAL AUROC={val['auroc']:.4f}  AUPRC={val['auprc']:.4f}")
+    return {
+        "threshold": thr,
+        "threshold_rule": "fpr_budget_on_train_benign",
+        "operating_alpha": OPERATING_ALPHA,
+        "thresholds_by_alpha": thr_by_alpha,
+        "threshold_f1max_train": thr_f1,
+        "val": val,
+        "val_by_alpha": val_by_alpha,
+    }
+
+
 def train_xgb(Xtr, ytr, Xva, yva, names, tag, out_dir, mono):
     print(f"\n{'='*66}\n  XGBoost [{tag}] — {Xtr.shape[1]} feature\n{'='*66}")
     assert mono is not None and len(mono) == Xtr.shape[1], (
@@ -350,40 +358,16 @@ def train_xgb(Xtr, ytr, Xva, yva, names, tag, out_dir, mono):
     n_trees = clf.get_booster().num_boosted_rounds()
     print(f"  train {dt:.0f}s, {n_trees} cay")
 
-    # Nguong theo ngan sach FPR tren benign cua TRAIN (val khong tham gia)
-    p_tr = clf.predict_proba(Xtr)[:, 1]
-    p_ben = p_tr[ytr == 0]
-    thr_by_alpha = {f"{a:.3f}": float(np.quantile(p_ben, 1 - a, method="higher")) for a in ALPHAS}
-    thr = thr_by_alpha[f"{OPERATING_ALPHA:.3f}"]
-    thr_f1, f1_tr = best_f1_threshold(ytr, p_tr)
-    print(f"  threshold (FPR {OPERATING_ALPHA:.1%} tren benign TRAIN) = {thr:.4f}   "
-          f"[tham chieu F1-max tren TRAIN = {thr_f1:.4f}]")
-
-    p_va = clf.predict_proba(Xva)[:, 1]
-    val_by_alpha = {k: _val_metrics(yva, p_va, t) for k, t in thr_by_alpha.items()}
     m = {
         "n_features": int(Xtr.shape[1]),
-        "threshold": thr,
-        "threshold_rule": "fpr_budget_on_train_benign",
-        "operating_alpha": OPERATING_ALPHA,
-        "thresholds_by_alpha": thr_by_alpha,
-        "threshold_f1max_train": thr_f1,
         "n_trees": int(n_trees),
         "early_stopping": False,
         "monotone_constraints": list(mono),
         "xgb_config": "LAYER1/03_training/common/xgb_config_mono.py",
         "train_seconds": round(dt, 1),
         "scale_pos_weight": round(spw, 4),
-        "val": {**val_by_alpha[f"{OPERATING_ALPHA:.3f}"],
-                "auroc": float(roc_auc_score(yva, p_va)),
-                "auprc": float(average_precision_score(yva, p_va))},
-        "val_by_alpha": val_by_alpha,
     }
-    print(f"  {'alpha':>6} {'thr':>7} {'F1':>7} {'P':>7} {'R':>7} {'FPR':>8} {'TP':>7} {'FP':>6}")
-    for k, v in val_by_alpha.items():
-        print(f"  {float(k):>6.1%} {thr_by_alpha[k]:>7.4f} {v['f1']:>7.4f} {v['precision']:>7.4f} "
-              f"{v['recall']:>7.4f} {v['fpr']:>8.5f} {v['tp']:>7,} {v['fp']:>6,}")
-    print(f"  VAL AUROC={m['val']['auroc']:.4f}  AUPRC={m['val']['auprc']:.4f}")
+    m.update(threshold_metrics(clf.predict_proba(Xtr)[:, 1], ytr, clf.predict_proba(Xva)[:, 1], yva))
 
     joblib.dump(clf, out_dir / "model.pkl")
     with open(out_dir / "feature_names.json", "w", encoding="utf-8") as f:
@@ -392,11 +376,39 @@ def train_xgb(Xtr, ytr, Xva, yva, names, tag, out_dir, mono):
 
 
 # ==========================================================================
+def thresholds_only(variant, feats, Xtr_raw, ytr, Xva_raw, yva):
+    """Recompute the threshold fields of metrics.json from the saved checkpoint (no retraining)."""
+    d = OUT / variant
+    with open(d / "metrics.json", encoding="utf-8") as f:
+        m = json.load(f)
+    sc = joblib.load(d / "scaler.pkl")
+    Xtr_s, Xva_s = scale(sc, Xtr_raw), scale(sc, Xva_raw)
+    if variant == "ae_xgboost":
+        enc = BenignAutoencoder(input_dim=len(feats), bottleneck_dim=AE_BOTTLENECK).to(DEVICE)
+        enc.load_state_dict(torch.load(d / "ae_model.pt", map_location=DEVICE))
+        enc.eval()
+        Atr, Ava = ae_features(enc, Xtr_s), ae_features(enc, Xva_s)
+    else:
+        enc = MixtureSVDD(K=int(m["svdd_K_total"]), input_dim=len(feats), embed_dim=SVDD_EMBED, device=str(DEVICE))
+        enc.load(str(d / "svdd"))
+        Atr, Ava = svdd_features(enc, Xtr_s), svdd_features(enc, Xva_s)
+    clf = joblib.load(d / "model.pkl")
+    print(f"\n  [{variant}] thresholds from the saved model ({clf.get_booster().num_boosted_rounds()} trees)")
+    m.update(threshold_metrics(clf.predict_proba(np.hstack([Xtr_s, Atr]))[:, 1], ytr,
+                               clf.predict_proba(np.hstack([Xva_s, Ava]))[:, 1], yva))
+    m["thresholds_recomputed_at"] = pd.Timestamp.now().isoformat()
+    with open(d / "metrics.json", "w", encoding="utf-8") as f:
+        json.dump(m, f, indent=2)
+    print(f"  -> {d / 'metrics.json'}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", choices=["ae", "svdd"], default=None)
     ap.add_argument("--retrain-encoders", action="store_true",
                     help="train lai AE/SVDD thay vi dung ban da co trong thu muc artifact")
+    ap.add_argument("--thresholds-only", action="store_true",
+                    help="no training: recompute tau_alpha (all ALPHAS) from the saved checkpoints")
     args = ap.parse_args()
     want_ae = args.only in (None, "ae")
     want_svdd = args.only in (None, "svdd")
@@ -404,12 +416,19 @@ def main():
     print(f"DEVICE = {DEVICE}")
     if torch.cuda.is_available():
         print(f"GPU    = {torch.cuda.get_device_name(0)}")
+    print(f"data   = {DATA_ROOT}\nout    = {OUT}")
     OUT.mkdir(parents=True, exist_ok=True)
 
     tr, va, ben, feats = load_data()
     Xtr_raw, ytr = clean(tr[feats]), tr["Label"].to_numpy()
     Xva_raw, yva = clean(va[feats]), va["Label"].to_numpy()
     Xben_raw = clean(ben[feats])
+
+    if args.thresholds_only:
+        for v, want in (("ae_xgboost", want_ae), ("svdd_xgboost", want_svdd)):
+            if want:
+                thresholds_only(v, feats, Xtr_raw, ytr, Xva_raw, yva)
+        return
 
     summary = {
         "generated_at": pd.Timestamp.now().isoformat(),

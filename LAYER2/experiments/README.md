@@ -21,8 +21,8 @@ chạy theo thứ tự; file trung gian và kết quả ghi vào `output/<thư m
 | Paper | Code |
 |---|---|
 | Layer 1 Protocol A (14 fold LOAO), Section 3.3 | `zeroshot_benchmark/04_training_v2/train_*.py` (repo: `LAYER1/03_training/`) |
-| Layer 1 Protocol B, ngưỡng τ_α (Eq. `tau-alpha`) | `LAYER2/layer1/train.py` |
-| Vector SHAP (cả hai protocol) | `LAYER2/layer1/engine.py` (`Layer1Engine`, `Layer1Engine.from_fold`) |
+| Layer 1 Protocol B, ngưỡng τ_α (Eq. `tau-alpha`, ngân sách FPR α = 0.5%) | `LAYER1/03_training/train_protocol_b.py` |
+| Vector SHAP (cả hai protocol) | `LAYER2/gate/engine.py` (`Layer1Engine`, `Layer1Engine.from_fold`) |
 | Tập tham chiếu R | `LAYER2/retrieval/reference_set.py` (Protocol B), `rq3_retrieval/01_build_loao_pools.py` (Protocol A) |
 | SHAP-KNN Retriever (Eq. `type-dist`, `novelty`, `zeroday-flag`) | `LAYER2/retrieval/retriever.py`, `LAYER2/retrieval/novelty.py` |
 | Evidence và bundle gửi VLM | `LAYER2/evidence/build.py`, `LAYER2/evidence/bundle.py` |

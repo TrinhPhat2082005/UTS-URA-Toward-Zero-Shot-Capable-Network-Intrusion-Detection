@@ -8,7 +8,7 @@ Moi fold f (giu lai nhan h):
   R    = SHAP cua TOAN BO flow attack trong 03_splits_v2/by_label/<h>/train_benign_attack.csv
          (13 loai giu lai, KHONG benign, KHONG gioi han so flow) — cung cach build tap R Protocol B
          (retrieval/reference_set.py).
-  SHAP = Layer1Engine.from_fold (layer1/engine.py): TreeSHAP chinh xac cua checkpoint Layer 1 cua chinh
+  SHAP = Layer1Engine.from_fold (gate/engine.py): TreeSHAP chinh xac cua checkpoint Layer 1 cua chinh
          fold do, tren khong gian input day du cua bien the (78 goc + augmented).
 
 Output (cung dinh dang tap R Protocol B, SHAPKNNRetriever nap truc tiep):
@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import paths  # noqa: E402
 
 paths.use_layer2_code()
-from layer1.engine import Layer1Engine   # noqa: E402
+from gate.engine import Layer1Engine   # noqa: E402
 from retrieval import reference_set      # noqa: E402
 
 SPL = paths.SPLITS

@@ -33,10 +33,25 @@ DATA_ROOT = os.environ.get("UTS_DATA", LAYER2_DIR)
 # --------------------------------------------------------------------------
 VARIANT = "ae_xgboost"            # "ae_xgboost" | "svdd_xgboost"
 
-# Checkpoint train boi layer1/train.py tren LAYER2/data/train_full.csv.
+# Checkpoint train boi LAYER1/03_training/train_protocol_b.py tren <UTS_DATA>/data/train_full.csv.
 # Moi thu muc co: model.pkl, scaler.pkl, feature_names.json, metrics.json
 # va encoder tuong ung (ae_model.pt hoac svdd/).
 _L1 = os.path.join(DATA_ROOT, "artifacts", "layer1")
+
+# Code Layer 1 (kien truc AE/SVDD trong models/): LAYER1/03_training cua repo. LAYER2 khong giu
+# ban sao nao; gate/engine.py import tu day. Dat UTS_LAYER1_CODE neu nam cho khac.
+LAYER1_CODE_DIR = os.environ.get("UTS_LAYER1_CODE") or next(
+    (p for p in (os.path.join(PROJECT_ROOT, "LAYER1", "03_training"),
+                 os.path.join(PROJECT_ROOT, "UTS_URA", "LAYER1", "03_training"))
+     if os.path.isdir(p)),
+    os.path.join(PROJECT_ROOT, "LAYER1", "03_training"))
+
+
+def use_layer1_code():
+    """Cho phep `from models.autoencoder import ...` (kien truc Layer 1 cua LAYER1)."""
+    import sys
+    if LAYER1_CODE_DIR not in sys.path:
+        sys.path.insert(0, LAYER1_CODE_DIR)
 
 LAYER1_ARTIFACTS = {
     "ae_xgboost": {
@@ -55,13 +70,13 @@ LAYER1_ARTIFACTS = {
     },
 }
 
-# Gia tri clip cua RobustScaler - phai khop layer1/train.py.
+# Gia tri clip cua RobustScaler - phai khop LAYER1/03_training/train_protocol_b.py.
 CLIP_VAL = 20.0
 
 # Nguong Layer 1: None = doc "threshold" tu metrics.json, la nguong theo ngan sach
-# FPR alpha = 0.4% tren benign cua TRAIN (layer1/train.py; metrics.json con luu
-# thresholds_by_alpha cho cac alpha khac). Khong tune tren val, vi val la tap bao
-# cao TP/FP cho Layer 2. Dat mot so cu the de ghi de.
+# FPR alpha = 0.5% tren benign cua TRAIN (LAYER1/03_training/train_protocol_b.py, OPERATING_ALPHA;
+# metrics.json con luu thresholds_by_alpha cho cac alpha khac). Khong tune tren val, vi val la
+# tap bao cao TP/FP cho Layer 2. Dat mot so cu the de ghi de.
 LAYER1_THRESHOLD = None
 
 # --------------------------------------------------------------------------

@@ -7,7 +7,7 @@ Tap tham chieu R (paper Section 3.5): vector SHAP cua moi flow attack cua tap tr
 
 Moi file: khoa label__<Label_Text> -> (n, d) float32 va feature_names; kem <file>.meta.json (nguon,
 so vector moi loai, ... va "novelty" -> "tau_zd" sau khi chay 02_calibrate_novelty.py).
-Vector SHAP tinh bang Layer1Engine.score (layer1/engine.py), tren khong gian input day du cua model:
+Vector SHAP tinh bang Layer1Engine.score (gate/engine.py), tren khong gian input day du cua model:
 95 chieu (AE) hoac 90 (SVDD), vi chieu augmented (ae_recon_error, svdd_d_min...) la thu model dung
 de quyet dinh.
 
@@ -78,7 +78,7 @@ def save(npz_path, pools, feature_names, meta):
 
 
 def build_protocol_b(variant: str) -> Path:
-    from layer1.engine import Layer1Engine
+    from gate.engine import Layer1Engine
 
     print(f"\n{'=' * 70}\n  TAP R (Protocol B) cho {variant}\n{'=' * 70}")
     l1 = Layer1Engine(variant=variant)

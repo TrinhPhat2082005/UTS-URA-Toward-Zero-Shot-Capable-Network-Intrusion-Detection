@@ -21,9 +21,7 @@ cách, novelty, cờ zero-day và 5 ảnh.
 | Thư mục / file | Paper | Việc |
 |---|---|---|
 | `config.py` | | Đường dẫn và tham số; dữ liệu đọc theo biến `UTS_DATA` |
-| `layer1/engine.py` | 3.3 | `Layer1Engine`: nạp checkpoint Protocol B (`Layer1Engine(variant)`) hoặc một fold Protocol A (`Layer1Engine.from_fold`), tính p(x) và vector SHAP. **Nơi duy nhất tính SHAP** (`shap.TreeExplainer`) |
-| `layer1/train.py` | 3.3, Eq. `tau-alpha` | Train Layer 1 Protocol B (config `xgb_config_mono.py` của LAYER1), ngưỡng theo ngân sách FPR α = 0.4% |
-| `layer1/models/` | | Kiến trúc AE/SVDD (giống hệt `LAYER1/03_training/models`), để LAYER2 tự chạy được trên Kaggle |
+| `gate/engine.py` | 3.3 | `Layer1Engine`: nạp checkpoint Layer 1 đã train, Protocol B (`Layer1Engine(variant)`) hoặc một fold Protocol A (`Layer1Engine.from_fold`), tính p(x) và vector SHAP. **Nơi duy nhất tính SHAP** (`shap.TreeExplainer`). LAYER2 không train Layer 1: kiến trúc AE/SVDD import từ `LAYER1/03_training/models` (`config.LAYER1_CODE_DIR`, biến `UTS_LAYER1_CODE`) |
 | `retrieval/reference_set.py` | 3.5 | Tập tham chiếu R: đường dẫn, hàm ghi, build Protocol B |
 | `retrieval/retriever.py` | 3.5, Eq. `type-dist`, `novelty` | `SHAPKNNRetriever`: một lần tính L2 → 3 loại gần nhất + điểm novelty. Chỉ trả số và profile, không viết text |
 | `retrieval/novelty.py` | 3.5, Eq. `zeroday-flag` | Cờ zero-day `s(q) > τ_zd`, đọc và hiệu chỉnh τ_zd |
@@ -51,13 +49,14 @@ Vì công tắc nằm ở prompt, cùng một bundle chạy được cả hai ch
 
 | Đường dẫn | Nội dung |
 |---|---|
-| `layer1/<variant>/` | Checkpoint Layer 1 Protocol B (`model.pkl`, `scaler.pkl`, `feature_names.json`, `metrics.json`, encoder) |
+| `layer1/<variant>/` | Checkpoint Layer 1 Protocol B do `LAYER1/03_training/train_protocol_b.py` ghi ra (`model.pkl`, `scaler.pkl`, `feature_names.json`, `metrics.json`, encoder). `metrics.json`: `threshold` = ngưỡng ngân sách FPR α = 0.5% trên benign train; `thresholds_by_alpha` giữ ngưỡng mọi α khác, kể cả 0.4% của các lần chạy cũ |
 | `reference_sets/protocol_b/<variant>.npz` (+ `.meta.json`) | Tập R của pipeline (mọi flow attack của train_full); τ_zd ở khóa `novelty` của meta |
 | `reference_sets/protocol_a/<fold>/<variant>.npz` (+ `.meta.json`) | Tập R của từng fold LOAO (R3, Setup 2); meta có thêm τ_α của fold |
 
 ## Chạy
 
-1. `python LAYER2/layer1/train.py` → `artifacts/layer1/<variant>/`
+1. `python LAYER1/03_training/train_protocol_b.py` → `artifacts/layer1/<variant>/`
+   (`--thresholds-only`: chỉ tính lại ngưỡng từ checkpoint đã có, không train lại)
 2. `python LAYER2/retrieval/reference_set.py` → `artifacts/reference_sets/protocol_b/<variant>.npz`
 3. `python LAYER2/experiments/rq3_retrieval/02_calibrate_novelty.py` → τ_zd vào file meta
 4. Báo cáo VLM: Setup 1/2 theo `experiments/README.md`; đợt pilot cũ dùng `run_layer2.ipynb` (GPU).
