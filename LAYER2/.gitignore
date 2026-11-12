@@ -2,6 +2,7 @@
 data/
 artifacts/
 evidence_cache/
+kb_sources/
 __pycache__/
 *.pyc
 dataset-metadata.json

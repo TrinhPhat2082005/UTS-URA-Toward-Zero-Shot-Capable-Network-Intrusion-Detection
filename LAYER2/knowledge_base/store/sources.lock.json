@@ -1,0 +1,185 @@
+{
+ "unb-ids2018": {
+  "version": "page retrieved on the date in sources.lock.json",
+  "files": {
+   "page.html": {
+    "url": "https://www.unb.ca/cic/datasets/ids-2018.html",
+    "sha256": "c1258503f336f0dd4b1877ce5506b8d870b2ddf67e14f90348c42bfd3258b9fe",
+    "bytes": 96799
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "cicflowmeter-readme": {
+  "version": "git 98a5ebad0df579cc8b43eedd3421b3ae87699901 (master, 2022-01-05)",
+  "files": {
+   "ReadMe.txt": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/98a5ebad0df579cc8b43eedd3421b3ae87699901/ReadMe.txt",
+    "sha256": "c8919171add30ac3bda3cd0cf528a0e409968a5c2c74192daada45d9df17494c",
+    "bytes": 7108
+   },
+   "LICENSE.txt": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/98a5ebad0df579cc8b43eedd3421b3ae87699901/LICENSE.txt",
+    "sha256": "f60c54b998ca033fd2b85de91c7d84960536a1c077bc4b641132fe1afd3f9255",
+    "bytes": 1968
+   },
+   "FlowFeature.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/98a5ebad0df579cc8b43eedd3421b3ae87699901/src/main/java/cic/cs/unb/ca/jnetpcap/FlowFeature.java",
+    "sha256": "fadddf4ff18de8507b7dbf8f1c9a51df8d249cc3dd92b041d12d0d9115d59f8c",
+    "bytes": 7433
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "cicflowmeter-src-2018": {
+  "version": "git 50d668db9bdb0a5fae457916dae4538ba8b41876 (2018-03-07)",
+  "files": {
+   "FlowFeature.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/FlowFeature.java",
+    "sha256": "941611e67a7a9cd72895cdb110510519a39051a2eedffdc8433b157601b41511",
+    "bytes": 7421
+   },
+   "BasicFlow.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/BasicFlow.java",
+    "sha256": "7519720889fe4f5de53b70c38efcd8f8b403a0b2cd6e743bce1648e4a46b31a9",
+    "bytes": 35831
+   },
+   "BasicPacketInfo.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/BasicPacketInfo.java",
+    "sha256": "eff86c02d123bcc285a824822bb759909da40d4d96618bd5a7159b8189435ba3",
+    "bytes": 4806
+   },
+   "PacketReader.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/PacketReader.java",
+    "sha256": "776a9234941c8f9d4af70b092f548bf4c72dbb91fda24fc499cf4bb2e8511bb7",
+    "bytes": 15135
+   },
+   "FlowGenerator.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/FlowGenerator.java",
+    "sha256": "c760789268bad42159e34cf972555d44dc9b82ad1c6eac6ad17c049a99e5e407",
+    "bytes": 7656
+   },
+   "CICFlowMeter.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/ifm/CICFlowMeter.java",
+    "sha256": "9b74a25ae29230020dc7115ad6327e165caed8a7c06f21fde2e417597c76411e",
+    "bytes": 3376
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "attack-20.1": {
+  "version": "20.1",
+  "files": {
+   "enterprise-attack-20.1.json": {
+    "url": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack-20.1.json",
+    "sha256": "539a843a7b53ed9749740b2123dddae3726b1a4831841c32aca740b011b910b5",
+    "bytes": 55277605
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "capec-3.9": {
+  "version": "3.9",
+  "files": {
+   "capec_v3.9.xml": {
+    "url": "https://capec.mitre.org/data/xml/capec_v3.9.xml",
+    "sha256": "70279a2dff0cb0ad79e546adb07828335a704ad5210e047e09e986172fc9e34d",
+    "bytes": 3849998
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "iana-ports": {
+  "version": "registry retrieved on the date in sources.lock.json",
+  "files": {
+   "service-names-port-numbers.csv": {
+    "url": "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv",
+    "sha256": "ee7416ab54a15a77de38cc2c03cc5ed6da8f59597bdbfff795360de3ffd8a719",
+    "bytes": 1158925
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "iana-protocols": {
+  "version": "registry retrieved on the date in sources.lock.json",
+  "files": {
+   "protocol-numbers-1.csv": {
+    "url": "https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv",
+    "sha256": "ba37fe0a4e01e45fe172f212ade37b908f4d56bbab0be9a97423bcfb9b8271a9",
+    "bytes": 9347
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "rfc9293": {
+  "version": "RFC 9293 (2022)",
+  "files": {
+   "rfc9293.txt": {
+    "url": "https://www.rfc-editor.org/rfc/rfc9293.txt",
+    "sha256": "6d9ac8be4b0286f8c3d337addf442b2eb6a9b14e1366594ea7fbc273f93dc2d9",
+    "bytes": 263696
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "rfc768": {
+  "version": "RFC 768 (1980)",
+  "files": {
+   "rfc768.txt": {
+    "url": "https://www.rfc-editor.org/rfc/rfc768.txt",
+    "sha256": "7dc8880e1ecef9c3f9da0db4b876a16e96bfa4f0953cc9d977d414f8f680c2f0",
+    "bytes": 5896
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "rfc3168": {
+  "version": "RFC 3168 (2001)",
+  "files": {
+   "rfc3168.txt": {
+    "url": "https://www.rfc-editor.org/rfc/rfc3168.txt",
+    "sha256": "35b437f1826b2624d6c5e7af2f047a6ba0a3110cd5559ffbd0cefdc8c3d87b76",
+    "bytes": 170966
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "java8-hashmap": {
+  "version": "Java SE 8",
+  "files": {
+   "HashMap.html": {
+    "url": "https://docs.oracle.com/javase/8/docs/api/java/util/HashMap.html",
+    "sha256": "8f718a56aa375f510fcb55e5057ce1dbbd68473327756852137669fb84eb2022",
+    "bytes": 86709
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "layer1-code": {
+  "version": "repository working tree at build time",
+  "files": {
+   "autoencoder.py": {
+    "path": "LAYER1/03_training/models/autoencoder.py",
+    "sha256": "0321d6c1fd5a4d1ccef38ccb9f408590890177477022f833bb54306d58d70ae5",
+    "bytes": 1870
+   },
+   "train_protocol_b.py": {
+    "path": "LAYER1/03_training/train_protocol_b.py",
+    "sha256": "4f7df36526819795aced0eff49d2f791aa3998e8d879464fe3eaa09e7dc5f9a7",
+    "bytes": 22810
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "java8-jls": {
+  "version": "Java SE 8",
+  "files": {
+   "jls-4.html": {
+    "url": "https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html",
+    "sha256": "f99deeffe02e7c2920072a7302529fd290d3f0401a50848e67404b221e80aba1",
+    "bytes": 351514
+   }
+  },
+  "retrieved": "2026-11-13"
+ }
+}

@@ -1,0 +1,498 @@
+{
+ "dataset": {
+  "file": "train_full.csv (Protocol B training split)",
+  "sha256": "64f48652b0f6b1b7b4811bf09862d3c74b2d5a7a109884d09ef4a42e8fe46c9f",
+  "rows": 682090,
+  "feature_columns": 78,
+  "label_counts": {
+   "Benign": 560000,
+   "Bot": 16000,
+   "Brute_Force_Web": 444,
+   "Brute_Force_XSS": 182,
+   "DDOS_attack_HOIC": 16000,
+   "DDOS_attack_LOIC_UDP": 1384,
+   "DDoS_attacks_LOIC_HTTP": 16000,
+   "DoS_attacks_GoldenEye": 16000,
+   "DoS_attacks_Hulk": 16000,
+   "DoS_attacks_SlowHTTPTest": 44,
+   "DoS_attacks_Slowloris": 7926,
+   "FTP_BruteForce": 43,
+   "Infiltration": 16000,
+   "SQL_Injection": 67,
+   "SSH_Bruteforce": 16000
+  }
+ },
+ "constant_columns": {
+  "Bwd PSH Flags": 0.0,
+  "Bwd URG Flags": 0.0,
+  "Fwd Byts/b Avg": 0.0,
+  "Fwd Pkts/b Avg": 0.0,
+  "Fwd Blk Rate Avg": 0.0,
+  "Bwd Byts/b Avg": 0.0,
+  "Bwd Pkts/b Avg": 0.0,
+  "Bwd Blk Rate Avg": 0.0
+ },
+ "identical_columns": [
+  [
+   "Tot Fwd Pkts",
+   "Subflow Fwd Pkts"
+  ],
+  [
+   "Tot Bwd Pkts",
+   "Subflow Bwd Pkts"
+  ],
+  [
+   "TotLen Fwd Pkts",
+   "Subflow Fwd Byts"
+  ],
+  [
+   "Fwd PSH Flags",
+   "SYN Flag Cnt"
+  ],
+  [
+   "Fwd URG Flags",
+   "CWE Flag Count"
+  ]
+ ],
+ "near_identical_columns": [
+  [
+   "TotLen Bwd Pkts",
+   "Subflow Bwd Byts",
+   0.999993
+  ],
+  [
+   "RST Flag Cnt",
+   "ECE Flag Cnt",
+   0.999999
+  ]
+ ],
+ "identical_with": {
+  "Tot Fwd Pkts": [
+   "Subflow Fwd Pkts"
+  ],
+  "Subflow Fwd Pkts": [
+   "Tot Fwd Pkts"
+  ],
+  "Tot Bwd Pkts": [
+   "Subflow Bwd Pkts"
+  ],
+  "Subflow Bwd Pkts": [
+   "Tot Bwd Pkts"
+  ],
+  "TotLen Fwd Pkts": [
+   "Subflow Fwd Byts"
+  ],
+  "Subflow Fwd Byts": [
+   "TotLen Fwd Pkts"
+  ],
+  "Fwd PSH Flags": [
+   "SYN Flag Cnt"
+  ],
+  "SYN Flag Cnt": [
+   "Fwd PSH Flags"
+  ],
+  "Fwd URG Flags": [
+   "CWE Flag Count"
+  ],
+  "CWE Flag Count": [
+   "Fwd URG Flags"
+  ]
+ },
+ "near_identical_with": {
+  "TotLen Bwd Pkts": [
+   "Subflow Bwd Byts"
+  ],
+  "Subflow Bwd Byts": [
+   "TotLen Bwd Pkts"
+  ],
+  "RST Flag Cnt": [
+   "ECE Flag Cnt"
+  ],
+  "ECE Flag Cnt": [
+   "RST Flag Cnt"
+  ]
+ },
+ "flag_values": {
+  "FIN Flag Cnt": [
+   0.0,
+   1.0
+  ],
+  "SYN Flag Cnt": [
+   0.0,
+   1.0
+  ],
+  "RST Flag Cnt": [
+   0.0,
+   1.0
+  ],
+  "PSH Flag Cnt": [
+   0.0,
+   1.0
+  ],
+  "ACK Flag Cnt": [
+   0.0,
+   1.0
+  ],
+  "URG Flag Cnt": [
+   0.0,
+   1.0
+  ],
+  "CWE Flag Count": [
+   0.0,
+   1.0
+  ],
+  "ECE Flag Cnt": [
+   0.0,
+   1.0
+  ],
+  "Fwd PSH Flags": [
+   0.0,
+   1.0
+  ],
+  "Bwd PSH Flags": [
+   0.0
+  ],
+  "Fwd URG Flags": [
+   0.0,
+   1.0
+  ],
+  "Bwd URG Flags": [
+   0.0
+  ]
+ },
+ "flag_column_holds": {
+  "FIN Flag Cnt": "RST",
+  "SYN Flag Cnt": "PSH",
+  "RST Flag Cnt": "ECE",
+  "PSH Flag Cnt": "SYN",
+  "ACK Flag Cnt": "ACK",
+  "URG Flag Cnt": "FIN",
+  "CWE Flag Count": "URG",
+  "ECE Flag Cnt": "CWR"
+ },
+ "flag_consistency": {
+  "SYN_Flag_Cnt_equals_Fwd_PSH_Flags": 1.0,
+  "CWE_Flag_Count_equals_Fwd_URG_Flags": 1.0,
+  "RST_Flag_Cnt_equals_ECE_Flag_Cnt": 1.0
+ },
+ "flag_share_tcp": {
+  "FIN Flag Cnt": 0.006,
+  "SYN Flag Cnt": 0.0551,
+  "RST Flag Cnt": 0.3071,
+  "PSH Flag Cnt": 0.6403,
+  "ACK Flag Cnt": 0.3554,
+  "URG Flag Cnt": 0.0569,
+  "CWE Flag Count": 0.0003,
+  "ECE Flag Cnt": 0.3071
+ },
+ "init_win_minus1": {
+  "fwd_rows": 131993,
+  "fwd_udp_share": 0.9072,
+  "bwd_rows": 248429,
+  "bwd_zero_bwd_pkts_share": 0.5365,
+  "bwd_udp_share": 0.482,
+  "bwd_zero_bwd_pkts_or_udp_share": 0.9984
+ },
+ "fwd_payload_without_act_data": {
+  "rows": 87044,
+  "single_fwd_pkt_share": 0.8746
+ },
+ "flow_duration": {
+  "max": 119999998,
+  "negative_rows": 2
+ },
+ "protocol_0": {
+  "rows": 12243,
+  "dst_port_0_share": 1.0,
+  "zero_payload_share": 1.0
+ },
+ "attack_main_ports": {
+  "rule": "port carries >= 1% of the flows of at least one attack label",
+  "ports": {
+   "0": {
+    "Brute_Force_Web": 0.0383,
+    "Infiltration": 0.0166
+   },
+   "21": {
+    "DoS_attacks_SlowHTTPTest": 1.0,
+    "FTP_BruteForce": 1.0
+   },
+   "22": {
+    "SSH_Bruteforce": 1.0
+   },
+   "53": {
+    "Infiltration": 0.2917
+   },
+   "80": {
+    "Brute_Force_Web": 0.7455,
+    "Brute_Force_XSS": 0.9835,
+    "DDOS_attack_HOIC": 1.0,
+    "DDOS_attack_LOIC_UDP": 1.0,
+    "DDoS_attacks_LOIC_HTTP": 1.0,
+    "DoS_attacks_GoldenEye": 1.0,
+    "DoS_attacks_Hulk": 1.0,
+    "DoS_attacks_Slowloris": 1.0,
+    "Infiltration": 0.0395,
+    "SQL_Injection": 1.0
+   },
+   "135": {
+    "Infiltration": 0.0181
+   },
+   "443": {
+    "Infiltration": 0.2029
+   },
+   "445": {
+    "Infiltration": 0.0396
+   },
+   "500": {
+    "Brute_Force_Web": 0.2072,
+    "Brute_Force_XSS": 0.0165
+   },
+   "3389": {
+    "Infiltration": 0.0963
+   },
+   "8080": {
+    "Bot": 0.9667
+   }
+  },
+  "attack_flow_coverage": 0.958
+ },
+ "by_label": {
+  "Benign": {
+   "n": 560000,
+   "top_ports": {
+    "53": 0.1946,
+    "3389": 0.1725,
+    "443": 0.1643,
+    "80": 0.1186,
+    "445": 0.0668
+   },
+   "protocol": {
+    "6": 0.776,
+    "17": 0.2026,
+    "0": 0.0213
+   },
+   "zero_payload": 0.2286,
+   "init_fwd_win_minus1": 0.224,
+   "init_bwd_win_minus1": 0.3715,
+   "duration_ge_119s": 0.0064,
+   "udp": 0.2026
+  },
+  "Bot": {
+   "n": 16000,
+   "top_ports": {
+    "8080": 0.9667,
+    "0": 0.0015,
+    "51342": 0.0002,
+    "51280": 0.0002,
+    "51771": 0.0002
+   },
+   "protocol": {
+    "6": 0.9985,
+    "0": 0.0015
+   },
+   "zero_payload": 0.0116,
+   "init_fwd_win_minus1": 0.0015,
+   "init_bwd_win_minus1": 0.0109,
+   "duration_ge_119s": 0.0,
+   "udp": 0.0
+  },
+  "Brute_Force_Web": {
+   "n": 444,
+   "top_ports": {
+    "80": 0.7455,
+    "500": 0.2072,
+    "0": 0.0383,
+    "67": 0.0045,
+    "22": 0.0023
+   },
+   "protocol": {
+    "6": 0.75,
+    "17": 0.2117,
+    "0": 0.0383
+   },
+   "zero_payload": 0.3063,
+   "init_fwd_win_minus1": 0.25,
+   "init_bwd_win_minus1": 0.5113,
+   "duration_ge_119s": 0.0,
+   "udp": 0.2117
+  },
+  "Brute_Force_XSS": {
+   "n": 182,
+   "top_ports": {
+    "80": 0.9835,
+    "500": 0.0165
+   },
+   "protocol": {
+    "6": 0.9835,
+    "17": 0.0165
+   },
+   "zero_payload": 0.4725,
+   "init_fwd_win_minus1": 0.0165,
+   "init_bwd_win_minus1": 0.4835,
+   "duration_ge_119s": 0.0,
+   "udp": 0.0165
+  },
+  "DDOS_attack_HOIC": {
+   "n": 16000,
+   "top_ports": {
+    "80": 1.0
+   },
+   "protocol": {
+    "6": 1.0
+   },
+   "zero_payload": 0.1779,
+   "init_fwd_win_minus1": 0.0,
+   "init_bwd_win_minus1": 0.1779,
+   "duration_ge_119s": 0.0,
+   "udp": 0.0
+  },
+  "DDOS_attack_LOIC_UDP": {
+   "n": 1384,
+   "top_ports": {
+    "80": 1.0
+   },
+   "protocol": {
+    "17": 1.0
+   },
+   "zero_payload": 0.0,
+   "init_fwd_win_minus1": 1.0,
+   "init_bwd_win_minus1": 1.0,
+   "duration_ge_119s": 0.94,
+   "udp": 1.0
+  },
+  "DDoS_attacks_LOIC_HTTP": {
+   "n": 16000,
+   "top_ports": {
+    "80": 1.0
+   },
+   "protocol": {
+    "6": 0.9986,
+    "17": 0.0014
+   },
+   "zero_payload": 0.5031,
+   "init_fwd_win_minus1": 0.0014,
+   "init_bwd_win_minus1": 0.5044,
+   "duration_ge_119s": 0.0012,
+   "udp": 0.0014
+  },
+  "DoS_attacks_GoldenEye": {
+   "n": 16000,
+   "top_ports": {
+    "80": 1.0
+   },
+   "protocol": {
+    "6": 1.0
+   },
+   "zero_payload": 0.3292,
+   "init_fwd_win_minus1": 0.0,
+   "init_bwd_win_minus1": 0.3292,
+   "duration_ge_119s": 0.0,
+   "udp": 0.0
+  },
+  "DoS_attacks_Hulk": {
+   "n": 16000,
+   "top_ports": {
+    "80": 1.0
+   },
+   "protocol": {
+    "6": 1.0
+   },
+   "zero_payload": 0.8266,
+   "init_fwd_win_minus1": 0.0,
+   "init_bwd_win_minus1": 0.8266,
+   "duration_ge_119s": 0.0,
+   "udp": 0.0
+  },
+  "DoS_attacks_SlowHTTPTest": {
+   "n": 44,
+   "top_ports": {
+    "21": 1.0
+   },
+   "protocol": {
+    "6": 1.0
+   },
+   "zero_payload": 1.0,
+   "init_fwd_win_minus1": 0.0,
+   "init_bwd_win_minus1": 0.0,
+   "duration_ge_119s": 0.0,
+   "udp": 0.0
+  },
+  "DoS_attacks_Slowloris": {
+   "n": 7926,
+   "top_ports": {
+    "80": 1.0
+   },
+   "protocol": {
+    "6": 1.0
+   },
+   "zero_payload": 0.231,
+   "init_fwd_win_minus1": 0.0,
+   "init_bwd_win_minus1": 0.2311,
+   "duration_ge_119s": 0.0004,
+   "udp": 0.0
+  },
+  "FTP_BruteForce": {
+   "n": 43,
+   "top_ports": {
+    "21": 1.0
+   },
+   "protocol": {
+    "6": 1.0
+   },
+   "zero_payload": 1.0,
+   "init_fwd_win_minus1": 0.0,
+   "init_bwd_win_minus1": 0.0,
+   "duration_ge_119s": 0.0,
+   "udp": 0.0
+  },
+  "Infiltration": {
+   "n": 16000,
+   "top_ports": {
+    "53": 0.2917,
+    "443": 0.2029,
+    "3389": 0.0963,
+    "445": 0.0396,
+    "80": 0.0395
+   },
+   "protocol": {
+    "6": 0.6857,
+    "17": 0.2977,
+    "0": 0.0166
+   },
+   "zero_payload": 0.3331,
+   "init_fwd_win_minus1": 0.3142,
+   "init_bwd_win_minus1": 0.4524,
+   "duration_ge_119s": 0.0071,
+   "udp": 0.2977
+  },
+  "SQL_Injection": {
+   "n": 67,
+   "top_ports": {
+    "80": 1.0
+   },
+   "protocol": {
+    "6": 1.0
+   },
+   "zero_payload": 0.403,
+   "init_fwd_win_minus1": 0.0,
+   "init_bwd_win_minus1": 0.2687,
+   "duration_ge_119s": 0.0,
+   "udp": 0.0
+  },
+  "SSH_Bruteforce": {
+   "n": 16000,
+   "top_ports": {
+    "22": 1.0
+   },
+   "protocol": {
+    "6": 1.0
+   },
+   "zero_payload": 0.0021,
+   "init_fwd_win_minus1": 0.0,
+   "init_bwd_win_minus1": 0.0,
+   "duration_ge_119s": 0.0,
+   "udp": 0.0
+  }
+ }
+}

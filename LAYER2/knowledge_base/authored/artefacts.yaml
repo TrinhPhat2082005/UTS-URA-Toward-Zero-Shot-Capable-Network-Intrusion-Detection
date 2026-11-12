@@ -1,0 +1,63 @@
+# H3: doan giai thich gia tri la DO CONG CU TRICH XUAT sinh ra. Chi dua vao context khi `when` dung voi
+# gia tri tho cua alert (knowledge_base/conditions.py danh gia, khong dung eval).
+# Cau `text` noi CO CHE (gia tri nay sinh ra the nao), khong phan xet flow co phai tan cong hay khong.
+# Ty le theo tung nhan (data_facts.by_label.*) duoc build_report.md liet ke canh moi doan.
+
+- pid: H3-NOPAYLOAD
+  when: {all: [["TotLen Fwd Pkts", "==", 0], ["TotLen Bwd Pkts", "==", 0]]}
+  frequency_key: zero_payload
+  text: "This flow carries no transport-layer payload in either direction, so application content (for example an HTTP request or an SQL statement) cannot be observed in it. The extractor ends a TCP flow at the first FIN packet, and a packet that arrives when no flow is open starts a new flow, so the last packets of a connection can form a flow of their own."
+  support:
+    - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch", quote: 'packetInfo.setPayloadBytes(tcp.getPayloadLength());'}
+    - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket()", quote: '// Flow finished due FIN flag (tcp only):'}
+    - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket()", quote: '}else if(packet.hasFlagFIN()){'}
+    - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket(), packet without an open flow",
+       quote: 'currentFlows.put(packet.getFlowId(), new BasicFlow(bidirectional,packet));'}
+    - {data: by_label.Benign.zero_payload}
+    - {data: by_label.DoS_attacks_Hulk.zero_payload}
+
+- pid: H3-NOWIN
+  when: {any: [["Init Fwd Win Byts", "==", -1], ["Init Bwd Win Byts", "==", -1]]}
+  frequency_key: init_bwd_win_minus1
+  text: "A value of -1 in an initial-window column is not a window size: the TCP window field is a 16-bit count of octets. It is the extractor's default, kept when no TCP window was read for that direction, for example in a UDP flow or when no packet was seen in that direction."
+  support:
+    - {src: rfc9293, locator: "Section 3.1, Header Format",
+       quote: 'Window: 16 bits The number of data octets beginning with the one indicated in the acknowledgment field that the sender of this segment is willing to accept.'}
+    - {src: cicflowmeter-src-2018, locator: "BasicPacketInfo.java, field declaration", quote: 'private int TCPWindow=-1;'}
+    - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch", quote: 'packetInfo.setTCPWindow(tcp.window());'}
+    - {data: init_win_minus1.bwd_zero_bwd_pkts_or_udp_share}
+
+- pid: H3-TIMEOUT
+  when: {all: [["Flow Duration", ">=", 119000000]]}
+  frequency_key: duration_ge_119s
+  text: "The flow lasted until the extractor's 120 s flow timeout. A longer connection is split into several consecutive flows, so this duration does not cover the whole session."
+  support:
+    - {src: cicflowmeter-src-2018, locator: "CICFlowMeter.java, main()", quote: 'flowGen = new FlowGenerator(true,120000000L, 5000000L);'}
+    - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket()",
+       quote: '// Flow finished due flowtimeout: // 1.- we move the flow to finished flow list // 2.- we eliminate the flow from the current flow list // 3.- we create a new flow with the packet-in-process'}
+    - {data: flow_duration.max}
+    - {data: by_label.DDOS_attack_LOIC_UDP.duration_ge_119s}
+
+- pid: H3-UDP
+  when: {all: [["Protocol", "==", 17]]}
+  frequency_key: udp
+  text: "This is a UDP flow. The extractor reads flags and the window only from TCP headers, so for UDP the flag columns stay 0 and the initial-window columns stay -1; they carry no information about this flow."
+  support:
+    - {src: cicflowmeter-readme, locator: "ReadMe.txt, list of extracted features",
+       quote: 'Fwd PSH flags Number of times the PSH flag was set in packets travelling in the forward direction (0 for UDP)'}
+    - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch", quote: 'packetInfo.setFlagRST(tcp.flags_RST());'}
+    - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch", quote: 'packetInfo.setTCPWindow(tcp.window());'}
+    - {data: by_label.DDOS_attack_LOIC_UDP.init_fwd_win_minus1}
+
+- pid: H3-NOTRANSPORT
+  when: {all: [["Protocol", "==", 0]]}
+  frequency_key: null
+  text: "Protocol 0 here means the packets carried neither a TCP nor a UDP header: the extractor sets the protocol only to 6 (TCP) or 17 (UDP) and otherwise keeps the Java default value 0, and ports and payload are then also 0. It does not refer to IANA protocol number 0 (HOPOPT)."
+  support:
+    - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch", quote: 'packetInfo.setProtocol(6);'}
+    - {src: cicflowmeter-src-2018, locator: "PacketReader.java, UDP branch", quote: 'packetInfo.setProtocol(17);'}
+    - {src: cicflowmeter-src-2018, locator: "BasicPacketInfo.java, field declarations", quote: 'private int protocol;'}
+    - {src: java8-jls, locator: "Section 4.12.5, Initial Values of Variables", quote: 'For type int, the default value is zero, that is, 0.'}
+    - {src: iana-protocols, locator: "protocol-numbers-1.csv, row 0", quote: '0,HOPOPT,IPv6 Hop-by-Hop Option'}
+    - {data: protocol_0.dst_port_0_share}
+    - {data: protocol_0.zero_payload_share}

@@ -1,0 +1,91 @@
+{
+ "kb_sha256": "6f6b4d5ed81e3069580eb9bdfa196995c82206a4921e87404fe9db687a192d80",
+ "labels": {
+  "SSH_Bruteforce": {
+   "technique": "T1110.001",
+   "capec": "CAPEC-49"
+  },
+  "FTP_BruteForce": {
+   "technique": "T1110.001",
+   "capec": "CAPEC-49"
+  },
+  "DoS_attacks_GoldenEye": {
+   "technique": "T1499.002",
+   "capec": "CAPEC-488"
+  },
+  "DoS_attacks_Hulk": {
+   "technique": "T1499.002",
+   "capec": "CAPEC-488"
+  },
+  "DoS_attacks_SlowHTTPTest": {
+   "technique": "T1499.002",
+   "capec": "CAPEC-469"
+  },
+  "DoS_attacks_Slowloris": {
+   "technique": "T1499.002",
+   "capec": "CAPEC-469"
+  },
+  "DDoS_attacks_LOIC_HTTP": {
+   "technique": "T1499.002",
+   "capec": "CAPEC-488"
+  },
+  "DDOS_attack_LOIC_UDP": {
+   "technique": "T1498.001",
+   "capec": "CAPEC-125"
+  },
+  "DDOS_attack_HOIC": {
+   "technique": "T1499.002",
+   "capec": "CAPEC-488"
+  },
+  "Brute_Force_Web": {
+   "technique": "T1110.001",
+   "capec": "CAPEC-49"
+  },
+  "Brute_Force_XSS": {
+   "technique": "T1190",
+   "capec": "CAPEC-63"
+  },
+  "SQL_Injection": {
+   "technique": "T1190",
+   "capec": "CAPEC-66"
+  },
+  "Infiltration": {
+   "technique": "T1046",
+   "capec": "CAPEC-300"
+  },
+  "Bot": {
+   "technique": "T1071.001",
+   "capec": null
+  }
+ },
+ "flag_column_holds": {
+  "FIN Flag Cnt": "RST",
+  "SYN Flag Cnt": "PSH",
+  "RST Flag Cnt": "ECE",
+  "PSH Flag Cnt": "SYN",
+  "ACK Flag Cnt": "ACK",
+  "URG Flag Cnt": "FIN",
+  "CWE Flag Count": "URG",
+  "ECE Flag Cnt": "CWR",
+  "Fwd PSH Flags": "PSH",
+  "Fwd URG Flags": "URG"
+ },
+ "discrete_features": [
+  "Dst Port",
+  "Protocol",
+  "Fwd PSH Flags",
+  "Bwd PSH Flags",
+  "Fwd URG Flags",
+  "Bwd URG Flags",
+  "FIN Flag Cnt",
+  "SYN Flag Cnt",
+  "RST Flag Cnt",
+  "PSH Flag Cnt",
+  "ACK Flag Cnt",
+  "URG Flag Cnt",
+  "CWE Flag Count",
+  "ECE Flag Cnt",
+  "Init Fwd Win Byts",
+  "Init Bwd Win Byts"
+ ]
+}

@@ -1,0 +1,128 @@
+# Nguon cua knowledge base. Moi trich dan trong authored/*.yaml va store/passages.jsonl tro toi
+# mot `id` o day; fetch_sources.py tai file ve $UTS_DATA/kb_sources/<id>/ va ghi sha256 vao
+# store/sources.lock.json. Chi dung nguon thuoc cac tang duoi (xem knowledge_base/README.md).
+#
+# tier:
+#   standard   chuan (IANA, IETF RFC)
+#   knowledge  tri thuc chuan cua MITRE (ATT&CK, CAPEC)
+#   dataset    nguon goc cua dataset (trang CSE-CIC-IDS2018 cua UNB/CIC)
+#   tool       nguon goc cua cong cu trich xuat (ReadMe + ma nguon CICFlowMeter)
+#   platform   tai lieu chinh thuc cua nen tang ma cong cu chay tren (Java SE)
+#   system     ma nguon cua chinh he thong nay (dinh nghia feature AE cua Layer 1)
+
+- id: unb-ids2018
+  tier: dataset
+  title: "CSE-CIC-IDS2018 on AWS (Canadian Institute for Cybersecurity, University of New Brunswick)"
+  version: "page retrieved on the date in sources.lock.json"
+  license: "Dataset page; short quotations for research use with citation"
+  files:
+    - {name: page.html, url: "https://www.unb.ca/cic/datasets/ids-2018.html"}
+
+# FlowFeature.java (master) noi ten cot nam 2018 voi ten trong ReadMe: hai ban giu cung so thu tu
+# feature (chu thich //9, //10, ...), ban master dung ten day du nhu ReadMe ("Total Fwd Packet").
+- id: cicflowmeter-readme
+  tier: tool
+  title: "CICFlowMeter ReadMe (feature list and descriptions) and feature names at the same commit"
+  version: "git 98a5ebad0df579cc8b43eedd3421b3ae87699901 (master, 2022-01-05)"
+  license: "CICFlowMeter LICENSE.txt (MIT-style permission notice)"
+  files:
+    - {name: ReadMe.txt, url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/98a5ebad0df579cc8b43eedd3421b3ae87699901/ReadMe.txt"}
+    - {name: FlowFeature.java, url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/98a5ebad0df579cc8b43eedd3421b3ae87699901/src/main/java/cic/cs/unb/ca/jnetpcap/FlowFeature.java"}
+    - {name: LICENSE.txt, url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/98a5ebad0df579cc8b43eedd3421b3ae87699901/LICENSE.txt"}
+
+# Commit 2018-03-07: ten cot trong FlowFeature.java trung khop tung chu voi header CSV cua
+# CSE-CIC-IDS2018 (vd "Tot Fwd Pkts", "CWE Flag Count"); ban master (2022) da doi ten cot.
+- id: cicflowmeter-src-2018
+  tier: tool
+  title: "CICFlowMeter-V3 Java source at the commit whose column names match the CSE-CIC-IDS2018 CSV header"
+  version: "git 50d668db9bdb0a5fae457916dae4538ba8b41876 (2018-03-07)"
+  license: "CICFlowMeter LICENSE.txt (MIT-style permission notice)"
+  files:
+    - {name: FlowFeature.java,     url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/FlowFeature.java"}
+    - {name: BasicFlow.java,       url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/BasicFlow.java"}
+    - {name: BasicPacketInfo.java, url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/BasicPacketInfo.java"}
+    - {name: PacketReader.java,    url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/PacketReader.java"}
+    - {name: FlowGenerator.java,   url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/FlowGenerator.java"}
+    - {name: CICFlowMeter.java,    url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/ifm/CICFlowMeter.java"}
+
+- id: attack-20.1
+  tier: knowledge
+  title: "MITRE ATT&CK Enterprise v20.1 (STIX 2.1 bundle)"
+  version: "20.1"
+  license: "MITRE ATT&CK Terms of Use (reproduction permitted with copyright notice)"
+  files:
+    - {name: enterprise-attack-20.1.json, url: "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack-20.1.json"}
+
+- id: capec-3.9
+  tier: knowledge
+  title: "MITRE CAPEC v3.9 (XML)"
+  version: "3.9"
+  license: "CAPEC Terms of Use (reproduction permitted with copyright notice)"
+  files:
+    - {name: capec_v3.9.xml, url: "https://capec.mitre.org/data/xml/capec_v3.9.xml"}
+
+- id: iana-ports
+  tier: standard
+  title: "IANA Service Name and Transport Protocol Port Number Registry"
+  version: "registry retrieved on the date in sources.lock.json"
+  license: "IANA registries are public"
+  files:
+    - {name: service-names-port-numbers.csv, url: "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv"}
+
+- id: iana-protocols
+  tier: standard
+  title: "IANA Assigned Internet Protocol Numbers"
+  version: "registry retrieved on the date in sources.lock.json"
+  license: "IANA registries are public"
+  files:
+    - {name: protocol-numbers-1.csv, url: "https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv"}
+
+- id: rfc9293
+  tier: standard
+  title: "RFC 9293: Transmission Control Protocol (TCP)"
+  version: "RFC 9293 (2022)"
+  license: "IETF Trust Legal Provisions"
+  files:
+    - {name: rfc9293.txt, url: "https://www.rfc-editor.org/rfc/rfc9293.txt"}
+
+- id: rfc768
+  tier: standard
+  title: "RFC 768: User Datagram Protocol"
+  version: "RFC 768 (1980)"
+  license: "IETF Trust Legal Provisions"
+  files:
+    - {name: rfc768.txt, url: "https://www.rfc-editor.org/rfc/rfc768.txt"}
+
+- id: rfc3168
+  tier: standard
+  title: "RFC 3168: The Addition of Explicit Congestion Notification (ECN) to IP"
+  version: "RFC 3168 (2001)"
+  license: "IETF Trust Legal Provisions"
+  files:
+    - {name: rfc3168.txt, url: "https://www.rfc-editor.org/rfc/rfc3168.txt"}
+
+- id: java8-hashmap
+  tier: platform
+  title: "Java SE 8 API: java.util.HashMap"
+  version: "Java SE 8"
+  license: "Oracle documentation; short quotation"
+  files:
+    - {name: HashMap.html, url: "https://docs.oracle.com/javase/8/docs/api/java/util/HashMap.html"}
+
+- id: java8-jls
+  tier: platform
+  title: "The Java Language Specification, Java SE 8 Edition, Chapter 4 (default values of variables)"
+  version: "Java SE 8"
+  license: "Oracle documentation; short quotation"
+  files:
+    - {name: jls-4.html, url: "https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html"}
+
+# Nguon "system": file trong chinh repo nay, khong tai; sha256 tinh luc build.
+- id: layer1-code
+  tier: system
+  title: "Layer 1 training code of this repository (autoencoder features)"
+  version: "repository working tree at build time"
+  license: "this repository"
+  local:
+    - {name: autoencoder.py,       path: "LAYER1/03_training/models/autoencoder.py"}
+    - {name: train_protocol_b.py,  path: "LAYER1/03_training/train_protocol_b.py"}
