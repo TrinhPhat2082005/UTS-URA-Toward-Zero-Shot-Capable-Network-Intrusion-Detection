@@ -595,3 +595,72 @@ def parse_candidate_report(raw, options):
     if out["n_sections"] < 6:
         out["parse_error"] = (out["parse_error"] or "") + f"|only_{out['n_sections']}_sections"
     return out
+
+
+# =============================================================================
+# Nhanh BAT CO "khong co tien le gan" (thiet ke chot 2026-11-13; thay unknown_anomaly.json)
+#
+# Day la CHI DAN cho VLM, khong phai tri thuc, nen nam o prompts.py chu khong o knowledge_base/:
+#   FLAGGED_NOTICE    code dien so (s, tau_zd, nhan gan nhat, so tien le) -> dat dau context
+#   FLAGGED_ADDENDUM  chi them khi co bat: phan tich khac biet qua bang C, mot danh gia trong 3 lua chon
+#   render_contrast_table   bang C (evidence/contrast.py) -> markdown voi ID [C1].. de VLM trich
+#   parse_assessment        doc danh gia cua VLM (cham tren Protocol A: loai bi giu lai vs loai da biet)
+# Chua noi vao luong prompt hien tai (build_candidate_prompt): viec do thuoc dot viet lai prompt (D6).
+# =============================================================================
+FLAGGED_NOTICE = """\
+NOVELTY FLAG: this alert is unusual with respect to the reference set of known attack flows.
+Its mean distance to its {k} nearest reference flows (s = {novelty:.4f}) is above the threshold
+(tau = {tau:.4f}) that {pct:.0f}% of known alerts fall under. The reference set holds no close
+precedent; this does not establish that the attack type is new.
+Nearest known type (for comparison only): {label} ({n} of the {k_vote} nearest precedents).\
+"""
+
+FLAGGED_ADDENDUM = """\
+The novelty flag is raised, so this alert may be an attack behaviour the system has not seen.
+Do not assign an attack type, ATT&CK technique or tactic. The profile of {label} is given only
+to compare against.
+
+In section 4:
+1. Using table C, state how this alert differs from the {label} precedents: in the gate's
+   reasons (phi) and in the traffic values (x). Cite the rows, e.g. [C1].
+2. For each behaviour in the {label} profile, state whether it is observed, contradicted, or
+   not observable in this alert. Cite [K:...] or [E...].
+3. Give exactly one assessment, supported by the cited rows:
+   - "Variant of {label}": the differences are of degree; the profile's behaviours hold.
+   - "Different behaviour": key behaviours of the profile are contradicted.
+   - "Undetermined": the evidence does not decide.
+Do not name another attack type, technique or tactic.\
+"""
+
+ASSESSMENTS = ("variant", "different", "undetermined")
+_ASSESS_RE = re.compile(r"(variant of|different behaviou?r|undetermined)", re.IGNORECASE)
+
+
+def render_flagged_notice(look, k_vote=5, quantile=0.95):
+    """look: retrieval.store.Lookup cua alert bi bat co."""
+    return FLAGGED_NOTICE.format(k=len(look.neighbours), novelty=look.novelty, tau=look.tau_zd,
+                                 pct=100 * quantile, label=look.label, n=len(look.winners), k_vote=k_vote)
+
+
+def render_contrast_table(table):
+    """Bang C (evidence/contrast.contrast_table) -> markdown, moi dong co ID de trich [C1]."""
+    def num(v):
+        return "-" if v is None else (v if isinstance(v, str) else f"{v:.6g}")
+    n, lab = table["n_precedents"], table["label"]
+    lines = [f"Table C: this alert vs the mean of its {n} nearest {lab} precedents "
+             "(phi = SHAP contribution in log-odds; x = raw flow value).",
+             "| ID | Feature | phi alert | phi precedents | delta phi | x alert | x precedents |",
+             "|---|---|---|---|---|---|---|"]
+    for r in table["rows"]:
+        lines.append(f"| {r['id']} | {r['feature']} | {r['phi_alert']:+.3f} | {r['phi_ref']:+.3f} | "
+                     f"{r['delta_phi']:+.3f} | {num(r['x_alert'])} | {num(r['x_ref'])} |")
+    return "\n".join(lines)
+
+
+def parse_assessment(raw):
+    """'variant' | 'different' | 'undetermined' | None tu muc 4 cua report (lay lan xuat hien cuoi)."""
+    hits = _ASSESS_RE.findall(_section(raw, 4) or raw or "")
+    if not hits:
+        return None
+    h = hits[-1].lower()
+    return "variant" if h.startswith("variant") else "different" if h.startswith("different") else "undetermined"
