@@ -97,6 +97,9 @@ def test_real_r_contrast_groups_latents():
     assert 1 <= len(t["rows"]) <= 8
     assert sum(r["feature"].startswith("ae_latent (") for r in t["rows"]) <= 1
     assert not any(r["feature"].startswith("ae_latent_") for r in t["rows"])
+    # checklist 2.3: dong latent gop tra KB bang khoa "ae_latent"; dong khac giu ten cot
+    for r in t["rows"]:
+        assert r["feature_key"] == ("ae_latent" if r["feature"].startswith("ae_latent (") else r["feature"])
 
 
 if __name__ == "__main__":

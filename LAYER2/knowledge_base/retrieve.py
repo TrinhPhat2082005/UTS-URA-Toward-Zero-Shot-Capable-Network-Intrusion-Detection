@@ -15,12 +15,19 @@ Luat chon (plan_kb.md muc 10, da chot):
   H2      protocol va cong cua alert (neu KB co doan); co TCP: doan cua co MA COT THUC SU CHUA.
   H3      moi doan co `when` dung voi x_raw.
   G'      mitigation cua technique, tra rieng cho code dien muc 6 (khong dua VLM); khong co khi bat co.
-  required_passage_ids = H1 cua top_features + moi H3 duoc chon (dung de cham context recall).
+
+Xu ly loi (checklist 2.1, 2.2):
+  - Protocol / Dst Port khong huu han (NaN, Inf, chuoi) -> bo qua doan H2 cua truong do; dieu kien `when`
+    voi gia tri khong huu han -> khong dung (conditions.py).
+  - pid can chon ma KB khong co -> ghi vao sel.missing. Thieu H2-PORT/H2-PROTO la binh thuong (KB chi co
+    cong chinh) nen khong canh bao; thieu A'/B'/H1/H3 -> warnings.warn, hoac raise khi strict=True.
 """
 from __future__ import annotations
 
 import json
+import math
 import re
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -34,11 +41,23 @@ def pid_safe(name):
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("_")
 
 
+def _finite_int(v):
+    """int(v) neu v la so huu han, nguoc lai None (flow live co the co NaN/Inf)."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return int(f) if math.isfinite(f) else None
+
+
+EXPECTED_MISSING = ("H2-PORT-", "H2-PROTO-")   # KB chi co doan cho cong/giao thuc chinh
+
+
 @dataclass
 class Selection:
     passages: list = field(default_factory=list)      # [{pid, part, role, reason, title, text}] theo thu tu dua VLM
-    required: list = field(default_factory=list)      # pid bat buoc phai duoc trich (cham do phu)
     mitigations: list = field(default_factory=list)   # [{pid, title, text}] cho code dien muc 6
+    missing: list = field(default_factory=list)       # [{pid, reason}] pid can chon nhung KB khong co
     kb_sha256: str = ""
 
     def pids(self):
@@ -46,8 +65,9 @@ class Selection:
 
 
 class KnowledgeBase:
-    def __init__(self, store_dir=STORE):
+    def __init__(self, store_dir=STORE, strict=False):
         store_dir = Path(store_dir)
+        self.strict = strict
         self.passages = {}
         for line in (store_dir / "passages.jsonl").read_text(encoding="utf-8").splitlines():
             if line.strip():
@@ -63,7 +83,15 @@ class KnowledgeBase:
         return " ".join(s if s.rstrip().endswith((".", ")", "?", "!")) else s.rstrip() + "." for s in parts)
 
     def _add(self, sel, seen, pid, role, reason):
-        if pid in seen or pid not in self.passages:
+        if pid in seen:
+            return False
+        if pid not in self.passages:
+            sel.missing.append({"pid": pid, "reason": reason})
+            if not pid.startswith(EXPECTED_MISSING):
+                msg = f"KB khong co doan {pid} ({reason})"
+                if self.strict:
+                    raise KeyError(msg)
+                warnings.warn(msg, stacklevel=3)
             return False
         p = self.passages[pid]
         seen.add(pid)
@@ -72,7 +100,8 @@ class KnowledgeBase:
         return True
 
     def _h1_pid(self, feature):
-        return "H1-ae_latent" if feature.startswith("ae_latent_") else f"H1-{pid_safe(feature)}"
+        # "ae_latent_3" (top feature) va "ae_latent" (feature_key dong gop cua bang C) -> mot doan
+        return "H1-ae_latent" if feature.startswith("ae_latent") else f"H1-{pid_safe(feature)}"
 
     # ------------------------------------------------------------------------------------------
     def select(self, label, flagged, top_features, x_raw, contrast_features=(), exclude_labels=()):
@@ -91,19 +120,16 @@ class KnowledgeBase:
         feats = list(top_features) + (list(contrast_features) if flagged else [])
         for i, f in enumerate(feats):
             why = "top-|phi| feature" if i < len(top_features) else "row of contrast table C"
-            pid = self._h1_pid(f)
-            self._add(sel, seen, pid, "definition", why)
-            if i < len(top_features) and pid not in sel.required:
-                sel.required.append(pid)
+            self._add(sel, seen, self._h1_pid(f), "definition", why)
         if any(("Fwd" in f or "Bwd" in f) for f in feats):
             self._add(sel, seen, "H1-DIRECTION", "definition", "a selected feature is directional")
 
         # H2: giao thuc, cong, co
-        proto, port = x_raw.get("Protocol"), x_raw.get("Dst Port")
+        proto, port = _finite_int(x_raw.get("Protocol")), _finite_int(x_raw.get("Dst Port"))
         if proto is not None:
-            self._add(sel, seen, f"H2-PROTO-{int(proto)}", "definition", f"Protocol = {int(proto)}")
+            self._add(sel, seen, f"H2-PROTO-{proto}", "definition", f"Protocol = {proto}")
         if port is not None:
-            self._add(sel, seen, f"H2-PORT-{int(port)}", "definition", f"Dst Port = {int(port)}")
+            self._add(sel, seen, f"H2-PORT-{port}", "definition", f"Dst Port = {port}")
         holds = self.index["flag_column_holds"]
         for f in feats:
             if f in holds:
@@ -115,8 +141,7 @@ class KnowledgeBase:
         # H3: artefact co dieu kien
         for p in self.h3:
             if conditions.holds(p["when"], x_raw):
-                if self._add(sel, seen, p["pid"], "caveat", "condition holds on this flow"):
-                    sel.required.append(p["pid"])
+                self._add(sel, seen, p["pid"], "caveat", "condition holds on this flow")
 
         # G': mitigation cho code (khong dua VLM); khong co khi bat co
         if info and not flagged:

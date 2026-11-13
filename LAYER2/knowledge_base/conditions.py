@@ -17,9 +17,13 @@ OPS = {"==": operator.eq, "!=": operator.ne, ">": operator.gt, ">=": operator.ge
 
 def _term(x_raw, col, op, value):
     v = x_raw.get(col)
-    if v is None or (isinstance(v, float) and math.isnan(v)):
-        return False                      # flow live co the thieu cot / NaN: dieu kien khong dung
-    return OPS[op](float(v), float(value))
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return False                      # flow live co the thieu cot / gia tri khong phai so
+    if not math.isfinite(f):
+        return False                      # NaN / Inf (CICFlowMeter co the sinh Inf khi chia 0): dieu kien khong dung
+    return OPS[op](f, float(value))
 
 
 def holds(when, x_raw):

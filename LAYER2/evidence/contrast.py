@@ -61,8 +61,11 @@ def contrast_table(phi_q, x_q, store, winners, label, discrete, n_top=5, max_row
     rows = []
     for k, g in enumerate(order, 1):
         name = groups[g][0]
-        row = {"id": f"C{k}", "feature": name, "phi_alert": float(gq[g]), "phi_ref": float(gr[g]),
-               "delta_phi": float(delta[g]), "x_alert": None, "x_ref": None}
+        # feature_key: ten dung de tra KB (retrieve.select contrast_features). Dong latent gop co ten hien thi
+        # "ae_latent (16 dims, summed)" nhung khoa la "ae_latent" -> doan H1-ae_latent (checklist 2.3).
+        key = LATENT if name.startswith(LATENT + " (") else name
+        row = {"id": f"C{k}", "feature": name, "feature_key": key, "phi_alert": float(gq[g]),
+               "phi_ref": float(gr[g]), "delta_phi": float(delta[g]), "x_alert": None, "x_ref": None}
         if name in col_of:
             vals = store.x[winners, col_of[name]]
             row["x_alert"] = x_q.get(name)

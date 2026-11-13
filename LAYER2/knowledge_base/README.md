@@ -86,8 +86,24 @@ python LAYER2/knowledge_base/tests/test_retrieve.py
 from knowledge_base.retrieve import KnowledgeBase
 sel = KnowledgeBase().select(label, flagged, top_features, x_raw, contrast_features=..., exclude_labels=...)
 sel.passages      # đoạn đưa VLM, theo thứ tự, mỗi đoạn có role (alert_label | comparison_only | definition | caveat)
-sel.required      # H1 của top feature + H3 thỏa điều kiện (chấm độ phủ)
 sel.mitigations   # G' cho code điền mục 6
+sel.missing       # [{pid, reason}] đoạn lẽ ra được chọn nhưng KB không có
 ```
 
+- `contrast_features` nhận `row["feature_key"]` của bảng C (`evidence/contrast.py`); dòng latent gộp có khóa `ae_latent`.
+- Giá trị thô không hữu hạn (NaN, Inf, chuỗi) không gây lỗi: H2 của trường đó bị bỏ, điều kiện `when` coi là không đúng.
+- Thiếu `H2-PORT-*` / `H2-PROTO-*` là bình thường (KB chỉ có cổng chính) nên chỉ ghi vào `sel.missing`.
+  Thiếu A′/B′/H1/H3 thì có `warnings.warn`; `KnowledgeBase(strict=True)` thì raise `KeyError` (dùng cho test và experiment).
+
 Chưa nối vào `evidence/build.py` và prompt: việc đó thuộc đợt viết lại prompt (D6).
+
+## Thay đổi
+
+Mỗi thay đổi ghi mã mục trong `workspace/kb_checklist.md` và loại sửa (build = phải chạy lại build; runtime = chỉ đổi lúc chạy).
+
+| Ngày | Mục | Loại | Thay đổi |
+|---|---|---|---|
+| 2026-11-13 | 0.1 | runtime | Bỏ `Selection.required`: đánh giá chỉ dùng faithfulness + groundedness |
+| 2026-11-13 | 2.1 | runtime | `_finite_int` cho Protocol/Dst Port; `conditions._term` coi NaN/Inf/chuỗi là không đúng |
+| 2026-11-13 | 2.2 | runtime | `Selection.missing`, cảnh báo khi thiếu A′/B′/H1/H3, tham số `strict` |
+| 2026-11-13 | 2.3 | runtime | Bảng C có `feature_key`; `_h1_pid` nhận khóa `ae_latent` của dòng latent gộp |

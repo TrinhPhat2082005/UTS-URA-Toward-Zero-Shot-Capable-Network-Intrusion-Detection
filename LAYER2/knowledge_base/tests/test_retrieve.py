@@ -26,10 +26,10 @@ def test_label_passages_and_mitigations():
     assert not any(p["pid"].startswith("G-") for p in s.passages), "G' khong duoc dua cho VLM"
 
 
-def test_zero_payload_adds_required_caveat():
+def test_zero_payload_adds_caveat():
     x = dict(TCP_WEB, **{"TotLen Fwd Pkts": 0, "TotLen Bwd Pkts": 0})
     s = KB.select("SQL_Injection", False, ["Fwd Seg Size Min"], x)
-    assert "H3-NOPAYLOAD" in s.pids() and "H3-NOPAYLOAD" in s.required
+    assert "H3-NOPAYLOAD" in s.pids()
     assert "H3-NOPAYLOAD" not in KB.select("SQL_Injection", False, ["Fwd Seg Size Min"], TCP_WEB).pids()
 
 
@@ -44,7 +44,7 @@ def test_udp_flow():
 def test_flagged_alert_marks_comparison_only_and_has_no_mitigation():
     s = KB.select("DoS_attacks_Hulk", True, ["Fwd Seg Size Min"], TCP_WEB, contrast_features=["Flow Duration"])
     assert all(p["role"] == "comparison_only" for p in s.passages if p["part"] in ("A", "B"))
-    assert "H1-Flow_Duration" in s.pids() and "H1-Flow_Duration" not in s.required
+    assert "H1-Flow_Duration" in s.pids()
     assert s.mitigations == []
 
 
@@ -63,6 +63,38 @@ def test_flag_column_maps_to_flag_it_actually_holds():
     assert "H2-FLAG-PSH" in s.pids(), "cot 'SYN Flag Cnt' chua co PSH (ma nguon 2018)"
     assert "H2-FLAG-SYN" not in s.pids()
     assert "H2-FLAG-ECE" in s.pids() and "H2-FLAG-ECN-SETUP" in s.pids()
+
+
+def test_nan_inf_raw_values_do_not_crash():
+    # checklist 2.1: flow live co the co NaN/Inf; truoc day int(NaN) -> ValueError
+    x = dict(TCP_WEB, **{"Protocol": float("nan"), "Dst Port": float("inf"), "TotLen Fwd Pkts": float("inf")})
+    s = KB.select("SQL_Injection", False, ["Fwd Seg Size Min"], x)
+    assert not any(p.startswith(("H2-PROTO-", "H2-PORT-")) for p in s.pids())
+    assert "H3-NOPAYLOAD" not in s.pids(), "Inf khong duoc lam dieu kien dung"
+
+
+def test_missing_passage_is_reported():
+    # checklist 2.2: truoc day pid khong co trong KB bi bo qua im lang
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        s = KB.select("SQL_Injection", False, ["no_such_feature"], dict(TCP_WEB, **{"Dst Port": 4444}))
+    assert {"pid": "H1-no_such_feature", "reason": "top-|phi| feature"} in s.missing
+    assert any("H1-no_such_feature" in str(x.message) for x in w)
+    assert any(m["pid"] == "H2-PORT-4444" for m in s.missing), "cong ngoai KB: ghi missing"
+    assert not any("H2-PORT-4444" in str(x.message) for x in w), "cong ngoai KB: khong canh bao"
+    strict = KnowledgeBase(strict=True)
+    try:
+        strict.select("SQL_Injection", False, ["no_such_feature"], TCP_WEB)
+        raise AssertionError("strict=True phai raise")
+    except KeyError:
+        pass
+
+
+def test_contrast_latent_row_maps_to_latent_passage():
+    # checklist 2.3: feature_key cua dong latent gop trong bang C la "ae_latent"
+    s = KB.select("DoS_attacks_Hulk", True, ["Fwd Seg Size Min"], TCP_WEB, contrast_features=["ae_latent"])
+    assert "H1-ae_latent" in s.pids() and not s.missing
 
 
 def test_every_label_has_label_card_and_mechanism():
