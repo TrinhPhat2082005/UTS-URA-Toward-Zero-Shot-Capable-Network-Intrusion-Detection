@@ -1,13 +1,13 @@
 {
- "kb_sha256": "6f6b4d5ed81e3069580eb9bdfa196995c82206a4921e87404fe9db687a192d80",
+ "kb_sha256": "7c5459ca3ce2849cfd4f1f4f1756ef5d85e01ef8a7140b4071992302ff2eb510",
  "labels": {
   "SSH_Bruteforce": {
    "technique": "T1110.001",
-   "capec": "CAPEC-49"
+   "capec": "CAPEC-16"
   },
   "FTP_BruteForce": {
    "technique": "T1110.001",
-   "capec": "CAPEC-49"
+   "capec": "CAPEC-16"
   },
   "DoS_attacks_GoldenEye": {
    "technique": "T1499.002",

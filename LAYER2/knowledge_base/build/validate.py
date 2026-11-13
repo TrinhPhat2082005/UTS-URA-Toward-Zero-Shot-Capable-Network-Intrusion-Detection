@@ -18,11 +18,28 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 
 import common as C
 
 KINDS = {"verbatim", "rendered", "authored"}
+
+# Luat moi 2026-11-13:
+#   D1   doan gui VLM chi duoc dung so lieu {data: claims.<id>} co holds_all = true (dung tren train, val va moi
+#        file CSV goc). Ngoai le DERIVED_KEYS: ket qua do code tinh lai tu ma nguon (thu tu HashMap), khong
+#        phai so lieu dataset (checklist 4.3, ban nhe).
+#   4.6  khong co phan tram trong `text` gui VLM va trong `text`/`rationale` cua authored/*.yaml; chi cho phep
+#        "99.9%" (nguong cua claim bat bien gan dung, vd near_identical).
+DERIVED_KEYS = {"flag_column_holds"}
+PERCENT = re.compile(r"\d+(?:[.,]\d+)?\s*%")
+PERCENT_ALLOWED = {"99.9%"}
+
+
+def _percent_errors(text, where, errors):
+    for m in PERCENT.findall(text or ""):
+        if m.replace(" ", "") not in PERCENT_ALLOWED:
+            errors.append(f"{where}: co phan tram '{m}' (luat 4.6: dung claim va cach noi khong co %)")
 
 
 def _walk(node, path=""):
@@ -45,7 +62,9 @@ def check_evidence(node, where, facts, sources, errors):
                 errors.append(f"{where}:{path}: quote KHONG nam nguyen van trong {d['src']}: {d['quote'][:90]!r}")
         if "data" in d and isinstance(d["data"], str):
             try:
-                C.fact(facts, d["data"])
+                v = C.fact(facts, d["data"])
+                if d["data"].startswith("claims.") and not v.get("holds_all"):
+                    errors.append(f"{where}:{path}: claim {d['data']} KHONG dung o moi nguon (failing={v.get('failing')})")
             except KeyError as e:
                 errors.append(f"{where}:{path}: {e}")
         if "decision" in d:
@@ -63,13 +82,36 @@ def check_lock(errors):
             want = lock.get(sid, {}).get("files", {}).get(f["name"], {}).get("sha256")
             if not p.exists():
                 errors.append(f"lock: thieu file {p}")
-            elif C.sha256_file(p) != want:
+            elif C.sha256_source(sid, f["name"]) != want:
                 errors.append(f"lock: {sid}/{f['name']} khong khop sha256 trong sources.lock.json")
 
 
 def check_authored(facts, sources, errors):
     for path in sorted(C.AUTHORED_DIR.glob("*.yaml")):
-        check_evidence(C.load_yaml(path), path.name, facts, sources, errors)
+        doc = C.load_yaml(path)
+        check_evidence(doc, path.name, facts, sources, errors)
+        for p, d in _walk(doc):
+            for k in ("text", "rationale"):
+                if isinstance(d.get(k), str):
+                    _percent_errors(d[k], f"{path.name}:{p}.{k}", errors)
+
+
+def _data_keys(node):
+    return [d["data"] for _, d in _walk(node) if isinstance(d.get("data"), str)]
+
+
+def check_vlm_stationary(p, errors):
+    """D1: so lieu trong support/ghi chu cua doan gui VLM phai la claim dung o moi nguon."""
+    if not p.get("for_vlm", True):
+        return
+    for key in _data_keys({"support": p.get("support"), "notes": p.get("notes")}):
+        if key in DERIVED_KEYS or key.startswith("claims."):
+            continue                                   # claims.*: holds_all da kiem trong check_evidence
+        errors.append(f"passage {p['pid']}: so lieu '{key}' khong phai claim co kiem tinh dung (luat D1)")
+    _percent_errors(p.get("text"), f"passage {p['pid']}", errors)
+    _percent_errors(p.get("technique_text"), f"passage {p['pid']} (technique_text)", errors)
+    for n in p.get("notes", []):
+        _percent_errors(n.get("text"), f"passage {p['pid']} note {n.get('id')}", errors)
 
 
 def check_passages(facts, sources, errors):
@@ -94,6 +136,7 @@ def check_passages(facts, sources, errors):
         elif not p.get("support"):
             errors.append(f"passage {pid}: doan {p.get('kind')} khong co support")
         check_evidence(p, f"passage {pid}", facts, sources, errors)
+        check_vlm_stationary(p, errors)
     return ps
 
 

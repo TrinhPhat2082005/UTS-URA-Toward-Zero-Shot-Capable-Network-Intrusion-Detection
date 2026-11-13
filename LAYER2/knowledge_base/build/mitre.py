@@ -74,10 +74,12 @@ def _capec():
             e = m.find("c:Entry_ID", CAPEC_NS)
             if m.get("Taxonomy_Name") == "ATTACK" and e is not None and e.text:
                 maps.append("T" + e.text.strip())
+        parents = [f"CAPEC-{r.get('CAPEC_ID')}" for r in ap.findall(".//c:Related_Attack_Pattern", CAPEC_NS)
+                   if r.get("Nature") == "ChildOf"]
         out[f"CAPEC-{ap.get('ID')}"] = {
             "id": f"CAPEC-{ap.get('ID')}", "name": ap.get("Name"), "status": ap.get("Status"),
             "description": " ".join("".join(desc.itertext()).split()) if desc is not None else "",
-            "attack": maps,
+            "attack": maps, "parents": parents,
         }
     return out
 
@@ -89,6 +91,15 @@ def capec(cid):
 def capec_maps_to(cid, tid):
     """CAPEC v3.9 co tu lien ket muc `cid` toi technique `tid` khong (Taxonomy_Mapping ATTACK)."""
     return tid in _capec()[cid]["attack"]
+
+
+def capec_child_of_linked(cid, tid):
+    """Route 'child_of_linked' (checklist 6.3): `cid` khong tu lien ket toi `tid`, nhung la con truc tiep
+    (ChildOf) cua mot muc CAPEC lien ket toi `tid`. Tra muc cha thoa, hoac None."""
+    for p in _capec()[cid]["parents"]:
+        if p in _capec() and tid in _capec()[p]["attack"]:
+            return p
+    return None
 
 
 def capec_linked(tid):

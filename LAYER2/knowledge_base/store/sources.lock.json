@@ -156,17 +156,19 @@
   "retrieved": "2026-11-13"
  },
  "layer1-code": {
-  "version": "repository working tree at build time",
+  "version": "git: commit of each file recorded in sources.lock.json",
   "files": {
    "autoencoder.py": {
     "path": "LAYER1/03_training/models/autoencoder.py",
     "sha256": "0321d6c1fd5a4d1ccef38ccb9f408590890177477022f833bb54306d58d70ae5",
-    "bytes": 1870
+    "bytes": 1870,
+    "commit": "13772d72b4d5f926d6dac06e3e06c786c1257a9c"
    },
    "train_protocol_b.py": {
     "path": "LAYER1/03_training/train_protocol_b.py",
-    "sha256": "4f7df36526819795aced0eff49d2f791aa3998e8d879464fe3eaa09e7dc5f9a7",
-    "bytes": 22810
+    "sha256": "a873c3c549c20de559d005829f318594292c058804aa30ff613013ce73ab7c17",
+    "bytes": 22278,
+    "commit": "db4dd4239b9a9b95ca6715e3210eeeeb549910d4"
    }
   },
   "retrieved": "2026-11-13"
@@ -178,6 +180,39 @@
     "url": "https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html",
     "sha256": "f99deeffe02e7c2920072a7302529fd290d3f0401a50848e67404b221e80aba1",
     "bytes": 351514
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "rfc7323": {
+  "version": "RFC 7323 (2014)",
+  "files": {
+   "rfc7323.txt": {
+    "url": "https://www.rfc-editor.org/rfc/rfc7323.txt",
+    "sha256": "29e07732ea23f4d3e41371be55b767d774b718f054ade161b71f48864f7c2d48",
+    "bytes": 106013
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "rfc6335": {
+  "version": "RFC 6335 (2011)",
+  "files": {
+   "rfc6335.txt": {
+    "url": "https://www.rfc-editor.org/rfc/rfc6335.txt",
+    "sha256": "a78d74017b69a480034b81a8951f05ea35841ae4769ab4fe9787ecc689fb783a",
+    "bytes": 79088
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "distrinet-2018": {
+  "version": "page retrieved on the date in sources.lock.json",
+  "files": {
+   "CSECICIDS2018.html": {
+    "url": "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html",
+    "sha256": "c9edddbcba999cf4a004a090d991e915ded9226cae3f0e9589fa302631f9803b",
+    "bytes": 70001
    }
   },
   "retrieved": "2026-11-13"

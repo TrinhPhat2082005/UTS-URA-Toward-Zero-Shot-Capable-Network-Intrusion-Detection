@@ -1,7 +1,9 @@
 # H3: doan giai thich gia tri la DO CONG CU TRICH XUAT sinh ra. Chi dua vao context khi `when` dung voi
 # gia tri tho cua alert (knowledge_base/conditions.py danh gia, khong dung eval).
-# Cau `text` noi CO CHE (gia tri nay sinh ra the nao), khong phan xet flow co phai tan cong hay khong.
-# Ty le theo tung nhan (data_facts.by_label.*) duoc build_report.md liet ke canh moi doan.
+# Cau `text` (tieng Anh, trich dan dien giai) noi CO CHE (gia tri nay sinh ra the nao), khong phan xet flow
+# co phai tan cong hay khong.
+# So lieu trong support chi dung claim da kiem tinh dung ({data: claims.<id>}, checklist D1). Ty le theo
+# tung nhan (data_facts.by_label.*, chi train, khong dung) chi duoc build_report.md liet ke de tham khao.
 
 - pid: H3-NOPAYLOAD
   when: {all: [["TotLen Fwd Pkts", "==", 0], ["TotLen Bwd Pkts", "==", 0]]}
@@ -13,19 +15,35 @@
     - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket()", quote: '}else if(packet.hasFlagFIN()){'}
     - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket(), packet without an open flow",
        quote: 'currentFlows.put(packet.getFlowId(), new BasicFlow(bidirectional,packet));'}
-    - {data: by_label.Benign.zero_payload}
-    - {data: by_label.DoS_attacks_Hulk.zero_payload}
 
+# checklist 1.5a: quote RFC 9293 keo dai toi cau ve window scaling (truoc day bi cat ngay truoc cau nay)
 - pid: H3-NOWIN
   when: {any: [["Init Fwd Win Byts", "==", -1], ["Init Bwd Win Byts", "==", -1]]}
   frequency_key: init_bwd_win_minus1
-  text: "A value of -1 in an initial-window column is not a window size: the TCP window field is a 16-bit count of octets. It is the extractor's default, kept when no TCP window was read for that direction, for example in a UDP flow or when no packet was seen in that direction."
+  text: "A value of -1 in an initial-window column is not a window size: the TCP window field is a 16-bit count of octets. It is the extractor's default, kept when no TCP window was read for that direction: every UDP flow has -1 in the forward column, and no TCP flow with at least one backward packet has -1 in the backward column."
   support:
     - {src: rfc9293, locator: "Section 3.1, Header Format",
-       quote: 'Window: 16 bits The number of data octets beginning with the one indicated in the acknowledgment field that the sender of this segment is willing to accept.'}
+       quote: 'Window: 16 bits The number of data octets beginning with the one indicated in the acknowledgment field that the sender of this segment is willing to accept. The value is shifted when the window scaling extension is used [47].'}
     - {src: cicflowmeter-src-2018, locator: "BasicPacketInfo.java, field declaration", quote: 'private int TCPWindow=-1;'}
     - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch", quote: 'packetInfo.setTCPWindow(tcp.window());'}
-    - {data: init_win_minus1.bwd_zero_bwd_pkts_or_udp_share}
+    - {data: claims.udp_flags_zero_init_fwd_minus1}
+    - {data: claims.tcp_with_bwd_init_bwd_never_minus1}
+
+# checklist 1.5a (moi): goi dau khong phai SYN -> truong window cua no da bi scale.
+# Cot 'PSH Flag Cnt' CHUA co SYN cua goi dau (data_facts.flag_column_holds, XN-FLAG-ORDER).
+- pid: H3-WINSCALE
+  when: {all: [["Protocol", "==", 6], ["PSH Flag Cnt", "==", 0]]}
+  frequency_key: null
+  text: "The first packet of this TCP flow is not a SYN segment, so the initial-window columns hold window fields of segments sent after the connection was opened. Such a field is not in bytes when window scaling is in use: the scale factor is agreed only in the SYN segments and every later window field is shifted by it, so the real window can be larger than the recorded value. Only a window field carried in a SYN or SYN-ACK segment is never scaled."
+  support:
+    - {src: rfc7323, locator: "Section 2.1",
+       quote: 'This option is sent only in a <SYN> segment (a segment with the SYN bit on), hence the window scale is fixed in each direction when a connection is opened.'}
+    - {src: rfc7323, locator: "Section 2.2",
+       quote: 'The window field in a segment where the SYN bit is set (i.e., a <SYN> or <SYN,ACK>) MUST NOT be scaled.'}
+    - {src: rfc9293, locator: "Section 3.1, Header Format", quote: 'The value is shifted when the window scaling extension is used [47].'}
+    - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch", quote: 'packetInfo.setTCPWindow(tcp.window());'}
+    - {data: flag_column_holds}
+    - {data: claims.init_fwd_win_tcp_16bit}
 
 - pid: H3-TIMEOUT
   when: {all: [["Flow Duration", ">=", 119000000]]}
@@ -35,8 +53,7 @@
     - {src: cicflowmeter-src-2018, locator: "CICFlowMeter.java, main()", quote: 'flowGen = new FlowGenerator(true,120000000L, 5000000L);'}
     - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket()",
        quote: '// Flow finished due flowtimeout: // 1.- we move the flow to finished flow list // 2.- we eliminate the flow from the current flow list // 3.- we create a new flow with the packet-in-process'}
-    - {data: flow_duration.max}
-    - {data: by_label.DDOS_attack_LOIC_UDP.duration_ge_119s}
+    - {data: claims.duration_le_120s}
 
 - pid: H3-UDP
   when: {all: [["Protocol", "==", 17]]}
@@ -47,7 +64,7 @@
        quote: 'Fwd PSH flags Number of times the PSH flag was set in packets travelling in the forward direction (0 for UDP)'}
     - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch", quote: 'packetInfo.setFlagRST(tcp.flags_RST());'}
     - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch", quote: 'packetInfo.setTCPWindow(tcp.window());'}
-    - {data: by_label.DDOS_attack_LOIC_UDP.init_fwd_win_minus1}
+    - {data: claims.udp_flags_zero_init_fwd_minus1}
 
 - pid: H3-NOTRANSPORT
   when: {all: [["Protocol", "==", 0]]}
@@ -59,5 +76,4 @@
     - {src: cicflowmeter-src-2018, locator: "BasicPacketInfo.java, field declarations", quote: 'private int protocol;'}
     - {src: java8-jls, locator: "Section 4.12.5, Initial Values of Variables", quote: 'For type int, the default value is zero, that is, 0.'}
     - {src: iana-protocols, locator: "protocol-numbers-1.csv, row 0", quote: '0,HOPOPT,IPv6 Hop-by-Hop Option'}
-    - {data: protocol_0.dst_port_0_share}
-    - {data: protocol_0.zero_payload_share}
+    - {data: claims.protocol0_port0_no_payload}

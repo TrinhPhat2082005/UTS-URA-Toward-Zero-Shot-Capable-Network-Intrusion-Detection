@@ -8,6 +8,7 @@
 #   dataset    nguon goc cua dataset (trang CSE-CIC-IDS2018 cua UNB/CIC)
 #   tool       nguon goc cua cong cu trich xuat (ReadMe + ma nguon CICFlowMeter)
 #   platform   tai lieu chinh thuc cua nen tang ma cong cu chay tren (Java SE)
+#   audit      phan tich lai dataset da cong bo cua nhom nghien cuu doc lap (DistriNet, KU Leuven)
 #   system     ma nguon cua chinh he thong nay (dinh nghia feature AE cua Layer 1)
 
 - id: unb-ids2018
@@ -101,6 +102,33 @@
   files:
     - {name: rfc3168.txt, url: "https://www.rfc-editor.org/rfc/rfc3168.txt"}
 
+- id: rfc7323
+  tier: standard
+  title: "RFC 7323: TCP Extensions for High Performance (window scale option)"
+  version: "RFC 7323 (2014)"
+  license: "IETF Trust Legal Provisions"
+  files:
+    - {name: rfc7323.txt, url: "https://www.rfc-editor.org/rfc/rfc7323.txt"}
+
+- id: rfc6335
+  tier: standard
+  title: "RFC 6335: IANA Procedures for the Management of the Service Name and Transport Protocol Port Number Registry"
+  version: "RFC 6335 (2011)"
+  license: "IETF Trust Legal Provisions"
+  files:
+    - {name: rfc6335.txt, url: "https://www.rfc-editor.org/rfc/rfc6335.txt"}
+
+# Trang tai lieu cua nhom DistriNet (KU Leuven) di kem Liu et al. 2022 (IEEE CNS) va Engelen et al. 2021:
+# phan tich lai tung ngay cua CSE-CIC-IDS2018 tren pcap goc. Than bai Liu 2022 khong doc duoc (paywall),
+# nen trich dan trong KB lay tu trang nay; paper cite Liu et al. 2022 va Engelen et al. 2021.
+- id: distrinet-2018
+  tier: audit
+  title: "DistriNet: CSE-CIC-IDS2018 day-by-day analysis (companion page of Liu et al., IEEE CNS 2022)"
+  version: "page retrieved on the date in sources.lock.json"
+  license: "Research web page; short quotations for research use with citation"
+  files:
+    - {name: CSECICIDS2018.html, url: "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html"}
+
 - id: java8-hashmap
   tier: platform
   title: "Java SE 8 API: java.util.HashMap"
@@ -117,11 +145,13 @@
   files:
     - {name: jls-4.html, url: "https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html"}
 
-# Nguon "system": file trong chinh repo nay, khong tai; sha256 tinh luc build.
+# Nguon "system": file trong chinh repo nay, khong tai. Lock ghi sha256 cua noi dung LF (CRLF tren Windows
+# duoc doi ve LF) va commit cuoi cung cham toi file; fetch_sources.py tu choi khoa khi file co thay doi
+# chua commit (checklist 4.5).
 - id: layer1-code
   tier: system
   title: "Layer 1 training code of this repository (autoencoder features)"
-  version: "repository working tree at build time"
+  version: "git: commit of each file recorded in sources.lock.json"
   license: "this repository"
   local:
     - {name: autoencoder.py,       path: "LAYER1/03_training/models/autoencoder.py"}

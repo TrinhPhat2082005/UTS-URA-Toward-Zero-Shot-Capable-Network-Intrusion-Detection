@@ -7,9 +7,14 @@ Luc chay: chon doan KB cho MOT alert. Khong dung yaml hay mang; chi doc store/pa
                     top_features=["Fwd Seg Size Min", "Dst Port", ...],   # 5 chieu |phi| lon nhat
                     x_raw={"Protocol": 6, "Dst Port": 80, ...})           # gia tri tho cua flow
 
-Luat chon (plan_kb.md muc 10, da chot):
-  A', B'  theo nhan l* (vote 5-NN). Khong co co: role "alert_label". Co co: role "comparison_only".
+Luat chon (plan_kb.md muc 10, da chot; sua 2026-11-13 theo checklist 1.4, 1.6):
+  A', B'  theo nhan l* (vote 5-NN). Khong co co: role "attack_type_background" (doan mo ta LOAI tan cong
+          cua nhan tien le, khong mo ta flow nay). Co co: role "comparison_only", va
+            - A' bo cau technique (`technique_text` chi duoc noi vao khi khong co co),
+            - B' van giu noi dung co che nhung an tieu de va ma trich dan co ID technique (cite = REF-MECH-n),
+          vi khi co co report khong duoc gan technique (thiet ke D9, quyet dinh U11 = A).
           Protocol A: nhan trong exclude_labels khong bao gio duoc chon.
+  Moi doan tra them `cite`: ma de VLM trich dan (= pid, tru B' khi co co).
   H1      dinh nghia moi feature trong top_features (+ cac dong cua bang doi chieu C khi co co);
           16 chieu ae_latent gop thanh mot doan; H1-DIRECTION khi co feature Fwd/Bwd.
   H2      protocol va cong cua alert (neu KB co doan); co TCP: doan cua co MA COT THUC SU CHUA.
@@ -77,12 +82,15 @@ class KnowledgeBase:
         self.h3 = [p for p in self.passages.values() if p["part"] == "H3"]
 
     # ------------------------------------------------------------------------------------------
-    def _text(self, p):
-        """Text dua VLM: doan + cac ghi chu cua no (moi phan ket thuc bang dau cau)."""
-        parts = [p["text"]] + [n["text"] for n in p.get("notes", [])]
+    def _text(self, p, flagged=False):
+        """Text dua VLM: doan (+ cau technique cua A' khi KHONG co co) + cac ghi chu (moi phan co dau cau)."""
+        parts = [p["text"]]
+        if p.get("technique_text") and not flagged:
+            parts.append(p["technique_text"])
+        parts += [n["text"] for n in p.get("notes", [])]
         return " ".join(s if s.rstrip().endswith((".", ")", "?", "!")) else s.rstrip() + "." for s in parts)
 
-    def _add(self, sel, seen, pid, role, reason):
+    def _add(self, sel, seen, pid, role, reason, flagged=False):
         if pid in seen:
             return False
         if pid not in self.passages:
@@ -95,8 +103,15 @@ class KnowledgeBase:
             return False
         p = self.passages[pid]
         seen.add(pid)
-        sel.passages.append({"pid": pid, "part": p["part"], "role": role, "reason": reason,
-                             "title": p.get("title"), "text": self._text(p)})
+        title, cite = p.get("title"), pid
+        if flagged and p["part"] == "B":
+            # tieu de va pid cua B' chua ID/ten technique ("ATT&CK T1499.002 Service Exhaustion Flood")
+            n = sum(1 for q in sel.passages if q["part"] == "B") + 1
+            title, cite = "Attack mechanism of the nearest reference label", f"REF-MECH-{n}"
+        elif flagged and p["part"] == "A":
+            title = "Nearest reference label"
+        sel.passages.append({"pid": pid, "cite": cite, "part": p["part"], "role": role, "reason": reason,
+                             "title": title, "text": self._text(p, flagged)})
         return True
 
     def _h1_pid(self, feature):
@@ -107,14 +122,15 @@ class KnowledgeBase:
     def select(self, label, flagged, top_features, x_raw, contrast_features=(), exclude_labels=()):
         sel, seen = Selection(kb_sha256=self.index.get("kb_sha256", "")), set()
         info = self.index["labels"].get(label)
-        role = "comparison_only" if flagged else "alert_label"
+        role = "comparison_only" if flagged else "attack_type_background"
 
         # A', B' theo nhan
         if info and label not in set(exclude_labels):
-            self._add(sel, seen, f"A-{label}", role, f"label from 5-NN vote: {label}")
-            self._add(sel, seen, f"B-{info['technique']}", role, f"technique of {label}")
+            self._add(sel, seen, f"A-{label}", role, f"label of the nearest reference precedents (5-NN vote): {label}",
+                      flagged)
+            self._add(sel, seen, f"B-{info['technique']}", role, f"attack mechanism of reference label {label}", flagged)
             if info.get("capec"):
-                self._add(sel, seen, f"B-{info['capec']}", role, f"CAPEC entry of {label}")
+                self._add(sel, seen, f"B-{info['capec']}", role, f"attack pattern of reference label {label}", flagged)
 
         # H1: top feature, roi cac dong cua bang C (chi khi co co)
         feats = list(top_features) + (list(contrast_features) if flagged else [])

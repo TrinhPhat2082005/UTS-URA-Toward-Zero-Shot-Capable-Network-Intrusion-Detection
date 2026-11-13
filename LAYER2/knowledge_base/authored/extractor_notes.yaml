@@ -1,12 +1,20 @@
 # Ghi chu ve CACH CICFlowMeter-V3 (ban 2018) tinh tung cot. Gan vao doan H1 cua cot o `applies_to`.
 #
-# Moi `text` la cau tac gia viet; no chi duoc noi dieu ma cac `support` (dong code nguyen van tai commit
-# 50d668db, tai lieu Java, hoac so lieu tu data_facts.json) cho thay. validate.py kiem moi quote nguyen van
-# va moi khoa data; nguoi duyet doc cau `text` canh bang chung trong store/build_report.md.
+# Moi `text` la trich dan dien giai (tieng Anh); no chi duoc noi dieu ma cac `support` cho thay: dong code
+# nguyen van tai commit 50d668db, tai lieu Java/RFC, hoac claim so lieu da kiem tinh dung
+# ({data: claims.<id>}, build/claims.py: dung tren train, val va moi file CSV goc). validate.py kiem moi quote
+# nguyen van va moi claim; nguoi duyet doc cau `text` canh bang chung trong store/build_report.md.
 #
-# {named} / {holds} trong text cua XN-FLAG-ORDER duoc part_feature.py dien tu data_facts.flag_column_holds.
+# relation (checklist 1.1):
+#   replaces  dinh nghia ReadMe SAI voi dataset nay. part_feature.py dat cac ghi chu nay len dau doan H1 va
+#             BO dinh nghia ReadMe khoi text gui VLM (ReadMe chi con trong feature_names.yaml va support).
+#             Vi vay cau `text` phai tu dung duoc, mo dau bang nghia that.
+#   adds      dinh nghia ReadMe dung nhung thieu; giu ReadMe, them ghi chu phia sau.
+#
+# {holds} / {named} duoc part_feature.py dien: co ma cot THUC SU chua / co trong ten cot.
 
 - id: XN-TIME-MICROSECONDS
+  relation: adds
   applies_to: [Flow Duration, Flow IAT Mean, Flow IAT Std, Flow IAT Max, Flow IAT Min,
                Fwd IAT Tot, Fwd IAT Mean, Fwd IAT Std, Fwd IAT Max, Fwd IAT Min,
                Bwd IAT Tot, Bwd IAT Mean, Bwd IAT Std, Bwd IAT Max, Bwd IAT Min,
@@ -19,6 +27,7 @@
        quote: 'Flow duration Duration of the flow in Microsecond'}
 
 - id: XN-PAYLOAD-BYTES
+  relation: adds
   applies_to: [TotLen Fwd Pkts, TotLen Bwd Pkts, Fwd Pkt Len Max, Fwd Pkt Len Min, Fwd Pkt Len Mean, Fwd Pkt Len Std,
                Bwd Pkt Len Max, Bwd Pkt Len Min, Bwd Pkt Len Mean, Bwd Pkt Len Std,
                Pkt Len Min, Pkt Len Max, Pkt Len Mean, Pkt Len Std, Pkt Len Var,
@@ -36,19 +45,46 @@
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, fAvgSegmentSize()",
        quote: 'return (this.fwdPktStats.getSum() / (double)this.forward.size());'}
 
+# checklist 1.5b: goi dau duoc cong hai lan vao flowLengthStats (claim pkt_len_double_count dung o moi nguon)
+- id: XN-FIRST-PACKET-TWICE
+  relation: adds
+  applies_to: [Pkt Len Mean, Pkt Len Std, Pkt Len Var, Pkt Size Avg]
+  text: "The extractor adds the payload length of the flow's first packet twice to the statistics over all packets, so the first packet counts double: the mean, standard deviation and variance are taken over one more value than the flow has packets, and the average packet size divides that sum by the real packet count."
+  support:
+    - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, firstPacket()",
+       quote: 'this.endActiveTime = packet.getTimeStamp(); this.flowLengthStats.addValue((double)packet.getPayloadBytes());'}
+    - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, firstPacket(), forward branch",
+       quote: 'Init_Win_bytes_forward = packet.getTCPWindow(); this.flowLengthStats.addValue((double)packet.getPayloadBytes());'}
+    - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, getAvgPacketSize()",
+       quote: 'return (this.flowLengthStats.getSum()/this.packetCount());'}
+    - {data: claims.pkt_len_double_count}
+
+# checklist 1.5c: Down/Up Ratio la phep chia nguyen (claim downup_integer dung o moi nguon)
+- id: XN-DOWNUP-INTEGER
+  relation: adds
+  applies_to: [Down/Up Ratio]
+  text: "The extractor divides the backward packet count by the forward packet count with integer division, so the fraction is dropped: the value is 0 whenever the flow has fewer backward than forward packets, and it never has a fractional part."
+  support:
+    - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, getDownUpRatio()",
+       quote: 'return (double)(this.backward.size()/this.forward.size());'}
+    - {data: claims.downup_integer}
+
 - id: XN-SEG-SIZE-MIN-IS-HEADER
+  relation: replaces
   applies_to: [Fwd Seg Size Min]
-  text: "Despite its name, this column is the smallest transport-header length in bytes among the forward packets of the flow, not a payload size."
+  text: "In CSE-CIC-IDS2018 this column is the smallest transport-header length, in bytes, among the forward packets of the flow (between 20 and 60 for TCP, 8 for UDP); it is not a payload or segment size."
   support:
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, addPacket()",
        quote: 'this.min_seg_size_forward = Math.min(packet.getHeaderBytes(),this.min_seg_size_forward);'}
     - {src: cicflowmeter-src-2018, locator: "PacketReader.java, TCP branch",
        quote: 'packetInfo.setHeaderBytes(tcp.getHeaderLength());'}
+    - {data: claims.seg_size_min_is_header}
 
 - id: XN-FLAGS-FIRST-PACKET
+  relation: replaces
   applies_to: [FIN Flag Cnt, SYN Flag Cnt, RST Flag Cnt, PSH Flag Cnt, ACK Flag Cnt, URG Flag Cnt, CWE Flag Count,
                ECE Flag Cnt, Fwd PSH Flags, Fwd URG Flags]
-  text: "In the extractor version that produced this dataset, flags are counted only for the first packet of the flow (the count is disabled for later packets), so the value is 0 or 1 and describes that first packet only."
+  text: "In CSE-CIC-IDS2018 this column is 1 if the first packet of the flow has the {holds} flag set and 0 otherwise. It describes that packet only and is not a count of packets: the extractor reads flags only from the first packet of a flow."
   support:
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, firstPacket()",
        quote: 'public void firstPacket(BasicPacketInfo packet){ updateFlowBulk(packet); detectUpdateSubflows(packet); checkFlags(packet);'}
@@ -56,11 +92,14 @@
        quote: 'public void addPacket(BasicPacketInfo packet){ //updateFlowBulk(packet); //detectUpdateSubflows(packet); //checkFlags(packet);'}
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, firstPacket(), forward branch",
        quote: 'if(packet.hasFlagPSH()){ this.fPSH_cnt++; } if(packet.hasFlagURG()){ this.fURG_cnt++; }'}
-    - {data: flag_values}
+    - {data: claims.flags_binary}
 
+# flag_column_holds (data_facts) la thu tu duyet HashMap do code tinh lai (data_facts.java_hashmap_order);
+# du lieu xac nhan doc lap 3 vi tri bang cac cap cot trung nhau (claims identical/near_identical ben duoi).
 - id: XN-FLAG-ORDER
+  relation: replaces
   applies_to: [FIN Flag Cnt, SYN Flag Cnt, RST Flag Cnt, PSH Flag Cnt, URG Flag Cnt, CWE Flag Count, ECE Flag Cnt]
-  text: "In this dataset the column named {named} holds the {holds} flag of the first packet: the extractor writes the eight flag counts in the iteration order of a Java HashMap, which does not follow the order of the column names."
+  text: "The column name does not match its content: the extractor writes the eight flag values in the iteration order of a Java HashMap, which does not follow the order of the column names, so this column holds the {holds} flag and not the {named} flag."
   support:
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, field declaration",
        quote: 'private HashMap<String, MutableInt> flagCounts;'}
@@ -71,38 +110,40 @@
     - {src: java8-hashmap, locator: "class description",
        quote: 'This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time.'}
     - {data: flag_column_holds}
-    - {data: flag_consistency.SYN_Flag_Cnt_equals_Fwd_PSH_Flags}
-    - {data: flag_consistency.CWE_Flag_Count_equals_Fwd_URG_Flags}
-    - {data: flag_consistency.RST_Flag_Cnt_equals_ECE_Flag_Cnt}
+    - {data: "claims.identical__Fwd PSH Flags__SYN Flag Cnt"}
+    - {data: "claims.identical__Fwd URG Flags__CWE Flag Count"}
+    - {data: "claims.near_identical__RST Flag Cnt__ECE Flag Cnt"}
 
 - id: XN-CWE-NAME
+  relation: adds
   applies_to: [CWE Flag Count]
-  text: "The name 'CWE Flag Count' is how the 2018 extractor labelled its CWR flag column; later versions call it 'CWR Flag Count'."
+  text: "'CWE' in this column name is the 2018 extractor's name for its CWR counter; later versions of the extractor call the column 'CWR Flag Count'."
   support:
     - {src: cicflowmeter-src-2018, locator: "FlowFeature.java, feature //56", quote: 'cwe_cnt("CWE Flag Count","CWECT"'}
     - {src: cicflowmeter-readme, locator: "FlowFeature.java (master), feature //56", quote: 'CWR_cnt("CWR Flag Count","CWRCT"'}
 
 - id: XN-BWD-FLAGS-ZERO
+  relation: replaces
   applies_to: [Bwd PSH Flags, Bwd URG Flags]
-  text: "Always 0 in this dataset: the backward PSH and URG counters are incremented only in the first-packet routine, and the first packet always defines the forward direction."
+  text: "In the published CSE-CIC-IDS2018 CSV files this column is always 0: the backward PSH and URG counters are incremented only in the first-packet routine, and the first packet always defines the forward direction."
   support:
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, firstPacket()",
        quote: 'if(this.src==null){ this.src = packet.getSrc();'}
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, firstPacket(), backward branch",
        quote: 'if(packet.hasFlagPSH()){ this.bPSH_cnt++; } if(packet.hasFlagURG()){ this.bURG_cnt++; }'}
-    - {data: constant_columns.Bwd PSH Flags}
-    - {data: constant_columns.Bwd URG Flags}
+    - {data: claims.bwd_dir_flags_zero}
 
 - id: XN-BULK-ZERO
+  relation: replaces
   applies_to: [Fwd Byts/b Avg, Fwd Pkts/b Avg, Fwd Blk Rate Avg, Bwd Byts/b Avg, Bwd Pkts/b Avg, Bwd Blk Rate Avg]
-  text: "Always 0 in this dataset: bulk statistics are updated only for the first packet of a flow (the update is disabled for later packets), so no bulk transfer is ever recorded."
+  text: "In the published CSE-CIC-IDS2018 CSV files this column is always 0: bulk statistics are updated only for the first packet of a flow (the update is disabled for later packets), so no bulk transfer is ever recorded."
   support:
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, addPacket()",
        quote: 'public void addPacket(BasicPacketInfo packet){ //updateFlowBulk(packet); //detectUpdateSubflows(packet); //checkFlags(packet);'}
-    - {data: constant_columns.Fwd Byts/b Avg}
-    - {data: constant_columns.Bwd Blk Rate Avg}
+    - {data: claims.bulk_zero}
 
 - id: XN-SUBFLOW-ONE
+  relation: adds
   applies_to: [Subflow Fwd Pkts, Subflow Fwd Byts, Subflow Bwd Pkts, Subflow Bwd Byts]
   text: "Subflow detection runs only for the first packet of a flow, so every flow counts as a single subflow and these columns repeat the flow totals."
   support:
@@ -110,21 +151,25 @@
        quote: 'public void addPacket(BasicPacketInfo packet){ //updateFlowBulk(packet); //detectUpdateSubflows(packet); //checkFlags(packet);'}
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, getSflow_fpackets()",
        quote: 'return this.forward.size()/sfCount;'}
-    - {data: identical_with.Subflow Fwd Pkts}
-    - {data: near_identical_with.Subflow Bwd Byts}
+    - {data: "claims.identical__Tot Fwd Pkts__Subflow Fwd Pkts"}
+    - {data: "claims.identical__Tot Bwd Pkts__Subflow Bwd Pkts"}
+    - {data: "claims.identical__TotLen Fwd Pkts__Subflow Fwd Byts"}
+    - {data: "claims.near_identical__TotLen Bwd Pkts__Subflow Bwd Byts"}
 
 - id: XN-ACT-DATA-FIRST-PACKET
+  relation: replaces
   applies_to: [Fwd Act Data Pkts]
-  text: "The first packet of the flow is never counted: the counter is incremented only for later forward packets that carry at least 1 byte of payload. A flow whose only forward payload is in its first packet therefore shows 0 here while its forward length is positive."
+  text: "In CSE-CIC-IDS2018 this column counts the forward packets after the first one that carry at least 1 byte of payload; the first packet of the flow is never counted. The value is therefore at most the forward packet count minus 1, and a flow whose only forward payload is in its first packet shows 0."
   support:
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, addPacket()",
        quote: 'if(packet.getPayloadBytes() >=1){ this.Act_data_pkt_forward++; }'}
-    - {data: fwd_payload_without_act_data.rows}
-    - {data: fwd_payload_without_act_data.single_fwd_pkt_share}
+    - {data: claims.act_data_le_fwd_minus1}
 
+# checklist 1.5a: them co che window scaling (RFC 7323); so lieu doi sang bat bien (claims) thay cho ty le
 - id: XN-INIT-WIN
+  relation: replaces
   applies_to: [Init Fwd Win Byts, Init Bwd Win Byts]
-  text: "The value is the TCP window field read from a packet header: for the forward direction, the first packet of the flow; for the backward direction, the most recent backward packet (the value is overwritten on each one). -1 is the default kept when no TCP window was read, for example in a UDP flow or when there is no backward packet."
+  text: "In CSE-CIC-IDS2018 this column is the raw TCP window field of a single packet header, not a byte count: for the forward direction it comes from the first packet of the flow, and for the backward direction from the most recent backward packet (the value is overwritten on each one). The field is recorded as read, without the window scale factor, so unless that packet is a SYN or SYN-ACK segment the real window can be larger than the recorded value. -1 is the extractor's default, kept when no TCP window was read: every UDP flow has -1 in the forward column, no TCP flow has -1 in the forward column, and no TCP flow with at least one backward packet has -1 in the backward column."
   support:
     - {src: cicflowmeter-src-2018, locator: "BasicPacketInfo.java, field declaration", quote: 'private int TCPWindow=-1;'}
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, field declarations",
@@ -134,15 +179,21 @@
        quote: 'this.min_seg_size_forward = packet.getHeaderBytes(); Init_Win_bytes_forward = packet.getTCPWindow();'}
     - {src: cicflowmeter-src-2018, locator: "BasicFlow.java, addPacket(), backward branch",
        quote: 'this.bwdPktStats.addValue((double)packet.getPayloadBytes()); Init_Win_bytes_backward = packet.getTCPWindow();'}
-    - {data: init_win_minus1.bwd_zero_bwd_pkts_or_udp_share}
-    - {data: init_win_minus1.fwd_udp_share}
+    - {src: rfc7323, locator: "Section 2.2",
+       quote: 'The window field in a segment where the SYN bit is set (i.e., a <SYN> or <SYN,ACK>) MUST NOT be scaled.'}
+    - {src: rfc9293, locator: "Section 3.1, Header Format", quote: 'The value is shifted when the window scaling extension is used [47].'}
+    - {data: claims.init_fwd_win_tcp_16bit}
+    - {data: claims.udp_flags_zero_init_fwd_minus1}
+    - {data: claims.tcp_init_fwd_never_minus1}
+    - {data: claims.tcp_with_bwd_init_bwd_never_minus1}
 
 - id: XN-FLOW-TIMEOUT
+  relation: adds
   applies_to: [Flow Duration]
-  text: "The command-line extractor closes a flow 120 s (120,000,000 microseconds) after its first packet and starts a new flow, so no duration in this dataset exceeds that limit."
+  text: "The command-line extractor closes a flow 120 s (120,000,000 microseconds) after its first packet and starts a new flow; no flow in the published CSE-CIC-IDS2018 CSV files lasts longer than that."
   support:
     - {src: cicflowmeter-src-2018, locator: "CICFlowMeter.java, main()",
        quote: 'flowGen = new FlowGenerator(true,120000000L, 5000000L);'}
     - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket()",
        quote: 'if((currentTimestamp -flow.getFlowStartTime())>flowTimeOut){'}
-    - {data: flow_duration.max}
+    - {data: claims.duration_le_120s}

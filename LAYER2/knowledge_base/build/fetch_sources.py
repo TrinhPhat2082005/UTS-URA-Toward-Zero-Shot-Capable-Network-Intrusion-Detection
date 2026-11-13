@@ -36,6 +36,26 @@ def download(url, dest):
         f.write(r.read())
 
 
+def _git_state(rel_path):
+    """(commit cuoi cung cham toi file, file co thay doi chua commit?) cho nguon local."""
+    import subprocess
+    run = lambda *a: subprocess.run(["git", "-C", str(C.REPO_DIR), *a], capture_output=True, text=True)
+    commit = run("log", "-1", "--format=%H", "--", rel_path).stdout.strip() or None
+    dirty = bool(run("status", "--porcelain", "--", rel_path).stdout.strip())
+    return commit, dirty
+
+
+def _git_state(rel_path):
+    """(commit cuoi cung cham toi file, file co thay doi chua commit?) cho nguon local."""
+    import subprocess
+
+    def run(*a):
+        return subprocess.run(["git", "-C", str(C.REPO_DIR), *a], capture_output=True, text=True)
+    commit = run("log", "-1", "--format=%H", "--", rel_path).stdout.strip() or None
+    dirty = bool(run("status", "--porcelain", "--", rel_path).stdout.strip())
+    return commit, dirty
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--verify", action="store_true", help="khong tai, chi so sha256 voi lock")
@@ -61,14 +81,20 @@ def main():
             entry["files"][f["name"]] = {"url": f["url"], "sha256": C.sha256_file(path),
                                          "bytes": path.stat().st_size}
         for f in spec.get("local", []):
+            # file trong repo: bam noi dung LF (CRLF tren Windows) va ghi commit cuoi cung cham toi file (4.5)
             path = C.source_path(sid, f["name"])
-            sha = C.sha256_file(path)
+            sha = C.sha256_lf(path)
+            commit, dirty = _git_state(f["path"])
             if args.verify:
                 ok = sha == entry["files"].get(f["name"], {}).get("sha256")
                 bad += not ok
-                print(f"  [{'ok ' if ok else 'CHANGED'}] {sid}/{f['name']} (file trong repo)")
+                note = " (co thay doi chua commit)" if dirty else ""
+                print(f"  [{'ok ' if ok else 'CHANGED'}] {sid}/{f['name']} (file trong repo){note}")
                 continue
-            entry["files"][f["name"]] = {"path": f["path"], "sha256": sha, "bytes": path.stat().st_size}
+            if dirty:
+                raise SystemExit(f"{f['path']} co thay doi chua commit: commit truoc khi khoa nguon {sid}")
+            entry["files"][f["name"]] = {"path": f["path"], "sha256": sha,
+                                         "bytes": len(path.read_bytes().replace(b"\r\n", b"\n")), "commit": commit}
             entry["retrieved"] = today
         entry["version"] = spec["version"]
         lock[sid] = entry

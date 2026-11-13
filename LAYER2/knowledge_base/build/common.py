@@ -55,8 +55,24 @@ def load_lock():
     return json.loads(LOCK_JSON.read_text(encoding="utf-8")) if LOCK_JSON.exists() else {}
 
 
+CLAIMS_JSON = STORE_DIR / "claims.json"
+
+
 def load_facts():
-    return json.loads(FACTS_JSON.read_text(encoding="utf-8"))
+    """data_facts.json (mo ta, chi train) + claims.json (co kiem tinh dung, build/claims.py) duoi khoa 'claims'.
+    Doan gui VLM chi duoc dung {data: claims.<id>} co holds_all = true (validate.py)."""
+    facts = json.loads(FACTS_JSON.read_text(encoding="utf-8"))
+    facts["claims"] = json.loads(CLAIMS_JSON.read_text(encoding="utf-8")) if CLAIMS_JSON.exists() else {}
+    return facts
+
+
+def claim_key(facts, a, b, kind="identical"):
+    """Khoa claim cua cap cot (a, b) bat ke thu tu: 'claims.identical__a__b' hoac '...__b__a'."""
+    for x, y in ((a, b), (b, a)):
+        cid = f"{kind}__{x}__{y}"
+        if cid in facts["claims"]:
+            return f"claims.{cid}"
+    raise KeyError(f"claims.json khong co claim {kind} cho cap ({a}, {b}): chay build/claims.py")
 
 
 def sha256_file(path):
@@ -65,6 +81,22 @@ def sha256_file(path):
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def sha256_lf(path):
+    """sha256 sau khi doi CRLF -> LF. Dung cho nguon `local` (file trong repo): git checkout tren Windows
+    ghi CRLF, tren Linux ghi LF; bam noi dung LF thi lock giong nhau tren moi may (checklist 4.5)."""
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def is_local(src_id, name):
+    return any(item["name"] == name for item in load_sources()[src_id].get("local", []))
+
+
+def sha256_source(src_id, name):
+    """Hash dung trong lock: file tai ve -> sha256 nguyen byte; file trong repo -> sha256_lf."""
+    p = source_path(src_id, name)
+    return sha256_lf(p) if is_local(src_id, name) else sha256_file(p)
 
 
 def source_path(src_id, name):
@@ -143,7 +175,13 @@ def quote_ok(src_id, quote):
 # So lieu (store/data_facts.json)
 # ----------------------------------------------------------------------------------------------
 def fact(facts, key):
-    """Lay gia tri theo khoa dang 'a.b.c'. Ten cot co the chua '/', khong chua '.'."""
+    """Lay gia tri theo khoa dang 'a.b.c'. Ten cot co the chua '/', khong chua '.'.
+    Khoa 'claims.<id>' tra ca muc claim {statement, values, holds_all, ...}."""
+    if key.startswith("claims."):
+        cid = key[len("claims."):]
+        if cid not in facts.get("claims", {}):
+            raise KeyError(f"claims.json khong co claim '{cid}'")
+        return facts["claims"][cid]
     node = facts
     for part in key.split("."):
         if not isinstance(node, dict) or part not in node:

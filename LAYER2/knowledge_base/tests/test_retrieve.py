@@ -21,7 +21,9 @@ TCP_WEB = {"Protocol": 6, "Dst Port": 80, "TotLen Fwd Pkts": 120, "TotLen Bwd Pk
 def test_label_passages_and_mitigations():
     s = KB.select("SQL_Injection", False, ["Fwd Seg Size Min", "Dst Port"], TCP_WEB)
     assert s.pids()[:3] == ["A-SQL_Injection", "B-T1190", "B-CAPEC-66"]
-    assert all(p["role"] == "alert_label" for p in s.passages if p["part"] in ("A", "B"))
+    # checklist 1.4: A'/B' mo ta loai tan cong cua nhan tien le, khong mo ta flow
+    assert all(p["role"] == "attack_type_background" for p in s.passages if p["part"] in ("A", "B"))
+    assert "ATT&CK technique of this label: T1190" in s.passages[0]["text"], "khong co co: co cau technique"
     assert s.mitigations and all(m["pid"].startswith("G-T1190-") for m in s.mitigations)
     assert not any(p["pid"].startswith("G-") for p in s.passages), "G' khong duoc dua cho VLM"
 
@@ -46,6 +48,54 @@ def test_flagged_alert_marks_comparison_only_and_has_no_mitigation():
     assert all(p["role"] == "comparison_only" for p in s.passages if p["part"] in ("A", "B"))
     assert "H1-Flow_Duration" in s.pids()
     assert s.mitigations == []
+    # checklist 1.6 (U11 = A): khi bat co khong co technique trong text, tieu de hay ma trich dan
+    shown = " ".join(f"{p['cite']} {p['title']} {p['text']}" for p in s.passages if p["part"] in ("A", "B"))
+    assert "T1499" not in shown and "Service Exhaustion" not in shown and "ATT&CK technique" not in shown
+    assert [p["cite"] for p in s.passages if p["part"] == "B"] == ["REF-MECH-1", "REF-MECH-2"]
+
+
+def test_replaced_columns_start_with_real_meaning():
+    # checklist 1.1: cot co ghi chu `replaces` khong con dinh nghia ReadMe trong text gui VLM
+    import yaml
+    readme = {f["csv"]: f["definition"] for f in yaml.safe_load(
+        (LAYER2 / "knowledge_base" / "authored" / "feature_names.yaml").read_text(encoding="utf-8")) if f["readme"]}
+    replaced = [p for p in KB.passages.values() if p.get("readme_replaced")]
+    assert len(replaced) >= 20
+    for p in replaced:
+        col = p["keys"]["feature"]
+        assert readme[col].rstrip(".") not in KB._text(p), col
+        assert p["text"].startswith(f"{col}: In ") or p["text"].startswith(f"{col}: The column name"), col
+    rst = KB._text(KB.passages["H1-RST_Flag_Cnt"])
+    assert "ECE flag" in rst and "Number of packets with RST" not in rst
+
+
+def test_no_percent_in_vlm_text():
+    # checklist 4.6 / D1: so lieu chi qua claim dung o moi nguon, khong co phan tram (tru nguong 99.9%)
+    import re
+    for p in KB.passages.values():
+        if p["for_vlm"]:
+            for m in re.findall(r"\d+(?:[.,]\d+)?\s*%", KB._text(p)):
+                assert m == "99.9%", (p["pid"], m)
+
+
+def test_non_syn_tcp_first_packet_adds_winscale():
+    # checklist 1.5a: cot 'PSH Flag Cnt' chua co SYN cua goi dau
+    s = KB.select("DoS_attacks_Hulk", False, ["Init Fwd Win Byts"], dict(TCP_WEB, **{"PSH Flag Cnt": 0}))
+    assert "H3-WINSCALE" in s.pids()
+    s = KB.select("DoS_attacks_Hulk", False, ["Init Fwd Win Byts"], dict(TCP_WEB, **{"PSH Flag Cnt": 1}))
+    assert "H3-WINSCALE" not in s.pids()
+
+
+def test_port_passage_warns_registration_is_not_usage():
+    # checklist 1.5d: IANA 80/udp cung ghi http; doan cong co them cau RFC 6335
+    assert "does not mean" in KB._text(KB.passages["H2-PORT-80"])
+
+
+def test_dictionary_attacks_use_capec_16():
+    # checklist 6.3: CAPEC-16 cho SSH/FTP (kich ban tu dien), BFW giu CAPEC-49
+    assert KB.index["labels"]["SSH_Bruteforce"]["capec"] == "CAPEC-16"
+    assert KB.index["labels"]["FTP_BruteForce"]["capec"] == "CAPEC-16"
+    assert KB.index["labels"]["Brute_Force_Web"]["capec"] == "CAPEC-49"
 
 
 def test_protocol_a_excludes_held_out_label():

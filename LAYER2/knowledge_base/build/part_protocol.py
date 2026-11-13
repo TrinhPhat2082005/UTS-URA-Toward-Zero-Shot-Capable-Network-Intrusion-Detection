@@ -29,6 +29,15 @@ FLAG_QUOTES = {
     "SYN": "SYN: 1 bit Synchronize sequence numbers.",
     "FIN": "FIN: 1 bit No more data from sender.",
 }
+PORT_NOTE = {
+    "id": "PORT-NOT-SERVICE", "relation": "adds",
+    "text": ("The registration does not show which service a flow actually uses: the fact that network traffic is "
+             "flowing to or from an assigned port number does not mean that it is \"good\" traffic, or even that it "
+             "is used by the assigned service."),
+    "support": [{"src": "rfc6335", "locator": "Section 9, Security Considerations",
+                 "quote": ("the fact that network traffic is flowing to or from an assigned port number does not mean "
+                           "that it is \"good\" traffic, or even that it is used by the assigned service.")}],
+}
 ECN_SETUP_QUOTE = ('We call a SYN packet with the ECE and CWR flags set an "ECN-setup SYN packet", and we call a SYN '
                    'packet with at least one of the ECE and CWR flags not set a "non-ECN-setup SYN packet".')
 
@@ -60,12 +69,16 @@ def build(ctx):
             continue
         r = hit[0]
         quote = ",".join(r[:4])
+        # checklist 1.5d: IANA ghi cung dich vu cho tcp va udp (vd 80/udp cung la http), nen khong tach doan
+        # theo giao thuc; them ghi chu RFC 6335 sec. 9: dang ky cong khong cho biet flow dung dich vu nao.
+        # Khoa data attack_main_ports.* (ty le theo nhan, khong dung) bi bo khoi support (checklist D1);
+        # no chi con dung de CHON cong nao co doan.
         out.append(C.passage(f"H2-PORT-{port}", "H2", {"port": int(port)}, "rendered",
                              f"Port {port} is registered by IANA as service '{r[0]}': {r[3]}.",
                              title=f"Port {port} ({r[0]})",
                              support=[{"src": "iana-ports", "locator": f"service-names-port-numbers.csv, {r[0]} {port}/{r[2]}",
-                                       "quote": quote},
-                                      {"data": f"attack_main_ports.ports.{port}"}]))
+                                       "quote": quote}],
+                             notes=[PORT_NOTE]))
     # --- co TCP ---------------------------------------------------------------------------------
     for flag, quote in FLAG_QUOTES.items():
         out.append(C.passage(f"H2-FLAG-{flag}", "H2", {"flag": flag}, "verbatim", quote,

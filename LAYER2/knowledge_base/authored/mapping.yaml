@@ -23,14 +23,22 @@ SSH_Bruteforce:
     text: "Dictionary password guessing against the SSH service of the victim server."
     support:
       - {src: unb-ids2018, locator: "1. Introduction, Brute force attacks", quote: 'by running a dictionary brute force attack against the main server.'}
-      - {data: by_label.SSH_Bruteforce.top_ports.22}
+      - {data: claims.ssh_port22_ge999}
   technique:
     decision: T1110.001
     support:
       - {src: attack-20.1, locator: "T1110.001 description",
          quote: 'Without knowledge of the password for an account, an adversary may opt to systematically guess the password using a repetitive or iterative mechanism.'}
     rationale: "The scenario guesses account passwords from a dictionary; Password Guessing is the ATT&CK sub-technique for guessing passwords from a list. Same as the previous mapping."
-  capec: {decision: CAPEC-49, route: taxonomy_mapping, support: [{src: capec-3.9, locator: "CAPEC-49 Description", quote: 'An adversary tries every possible value for a password until they succeed.'}]}
+  # checklist 6.3: CAPEC-49 ("tries every possible value") trai voi kich ban dung tu dien; CAPEC-16 la con
+  # truc tiep cua CAPEC-49, ma CAPEC-49 lien ket toi T1110.001 (route child_of_linked, part_mechanism.py kiem)
+  capec:
+    decision: CAPEC-16
+    route: child_of_linked
+    support:
+      - {src: capec-3.9, locator: "CAPEC-16 Description", quote: 'This is a specific instance of the password brute forcing attack pattern.'}
+      - {src: unb-ids2018, locator: "2.2.1 Brute-force attack", quote: 'For a list of passwords, we use a large dictionary that contains 90 million words.'}
+    rationale: "The dataset page says the passwords come from a dictionary; CAPEC-16 Dictionary-based Password Attack describes that case and is a child of CAPEC-49, the entry CAPEC links to T1110.001. CHANGED from CAPEC-49, whose description (trying every possible value) does not match a dictionary attack."
 
 FTP_BruteForce:
   dataset_name: {src: unb-ids2018, locator: "Table 2", quote: 'FTP-BruteForce'}
@@ -38,18 +46,28 @@ FTP_BruteForce:
     - {src: unb-ids2018, locator: "2.2.1 Brute-force attack",
        quote: 'In this dataset we use two modules, FTP and SSH on the Kali Linux machine as the attacker machine and an Ubuntu 14.0 system as the victim machine.'}
     - {src: unb-ids2018, locator: "2.2.1 Brute-force attack", quote: 'For a list of passwords, we use a large dictionary that contains 90 million words.'}
+  # checklist 1.2d: the cu chi noi kich ban; du lieu cho thay moi flow toi TCP 21 va khong co payload
+  # (claim bat bien), va phan tich doc lap cua DistriNet cho biet cong 21 dong nen khong thu duoc mat khau.
   behaviour:
-    text: "Dictionary password guessing against the FTP service of the victim server."
+    text: "The dataset page describes a dictionary password attack against the FTP service of the victim server. In the published CSV files every flow with this label goes to TCP port 21 and carries no payload in either direction. An independent analysis of the original capture reports that the target answered the connection attempts only with reset packets, so port 21 was closed and no credentials could be tried."
     support:
       - {src: unb-ids2018, locator: "2.2.1 Brute-force attack", quote: 'For a list of passwords, we use a large dictionary that contains 90 million words.'}
-      - {data: by_label.FTP_BruteForce.top_ports.21}
+      - {data: claims.twin_tcp21_nopayload__FTP_BruteForce}
+      - {src: distrinet-2018, locator: "1. FTP Patator, 14-02-2018",
+         quote: 'In response to the SYN packets being sent out, only [RST, ACK] packets are sent in response, suggesting that port 21 is closed, and so the attacker has no opportunity to actually "brute force" with credentials.'}
   technique:
     decision: T1110.001
     support:
       - {src: attack-20.1, locator: "T1110.001 description",
          quote: 'Without knowledge of the password for an account, an adversary may opt to systematically guess the password using a repetitive or iterative mechanism.'}
-    rationale: "Same scenario as SSH_Bruteforce on the FTP service. Same as the previous mapping."
-  capec: {decision: CAPEC-49, route: taxonomy_mapping, support: [{src: capec-3.9, locator: "CAPEC-49 Description", quote: 'An adversary tries every possible value for a password until they succeed.'}]}
+    rationale: "Same scenario as SSH_Bruteforce on the FTP service; the label keeps the technique named by the scenario, while the label card states that the data show a failed attempt. Same as the previous mapping."
+  capec:
+    decision: CAPEC-16
+    route: child_of_linked
+    support:
+      - {src: capec-3.9, locator: "CAPEC-16 Description", quote: 'This is a specific instance of the password brute forcing attack pattern.'}
+      - {src: unb-ids2018, locator: "2.2.1 Brute-force attack", quote: 'For a list of passwords, we use a large dictionary that contains 90 million words.'}
+    rationale: "Same choice as SSH_Bruteforce: the scenario uses a dictionary. CHANGED from CAPEC-49."
 
 DoS_attacks_GoldenEye:
   dataset_name: {src: unb-ids2018, locator: "Table 2", quote: 'DoS-GoldenEye'}
@@ -59,13 +77,14 @@ DoS_attacks_GoldenEye:
     text: "Denial-of-service attack on the victim's Apache web server."
     support:
       - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
-      - {data: by_label.DoS_attacks_GoldenEye.top_ports.80}
+      - {data: claims.port80_all__DoS_attacks_GoldenEye}
   technique:
     decision: T1499.002
     support:
       - {src: attack-20.1, locator: "T1499.002 description",
          quote: 'Adversaries may target the different network services provided by systems to conduct a denial of service (DoS). Adversaries often target the availability of DNS and web services; however, others have been targeted as well.'}
-    rationale: "Denial of service against a web service (UNB: DoS attack on Apache; data: all flows to port 80). Same as the previous mapping."
+      - {data: claims.port80_all__DoS_attacks_GoldenEye}
+    rationale: "Denial of service against a web service (UNB: DoS attack on Apache; every flow of the label goes to port 80). Same as the previous mapping."
   capec:
     decision: CAPEC-488
     route: taxonomy_mapping
@@ -80,13 +99,14 @@ DoS_attacks_Hulk:
     text: "Denial-of-service attack on the victim's Apache web server."
     support:
       - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
-      - {data: by_label.DoS_attacks_Hulk.top_ports.80}
+      - {data: claims.port80_all__DoS_attacks_Hulk}
   technique:
     decision: T1499.002
     support:
       - {src: attack-20.1, locator: "T1499.002 description",
          quote: 'Adversaries may target the different network services provided by systems to conduct a denial of service (DoS). Adversaries often target the availability of DNS and web services; however, others have been targeted as well.'}
-    rationale: "Denial of service against a web service (UNB: DoS attack on Apache; data: all flows to port 80). Same as the previous mapping."
+      - {data: claims.port80_all__DoS_attacks_Hulk}
+    rationale: "Denial of service against a web service (UNB: DoS attack on Apache; every flow of the label goes to port 80). Same as the previous mapping."
   capec:
     decision: CAPEC-488
     route: taxonomy_mapping
@@ -97,16 +117,20 @@ DoS_attacks_SlowHTTPTest:
   dataset_name: {src: unb-ids2018, locator: "Table 2", quote: 'DoS-SlowHTTPTest'}
   scenario:
     - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
+  # checklist 1.2d: the cu ("DoS on Apache") trai du lieu; nay noi ca kich ban, du lieu (bat bien) va audit
   behaviour:
-    text: "Denial-of-service attack on the victim's Apache web server."
+    text: "The dataset page lists Slowhttptest among the denial-of-service tools run against an Apache web server. In the published CSV files every flow with this label goes to TCP port 21 (FTP) and carries no payload in either direction. An independent analysis of the original capture found no successful Slowhttptest attack and reports that the tool appears to have been launched against port 21 by mistake."
     support:
       - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
+      - {data: claims.twin_tcp21_nopayload__DoS_attacks_SlowHTTPTest}
+      - {src: distrinet-2018, locator: "6. DoS Slowhttptest, 16-02-2018",
+         quote: 'No succesful DoS Slowhttptest attack was found in this dataset. Instead, it looks like the tool was mistakenly launched against port 21.'}
   technique:
     decision: T1499.002
     support:
       - {src: attack-20.1, locator: "T1499.002 description",
          quote: 'Adversaries may target the different network services provided by systems to conduct a denial of service (DoS). Adversaries often target the availability of DNS and web services; however, others have been targeted as well.'}
-    rationale: "Denial of service against a web service per the dataset page. Same as the previous mapping. The flows of this label all go to port 21 with no payload (data_facts), which does not match the scenario; this is reported as a dataset limitation, not in the KB."
+    rationale: "Denial of service against a web service per the dataset page; the label keeps the technique named by the scenario, while the label card states that the data show a failed attempt on port 21. Same as the previous mapping."
   capec:
     decision: CAPEC-469
     route: taxonomy_mapping
@@ -124,7 +148,7 @@ DoS_attacks_Slowloris:
     support:
       - {src: unb-ids2018, locator: "1. Introduction, HTTP denial of service",
          quote: 'The tool holds the connection open by sending valid, incomplete HTTP requests to the server at regular intervals to keep the sockets from closing. Since any Web server has a finite ability to serve connections, it will only be a matter of time before all sockets are used up and no other connection can be made.'}
-      - {data: by_label.DoS_attacks_Slowloris.top_ports.80}
+      - {data: claims.port80_all__DoS_attacks_Slowloris}
   technique:
     decision: T1499.002
     support:
@@ -145,7 +169,7 @@ DDoS_attacks_LOIC_HTTP:
     text: "Distributed denial of service with HTTP requests against the victim web server."
     support:
       - {src: unb-ids2018, locator: "Table 1", quote: 'Low Orbit Ion Canon (LOIC) for UDP, TCP, or HTTP requests'}
-      - {data: by_label.DDoS_attacks_LOIC_HTTP.top_ports.80}
+      - {data: claims.port80_all__DDoS_attacks_LOIC_HTTP}
   technique:
     decision: T1499.002
     support:
@@ -166,7 +190,7 @@ DDOS_attack_LOIC_UDP:
     text: "Distributed denial of service with UDP traffic sent to the victim server."
     support:
       - {src: unb-ids2018, locator: "Table 1", quote: 'Low Orbit Ion Canon (LOIC) for UDP, TCP, or HTTP requests'}
-      - {data: by_label.DDOS_attack_LOIC_UDP.udp}
+      - {data: claims.loic_udp_udp_port80}
   technique:
     decision: T1498.001
     support:
@@ -174,7 +198,8 @@ DDOS_attack_LOIC_UDP:
          quote: 'Adversaries may attempt to cause a denial of service (DoS) by directly sending a high-volume of network traffic to a target.'}
       - {src: attack-20.1, locator: "T1498.001 description",
          quote: 'Stateless protocols such as UDP or ICMP are commonly used but stateful protocols such as TCP can be used as well.'}
-    rationale: "All flows of this label are UDP (data), i.e. a flood of network traffic rather than requests to a service's application logic. Direct Network Flood names UDP floods. CHANGED from the previous mapping T1499.002 (Service Exhaustion Flood), which describes attacks on the services themselves."
+      - {data: claims.loic_udp_udp_port80}
+    rationale: "Every flow of this label is UDP, i.e. a flood of network traffic rather than requests to a service's application logic. Direct Network Flood names UDP floods. CHANGED from the previous mapping T1499.002 (Service Exhaustion Flood), which describes attacks on the services themselves."
   capec:
     decision: CAPEC-125
     route: taxonomy_mapping
@@ -192,7 +217,7 @@ DDOS_attack_HOIC:
     support:
       - {src: unb-ids2018, locator: "2.2.5 Distributed Denial-of-Service", quote: 'designed to attack as many as 256 URLs at the same time.'}
       - {src: unb-ids2018, locator: "2.2.5 Distributed Denial-of-Service", quote: 'In this scenario, we use free HOIC tool to conduct DDoS attack by using 4 different computers.'}
-      - {data: by_label.DDOS_attack_HOIC.top_ports.80}
+      - {data: claims.port80_all__DDOS_attack_HOIC}
   technique:
     decision: T1499.002
     support:
@@ -210,19 +235,30 @@ Brute_Force_Web:
   scenario:
     - {src: unb-ids2018, locator: "2.2.6 Web Attacks", quote: 'In this work, we use Damn Vulnerable Web App (DVWA) to conduct our attacks.'}
     - {src: unb-ids2018, locator: "2.2.6 Web Attacks", quote: 'To automate the attacks in XSS and Brute-force section we developed an automation code with Selenium framework.'}
+  # checklist 1.2a: the cu khong noi nhan co ca flow khong phai HTTP; ty le (25,5% train / 34,2% val / 0% ngay
+  # 22-02) khong dung nen chi noi dang ton tai o cap nhan (claim exists) va cong 80 pho bien nhat (claim top).
   behaviour:
-    text: "Automated password guessing against a deliberately vulnerable web application (DVWA) on the victim web server."
+    text: "The dataset page describes automated attacks, scripted with the Selenium framework, on the brute-force section of a deliberately vulnerable web application (DVWA) on the victim web server; an independent analysis of the capture describes repeated password login attempts on a web page. Not every flow carrying this label is HTTP: the label also contains UDP flows and flows to destination ports other than 80, although port 80 is its most common destination port."
     support:
       - {src: unb-ids2018, locator: "2.2.6 Web Attacks", quote: 'DVWA is a PHP/MySQL web application that is vulnerable.'}
       - {src: unb-ids2018, locator: "2.2.6 Web Attacks", quote: 'To automate the attacks in XSS and Brute-force section we developed an automation code with Selenium framework.'}
-      - {data: by_label.Brute_Force_Web.top_ports.80}
+      - {src: distrinet-2018, locator: "10. Web Attack - Brute Force, 22-02-2018",
+         quote: 'This attack looks mostly like a web-page based attack with repeated password login attempts.'}
+      - {data: claims.bfw_has_udp_and_other_ports}
+      - {data: claims.bfw_port80_top}
   technique:
     decision: T1110.001
     support:
       - {src: attack-20.1, locator: "T1110.001 description",
          quote: 'Without knowledge of the password for an account, an adversary may opt to systematically guess the password using a repetitive or iterative mechanism.'}
     rationale: "Brute force against a web login guesses passwords. Same as the previous mapping."
-  capec: {decision: CAPEC-49, route: taxonomy_mapping, support: [{src: capec-3.9, locator: "CAPEC-49 Description", quote: 'An adversary tries every possible value for a password until they succeed.'}]}
+  # checklist 6.3: giu CAPEC-49 vi trang dataset khong noi danh sach mat khau dung cho trang dang nhap web
+  # (cau "90 million words" chi nam o muc FTP/SSH)
+  capec:
+    decision: CAPEC-49
+    route: taxonomy_mapping
+    support: [{src: capec-3.9, locator: "CAPEC-49 Description", quote: 'An adversary tries every possible value for a password until they succeed.'}]
+    rationale: "CAPEC-49 is the entry CAPEC links to T1110.001. CAPEC-16 (dictionary) is not chosen here because the dataset page does not describe the password list used against the web login; the dictionary sentence belongs to the FTP and SSH scenario."
 
 Brute_Force_XSS:
   dataset_name: {src: unb-ids2018, locator: "Table 2", quote: 'Brute Force -XSS'}
@@ -234,7 +270,7 @@ Brute_Force_XSS:
     support:
       - {src: unb-ids2018, locator: "2.2.6 Web Attacks", quote: 'DVWA is a PHP/MySQL web application that is vulnerable.'}
       - {src: unb-ids2018, locator: "2.2.6 Web Attacks", quote: 'To automate the attacks in XSS and Brute-force section we developed an automation code with Selenium framework.'}
-      - {data: by_label.Brute_Force_XSS.top_ports.80}
+      - {data: claims.xss_port80_ge90}
   technique:
     decision: T1190
     support:
@@ -261,7 +297,7 @@ SQL_Injection:
       - {src: unb-ids2018, locator: "1. Introduction, Collection of web application attacks",
          quote: 'we conduct different types of web attacks on the vulnerable website, including SQL injection, command injection, and unrestricted file upload.'}
       - {src: unb-ids2018, locator: "2.2.6 Web Attacks", quote: 'DVWA is a PHP/MySQL web application that is vulnerable.'}
-      - {data: by_label.SQL_Injection.top_ports.80}
+      - {data: claims.port80_all__SQL_Injection}
   technique:
     decision: T1190
     support:
@@ -282,19 +318,25 @@ Infiltration:
     - {src: unb-ids2018, locator: "1. Introduction, Infiltration of the network from inside",
        quote: 'we use his computer to scan the internal network for other vulnerable boxes and exploit them if possible.'}
     - {src: unb-ids2018, locator: "2.2.7 Infiltration of the network from inside", quote: 'IP sweep, full port scan and service enumerations using Nmap.'}
+  # checklist 1.2b: bo "e-mail attachment" (trang UNB khong co chu nay, va mo ta hai cach xam nhap khac nhau:
+  # email o muc 1, Dropbox o Table 1). Ty le DNS/HTTPS khong dung -> nguong "at least a tenth" (claim dung o
+  # moi nguon, min 12,8%). Rationale cu "no destination port above 30%" SAI (val 30,4%, ngay 28-02 35,7%).
   behaviour:
-    text: "Reconnaissance of the internal network from a compromised victim host: IP sweep, port scan and service enumeration, after the host was compromised through a malicious e-mail attachment."
+    text: "The dataset page describes this label as the internal stage of an infiltration scenario: a compromised victim host was used for an IP sweep, a full port scan and service enumeration of the internal network with Nmap. The label is not limited to scan traffic: at least a tenth of its flows go to DNS (UDP port 53), at least a tenth go to HTTPS (TCP port 443), and no single destination port carries half of its flows."
     support:
       - {src: unb-ids2018, locator: "2.2.7 Infiltration of the network from inside", quote: 'IP sweep, full port scan and service enumerations using Nmap.'}
       - {src: unb-ids2018, locator: "1. Introduction, Infiltration of the network from inside",
-         quote: 'In this scenario, we send a malicious file via an email to the victim and exploit an application vulnerability.'}
-      - {data: by_label.Infiltration.top_ports}
+         quote: 'we use his computer to scan the internal network for other vulnerable boxes and exploit them if possible.'}
+      - {data: claims.infil_udp53_ge10}
+      - {data: claims.infil_tcp443_ge10}
+      - {data: claims.infil_max_port_lt50}
   technique:
     decision: T1046
     support:
       - {src: attack-20.1, locator: "T1046 description",
          quote: 'Common methods to acquire this information include port, vulnerability, and/or wordlist scans using tools that are brought onto a system.'}
-    rationale: "Of the scenario's stages, the internal scan is the one carried by network flows to many hosts and ports (data: no destination port above 30% of the label's flows); the e-mail delivery and the exploitation run on the victim host. CHANGED from the previous mapping T1204.002 + T1046: only the observable stage is kept, because the report must describe the flow."
+      - {data: claims.infil_max_port_lt50}
+    rationale: "Of the scenario's stages, the internal scan is the one described on the dataset page as network activity against many hosts and ports (no single destination port carries half of the label's flows); the delivery of the malicious file and the exploitation run on the victim host. CHANGED from the previous mapping T1204.002 + T1046: the user-execution stage is not kept because the report must describe network flows."
   capec:
     decision: CAPEC-300
     route: taxonomy_mapping
@@ -307,20 +349,25 @@ Bot:
     - {src: unb-ids2018, locator: "2.2.3 Botnet",
        quote: 'In this scenario, we infect machines with two different botnets (Zeus and Ares), also every 400 seconds we request screenshots from the zombies.'}
     - {src: unb-ids2018, locator: "Table 1", quote: 'Ares (developed by Python): remote shell, file upload/download, capturing screenshots and key logging'}
+  # checklist 1.2c: tach kha nang cua tool (Table 1) khoi viec da lam (chup man hinh moi 400 s); "97%" doi
+  # thanh "nearly all" voi claim > 95% (dung o moi nguon: 96,1-98,4%); them audit: khong thay Zeus.
   behaviour:
-    text: "Botnet command-and-control traffic between infected hosts and their controller: remote shell, file transfer and periodic screenshot requests."
+    text: "The dataset page describes victim machines infected with botnet malware (it names Zeus and Ares), with the controller requesting screenshots from the infected hosts every 400 seconds. It lists remote shell, file upload/download, screenshot capture and key logging as capabilities of the Ares tool, not as actions recorded in the capture. An independent analysis of the capture found no evidence of the Zeus botnet. Nearly all flows with this label go to TCP port 8080."
     support:
       - {src: unb-ids2018, locator: "2.2.3 Botnet",
          quote: 'In this scenario, we infect machines with two different botnets (Zeus and Ares), also every 400 seconds we request screenshots from the zombies.'}
       - {src: unb-ids2018, locator: "Table 1", quote: 'Ares (developed by Python): remote shell, file upload/download, capturing screenshots and key logging'}
-      - {data: by_label.Bot.top_ports.8080}
+      - {src: distrinet-2018, locator: "12. Botnet Ares",
+         quote: 'All botnet traffic occurs on port 8080, and we found no evidence of the Zeus botnet in this trace.'}
+      - {data: claims.bot_tcp8080_gt95}
   technique:
     decision: T1071.001
     support:
       - {src: attack-20.1, locator: "T1071.001 description",
          quote: 'Commands to the remote system, and often the results of those commands, will be embedded within the protocol traffic between the client and server.'}
       - {src: iana-ports, locator: "service-names-port-numbers.csv, port 8080/tcp", quote: 'http-alt,8080,tcp,HTTP Alternate (see port 80)'}
-    rationale: "The network-visible part of the scenario is the controller's commands and the infected hosts' replies; 97% of the label's flows use port 8080, registered by IANA as HTTP Alternate. CHANGED from the previous mapping T1583.005 (Botnet) + T1113 (Screen Capture): the first describes the attacker acquiring infrastructure and the second an action on the host, neither of which is observable in a flow."
+      - {data: claims.bot_tcp8080_gt95}
+    rationale: "The network-visible part of the scenario is the controller's commands and the infected hosts' replies; nearly all of the label's flows use TCP port 8080, registered by IANA as HTTP Alternate. CHANGED from the previous mapping T1583.005 (Botnet) + T1113 (Screen Capture): the first describes the attacker acquiring infrastructure and the second an action on the host, neither of which is observable in a flow."
   capec:
     decision: null
     route: none

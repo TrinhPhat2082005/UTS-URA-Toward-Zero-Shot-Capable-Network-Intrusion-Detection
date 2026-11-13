@@ -53,6 +53,10 @@ def legacy_techniques():
 def _ev(e):
     if "quote" in e:
         return f"[{e['src']} | {e.get('locator', '')}] \"{e['quote']}\""
+    if "data" in e and e["data"].startswith("claims."):
+        c = C.fact(C.load_facts(), e["data"])
+        return (f"[claim | {e['data'][7:]}] {c['statement']} — holds on every source: "
+                f"{'yes' if c['holds_all'] else '**NO**'} ({len([v for v in c['values'].values() if v is not None])} sources)")
     if "data" in e:
         return f"[data_facts | {e['data']}] = {json.dumps(C.fact(C.load_facts(), e['data']), ensure_ascii=False)}"
     if "decision" in e:
@@ -104,7 +108,7 @@ def report(passages, ctx, kb_sha, errors):
             L += [f"### {p['pid']}", "", f"> {p['text']}", ""]
             L += [f"- {_ev(e)}" for e in p["support"]]
             L.append("")
-    L += ["### Notes attached to H1 passages", ""]
+    L += ["### Notes attached to H1 and H2 passages", ""]
     seen = set()
     for p in passages:
         for n in p["notes"]:
@@ -112,12 +116,15 @@ def report(passages, ctx, kb_sha, errors):
             if key in seen:
                 continue
             seen.add(key)
-            cols = [q["keys"]["feature"] for q in passages if any((m["id"], m["text"]) == key for m in q["notes"])]
+            # H1 co khoa feature; H2-PORT (ghi chu RFC 6335, checklist 1.5d) co khoa port -> dung pid
+            cols = [q["keys"].get("feature", q["pid"]) for q in passages
+                    if any((m["id"], m["text"]) == key for m in q["notes"])]
             L += [f"**{n['id']}** (on: {', '.join(cols)})", "", f"> {n['text']}", ""]
             L += [f"- {_ev(e)}" for e in n["support"]]
             L.append("")
 
-    L += ["## 5. H3 conditions: share of flows per label (train_full.csv)", ""]
+    L += ["## 5. H3 conditions: share of flows per label (train_full.csv)", "",
+          "Descriptive only: training split, not checked for stationarity, not used as evidence in any passage.", ""]
     arts = [a for a in ctx["artefacts"] if a.get("frequency_key")]
     L.append("| label | " + " | ".join(a["pid"] for a in arts) + " |")
     L.append("|---|" + "---|" * len(arts))
@@ -132,6 +139,29 @@ def report(passages, ctx, kb_sha, errors):
     L += ["", f"Consistency in the data: {json.dumps(facts['flag_consistency'])}", "",
           f"Constant columns: {', '.join(facts['constant_columns'])}", "",
           f"Identical column pairs: {facts['identical_columns']}; near-identical: {facts['near_identical_columns']}", ""]
+
+    # checklist 1.1: cot ma dinh nghia ReadMe khong dung voi dataset nay (khong con trong text gui VLM)
+    L += ["## 6b. ReadMe definitions that do not hold for CSE-CIC-IDS2018", "",
+          "These columns start with their real meaning; the ReadMe definition is kept only in "
+          "authored/feature_names.yaml and in the passage support.", "", "| column | ReadMe definition (not sent to the VLM) |",
+          "|---|---|"]
+    readme = {f["csv"]: f.get("definition", "") for f in ctx["feature_names"]}
+    for p in passages:
+        if p.get("readme_replaced"):
+            L.append(f"| {p['keys']['feature']} | {readme.get(p['keys']['feature'], '')} |")
+
+    # checklist D1: claim so lieu va tinh dung
+    L += ["", "## 7. Claims and stationarity (build/claims.py)", "",
+          "A number enters a passage sent to the VLM only as a claim that holds on the training split, the validation "
+          "split and every published CSV file (and both halves of each label within a file, by row order).", "",
+          "| claim | statement | test | train | val | min / max over raw files and halves | holds |",
+          "|---|---|---|---|---|---|---|"]
+    for cid, c in facts["claims"].items():
+        raw = [v for k, v in c["values"].items() if k not in ("train", "val") and v is not None]
+        rng = f"{min(raw):.4g} / {max(raw):.4g}" if raw else "-"
+        fmt = lambda v: "-" if v is None else f"{v:.4g}"
+        L.append(f"| {cid} | {c['statement']} | {c['test']} | {fmt(c['values'].get('train'))} | "
+                 f"{fmt(c['values'].get('val'))} | {rng} | {'yes' if c['holds_all'] else '**no**'} |")
     return "\n".join(L) + "\n"
 
 

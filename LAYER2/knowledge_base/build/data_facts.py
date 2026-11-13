@@ -3,8 +3,10 @@ Buoc 2 cua KB: moi con so ve dataset dung trong KB deu tinh o day, tu train_full
 
     python LAYER2/knowledge_base/build/data_facts.py      # -> store/data_facts.json
 
-Khong co so nao trong authored/*.yaml hay passages.jsonl duoc go tay: chung tham chieu khoa cua file
-nay ({"data": "by_label.DoS_attacks_Hulk.zero_payload"}), va validate.py so lai gia tri.
+Sua 2026-11-13 (checklist D1): so o day chi tinh tren train nen KHONG duoc dung lam bang chung trong doan gui
+VLM (validate.py chan). Doan gui VLM chi dung claim co kiem tinh dung (build/claims.py -> store/claims.json).
+File nay con dung de: (1) tim danh sach cot hang / cot trung nhau (claims.py kiem lai tren moi nguon),
+(2) flag_column_holds (thu tu HashMap tinh lai tu ma nguon), (3) bang mo ta trong build_report.md.
 Ty le lam tron 4 chu so.
 """
 from __future__ import annotations
