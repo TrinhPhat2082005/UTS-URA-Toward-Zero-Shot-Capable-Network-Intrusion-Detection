@@ -1,61 +1,77 @@
 {
- "kb_sha256": "7c5459ca3ce2849cfd4f1f4f1756ef5d85e01ef8a7140b4071992302ff2eb510",
+ "kb_sha256": "520e42eba1962dc5daf2e72d3c1765c1ac14648cfe0e5b98b2903676000c71e9",
  "labels": {
   "SSH_Bruteforce": {
    "technique": "T1110.001",
-   "capec": "CAPEC-16"
+   "capec": "CAPEC-16",
+   "extra_mechanisms": []
   },
   "FTP_BruteForce": {
    "technique": "T1110.001",
-   "capec": "CAPEC-16"
+   "capec": "CAPEC-16",
+   "extra_mechanisms": []
   },
   "DoS_attacks_GoldenEye": {
    "technique": "T1499.002",
-   "capec": "CAPEC-488"
+   "capec": "CAPEC-488",
+   "extra_mechanisms": []
   },
   "DoS_attacks_Hulk": {
    "technique": "T1499.002",
-   "capec": "CAPEC-488"
+   "capec": "CAPEC-488",
+   "extra_mechanisms": []
   },
   "DoS_attacks_SlowHTTPTest": {
    "technique": "T1499.002",
-   "capec": "CAPEC-469"
+   "capec": "CAPEC-469",
+   "extra_mechanisms": []
   },
   "DoS_attacks_Slowloris": {
    "technique": "T1499.002",
-   "capec": "CAPEC-469"
+   "capec": "CAPEC-469",
+   "extra_mechanisms": []
   },
   "DDoS_attacks_LOIC_HTTP": {
    "technique": "T1499.002",
-   "capec": "CAPEC-488"
+   "capec": "CAPEC-488",
+   "extra_mechanisms": []
   },
   "DDOS_attack_LOIC_UDP": {
    "technique": "T1498.001",
-   "capec": "CAPEC-125"
+   "capec": "CAPEC-125",
+   "extra_mechanisms": []
   },
   "DDOS_attack_HOIC": {
    "technique": "T1499.002",
-   "capec": "CAPEC-488"
+   "capec": "CAPEC-488",
+   "extra_mechanisms": []
   },
   "Brute_Force_Web": {
    "technique": "T1110.001",
-   "capec": "CAPEC-49"
+   "capec": "CAPEC-49",
+   "extra_mechanisms": []
   },
   "Brute_Force_XSS": {
    "technique": "T1190",
-   "capec": "CAPEC-63"
+   "capec": "CAPEC-63",
+   "extra_mechanisms": []
   },
   "SQL_Injection": {
    "technique": "T1190",
-   "capec": "CAPEC-66"
+   "capec": "CAPEC-66",
+   "extra_mechanisms": []
   },
   "Infiltration": {
    "technique": "T1046",
-   "capec": "CAPEC-300"
+   "capec": "CAPEC-300",
+   "extra_mechanisms": [
+    "T1018"
+   ]
   },
   "Bot": {
    "technique": "T1071.001",
-   "capec": null
+   "capec": null,
+   "extra_mechanisms": []
   }
  },
  "flag_column_holds": {

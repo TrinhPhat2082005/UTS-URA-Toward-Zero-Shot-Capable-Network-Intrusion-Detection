@@ -48,9 +48,12 @@
 - pid: H3-TIMEOUT
   when: {all: [["Flow Duration", ">=", 119000000]]}
   frequency_key: duration_ge_119s
-  text: "The flow lasted until the extractor's 120 s flow timeout. A longer connection is split into several consecutive flows, so this duration does not cover the whole session."
+  text: "The flow lasted until the extractor's default 120 s flow timeout. A longer connection is split into several consecutive flows, so this duration does not cover the whole session."
   support:
-    - {src: cicflowmeter-src-2018, locator: "CICFlowMeter.java, main()", quote: 'flowGen = new FlowGenerator(true,120000000L, 5000000L);'}
+    # checklist 4.2: timeout trich tu GUI / worker, khong tu CICFlowMeter.java (bi loai khoi ban build)
+    - {src: cicflowmeter-src-2018, locator: "ReadPcapFileWorker.java, constructor", quote: 'flowTimeout = 120000000L;'}
+    - {src: cicflowmeter-src-2018, locator: "TrafficFlowWorker.java, doInBackground()",
+       quote: 'FlowGenerator flowGen = new FlowGenerator(true,120000000L, 5000000L);'}
     - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket()",
        quote: '// Flow finished due flowtimeout: // 1.- we move the flow to finished flow list // 2.- we eliminate the flow from the current flow list // 3.- we create a new flow with the packet-in-process'}
     - {data: claims.duration_le_120s}

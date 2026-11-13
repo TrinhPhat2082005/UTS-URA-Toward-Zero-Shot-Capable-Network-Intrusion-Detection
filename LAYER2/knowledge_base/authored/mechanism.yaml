@@ -1,0 +1,21 @@
+# Checklist 6.5: doan B' cua technique lay nhung DOAN VAN nao trong phan description cua ATT&CK v20.1.
+# Mac dinh (technique khong co o day): chi doan dau [0]. Moi lua chon la mot quyet dinh {decision, support,
+# rationale}; doan duoc chon phai LIEN NHAU de text cua B' van la chuoi con nguyen van cua nguon (validate.py
+# kiem). Chi so doan tinh tu 0 theo cac khoi cach nhau bang dong trong trong description STIX.
+# Khoa theo technique (khong theo nhan) vi nhieu nhan dung chung mot technique (T1499.002: 6 nhan).
+
+T1499.002:
+  paragraphs:
+    decision: [0, 1]
+    support:
+      - {src: attack-20.1, locator: "T1499.002 description, paragraph 2",
+         quote: 'One example of this type of attack is known as a simple HTTP flood, where an adversary sends a large number of HTTP requests to a web server to overwhelm it and/or an application that runs on top of it.'}
+    rationale: "The second paragraph describes the simple HTTP flood, the variant that matches the labels mapped to this technique (DoS and DDoS attacks on a web server reached on port 80). The third paragraph (SSL renegotiation) is not used because no label of the dataset describes it."
+
+T1110.001:
+  paragraphs:
+    decision: [0, 1, 2, 3]
+    support:
+      - {src: attack-20.1, locator: "T1110.001 description, paragraph 3",
+         quote: 'Typically, management services over commonly used ports are used when guessing passwords.'}
+    rationale: "Paragraphs 3 and 4 list the services commonly targeted by password guessing, including SSH (22/TCP), FTP (21/TCP) and HTTP (80/TCP), the services of the three labels mapped to this technique. Paragraph 2 is kept because the selected paragraphs must be contiguous in the source."

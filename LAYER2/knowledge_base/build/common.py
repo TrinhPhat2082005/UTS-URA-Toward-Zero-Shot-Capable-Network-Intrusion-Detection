@@ -128,12 +128,17 @@ def normalize(text):
     text = unicodedata.normalize("NFKC", text)
     text = _CITATION.sub("", text)
     text = _MDLINK.sub(r"\1", text)
+    text = re.sub(r"</?code>", "", text)          # the <code> trong mo ta ATT&CK (vd T1018), ap nhu nhau cho hai phia
     text = re.sub(r"\s+", " ", text)
     return re.sub(r" ([,.;:)])", r"\1", text).strip()
 
 
+CELL_SEP = " ¦ "      # checklist 5.3: ranh gioi o bang HTML; trich dan khong duoc vuot qua dau nay
+
+
 def _html_text(raw):
     raw = re.sub(r"<script.*?</script>|<style.*?</style>", " ", raw, flags=re.S | re.I)
+    raw = re.sub(r"</t[dh]\s*>", CELL_SEP, raw, flags=re.I)
     return html.unescape(_TAGS.sub(" ", raw))
 
 
@@ -148,27 +153,46 @@ def _xml_text(path):
     return " ".join(ET.parse(path).getroot().itertext())
 
 
+def _file_text(p):
+    if not p.exists():
+        raise FileNotFoundError(f"thieu file nguon {p}; chay build/fetch_sources.py truoc")
+    if p.suffix == ".json":
+        return _stix_text(p)
+    if p.suffix == ".xml":
+        return _xml_text(p)
+    if p.suffix == ".html":
+        return _html_text(p.read_text(encoding="utf-8", errors="replace"))
+    return p.read_text(encoding="utf-8", errors="replace")
+
+
 @lru_cache(maxsize=None)
 def source_text(src_id):
     """Toan bo van ban (da chuan hoa) cua mot nguon, dung de kiem trich dan."""
-    parts = []
-    for p in source_files(src_id):
-        if not p.exists():
-            raise FileNotFoundError(f"thieu file nguon {p}; chay build/fetch_sources.py truoc")
-        if p.suffix == ".json":
-            parts.append(_stix_text(p))
-        elif p.suffix == ".xml":
-            parts.append(_xml_text(p))
-        elif p.suffix == ".html":
-            parts.append(_html_text(p.read_text(encoding="utf-8", errors="replace")))
-        else:
-            parts.append(p.read_text(encoding="utf-8", errors="replace"))
-    return normalize("\n".join(parts))
+    return normalize("\n".join(_file_text(p) for p in source_files(src_id)))
 
 
-def quote_ok(src_id, quote):
-    """Trich dan co nam nguyen van trong nguon khong (sau khi chuan hoa)."""
-    return normalize(quote) in source_text(src_id)
+@lru_cache(maxsize=None)
+def file_text(src_id, name):
+    """Van ban (da chuan hoa) cua MOT file trong nguon."""
+    return normalize(_file_text(source_path(src_id, name)))
+
+
+def locator_file(src_id, locator):
+    """Ten file cua nguon ma locator chi toi ('BasicFlow.java, firstPacket()' -> 'BasicFlow.java'), hoac None.
+    Locator dang 'FlowFeature.java (master), ...' cung duoc nhan."""
+    if not locator:
+        return None
+    head = re.split(r"[,(]", locator, maxsplit=1)[0].strip()
+    names = [f["name"] for f in load_sources()[src_id].get("files", []) + load_sources()[src_id].get("local", [])]
+    return head if head in names else None
+
+
+def quote_ok(src_id, quote, locator=None):
+    """Trich dan co nam nguyen van trong nguon khong (sau khi chuan hoa).
+    Checklist 5.1 (ban nhe): neu locator bat dau bang ten mot file cua nguon, chi kiem trong file do."""
+    name = locator_file(src_id, locator)
+    hay = file_text(src_id, name) if name else source_text(src_id)
+    return normalize(quote) in hay
 
 
 # ----------------------------------------------------------------------------------------------

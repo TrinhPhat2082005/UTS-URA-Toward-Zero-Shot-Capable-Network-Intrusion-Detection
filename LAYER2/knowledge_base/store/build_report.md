@@ -1,6 +1,6 @@
 # Knowledge base build report
 
-Built 2026-11-13 | passages.jsonl sha256 `7c5459ca3ce2849cfd4f1f4f1756ef5d85e01ef8a7140b4071992302ff2eb510` | dataset `train_full.csv (Protocol B training split)` sha256 `64f48652b0f6b1b7...`
+Built 2026-11-14 | passages.jsonl sha256 `520e42eba1962dc5daf2e72d3c1765c1ac14648cfe0e5b98b2903676000c71e9` | dataset `train_full.csv (Protocol B training split)` sha256 `64f48652b0f6b1b7...`
 
 Validation: **passed** (every quote verbatim in its locked source, every data key present, coverage complete)
 
@@ -11,7 +11,9 @@ Validation: **passed** (every quote verbatim in its locked source, every data ke
 |---|---|---|---|---|
 | unb-ids2018 | dataset | page retrieved on the date in sources.lock.json | 2026-11-13 | page.html `c1258503f336` |
 | cicflowmeter-readme | tool | git 98a5ebad0df579cc8b43eedd3421b3ae87699901 (master, 2022-01-05) | 2026-11-13 | ReadMe.txt `c8919171add3`; LICENSE.txt `f60c54b998ca`; FlowFeature.java `fadddf4ff18d` |
-| cicflowmeter-src-2018 | tool | git 50d668db9bdb0a5fae457916dae4538ba8b41876 (2018-03-07) | 2026-11-13 | FlowFeature.java `941611e67a7a`; BasicFlow.java `7519720889fe`; BasicPacketInfo.java `eff86c02d123`; PacketReader.java `776a9234941c`; FlowGenerator.java `c760789268ba`; CICFlowMeter.java `9b74a25ae292` |
+| cicflowmeter-src-2018 | tool | git 50d668db9bdb0a5fae457916dae4538ba8b41876 (2018-03-07) | 2026-11-13 | FlowFeature.java `941611e67a7a`; BasicFlow.java `7519720889fe`; BasicPacketInfo.java `eff86c02d123`; PacketReader.java `776a9234941c`; FlowGenerator.java `c760789268ba`; CICFlowMeter.java `9b74a25ae292`; DateFormatter.java `b50d3489f41e`; FlowOfflinePane.java `37bf07e7d4ac`; ReadPcapFileWorker.java `049bd42c3c8c`; TrafficFlowWorker.java `201da46d4d66`; build.gradle `2f09973fe4ec` |
+| cicflowmeter-src-2018-06 | tool | git 6833ccd4ff2953fdd2ab703060d43e349494151e (2018-06-04) | 2026-11-13 | BasicFlow.java `797fb5370c35` |
+| openjdk8-src | platform | jdk8-b132 | 2026-11-13 | HashMap.java `78dc23b1dc93`; String.java `af751f86c9bd` |
 | attack-20.1 | knowledge | 20.1 | 2026-11-13 | enterprise-attack-20.1.json `539a843a7b53` |
 | capec-3.9 | knowledge | 3.9 | 2026-11-13 | capec_v3.9.xml `70279a2dff0c` |
 | iana-ports | standard | registry retrieved on the date in sources.lock.json | 2026-11-13 | service-names-port-numbers.csv `ee7416ab54a1` |
@@ -31,7 +33,7 @@ Validation: **passed** (every quote verbatim in its locked source, every data ke
 | part | passages | verbatim | rendered | authored | sent to VLM |
 |---|---|---|---|---|---|
 | A' label card | 14 | 0 | 0 | 14 | yes |
-| B' mechanism (ATT&CK + CAPEC) | 14 | 14 | 0 | 0 | yes |
+| B' mechanism (ATT&CK + CAPEC) | 15 | 15 | 0 | 0 | yes |
 | H1 feature definitions | 81 | 1 | 54 | 26 | yes |
 | H2 protocol / port / TCP flag | 21 | 9 | 12 | 0 | yes |
 | H3 conditional extractor artefacts | 6 | 0 | 0 | 6 | yes |
@@ -60,7 +62,7 @@ Rationale for each technique and CAPEC choice:
 
 - **SSH_Bruteforce** — The scenario guesses account passwords from a dictionary; Password Guessing is the ATT&CK sub-technique for guessing passwords from a list. Same as the previous mapping. CAPEC: The dataset page says the passwords come from a dictionary; CAPEC-16 Dictionary-based Password Attack describes that case and is a child of CAPEC-49, the entry CAPEC links to T1110.001. CHANGED from CAPEC-49, whose description (trying every possible value) does not match a dictionary attack.
 - **FTP_BruteForce** — Same scenario as SSH_Bruteforce on the FTP service; the label keeps the technique named by the scenario, while the label card states that the data show a failed attempt. Same as the previous mapping. CAPEC: Same choice as SSH_Bruteforce: the scenario uses a dictionary. CHANGED from CAPEC-49.
-- **DoS_attacks_GoldenEye** — Denial of service against a web service (UNB: DoS attack on Apache; every flow of the label goes to port 80). Same as the previous mapping. CAPEC: Of the CAPEC entries linked to T1499.002 (469, 482, 488, 489, 528), HTTP Flood matches a DoS on a web server reached on port 80; the dataset page does not describe a slow-request attack for this tool.
+- **DoS_attacks_GoldenEye** — Denial of service against a web service (UNB: DoS attack on Apache; every flow of the label goes to port 80). Same as the previous mapping. CAPEC: Of the CAPEC entries linked to T1499.002 (469, 482, 488, 489, 528), HTTP Flood matches a DoS on a web server reached on port 80; the dataset page names the tool (Table 1) but does not describe how it works, and it does not describe a slow-request attack for this tool.
 - **DoS_attacks_Hulk** — Denial of service against a web service (UNB: DoS attack on Apache; every flow of the label goes to port 80). Same as the previous mapping. CAPEC: Same choice as DoS_attacks_GoldenEye.
 - **DoS_attacks_SlowHTTPTest** — Denial of service against a web service per the dataset page; the label keeps the technique named by the scenario, while the label card states that the data show a failed attempt on port 21. Same as the previous mapping. CAPEC: Of the CAPEC entries linked to T1499.002, HTTP DoS describes holding HTTP sessions open, which is what a slow-HTTP test tool does; the dataset page gives only the tool name.
 - **DoS_attacks_Slowloris** — Exhausts the connection capacity of a web service. Same as the previous mapping. CAPEC: HTTP DoS (keeping HTTP sessions alive) is the CAPEC entry linked to T1499.002 that matches the scenario's description of Slowloris.
@@ -68,7 +70,7 @@ Rationale for each technique and CAPEC choice:
 - **DDOS_attack_LOIC_UDP** — Every flow of this label is UDP, i.e. a flood of network traffic rather than requests to a service's application logic. Direct Network Flood names UDP floods. CHANGED from the previous mapping T1499.002 (Service Exhaustion Flood), which describes attacks on the services themselves. CAPEC: Of the CAPEC entries linked to T1498.001 (125, 482, 528, 666), Flooding is the general one; 482 is TCP-specific, 528 is XML-specific and 666 is Bluetooth-specific.
 - **DDOS_attack_HOIC** — The tool attacks URLs, i.e. a web service. Same as the previous mapping. CAPEC: Attacking URLs is an HTTP-level flood; HTTP Flood is the CAPEC entry linked to T1499.002 for it.
 - **Brute_Force_Web** — Brute force against a web login guesses passwords. Same as the previous mapping. CAPEC: CAPEC-49 is the entry CAPEC links to T1110.001. CAPEC-16 (dictionary) is not chosen here because the dataset page does not describe the password list used against the web login; the dictionary sentence belongs to the FTP and SSH scenario.
-- **Brute_Force_XSS** — The captured flows are the attacker's automated requests to the vulnerable web application, i.e. an attempt to exploit a public-facing application. Drive-by Compromise (T1189) describes a user's browser visiting a compromised site, which is not the traffic captured in this scenario. CHANGED from the previous mapping T1189. SQL injection and XSS share T1190 and are told apart by their CAPEC entries. CAPEC: CAPEC v3.9 links no attack pattern to T1190; CAPEC-63 Cross-Site Scripting is chosen because it describes the attack named by the label.
+- **Brute_Force_XSS** — T1189 names cross-site scripting as one way to deliver exploit code to a visiting user's browser, and states that its focus, unlike Exploit Public-Facing Application, is the client endpoint. The captured flows are the attacker's automated requests to the vulnerable web application, the server side, so T1190 is kept; the browser-side compromise that T1189 describes is not in the capture. CHANGED from the previous mapping T1189. SQL injection and XSS share T1190 and are told apart by their CAPEC entries. CAPEC: CAPEC v3.9 links no attack pattern to T1190; CAPEC-63 Cross-Site Scripting is chosen because it describes the attack named by the label.
 - **SQL_Injection** — SQL injection exploits a weakness of a public-facing web application. Same as the previous mapping. CAPEC: CAPEC v3.9 links no attack pattern to T1190; CAPEC-66 SQL Injection is chosen because it describes the attack named by the label.
 - **Infiltration** — Of the scenario's stages, the internal scan is the one described on the dataset page as network activity against many hosts and ports (no single destination port carries half of the label's flows); the delivery of the malicious file and the exploitation run on the victim host. CHANGED from the previous mapping T1204.002 + T1046: the user-execution stage is not kept because the report must describe network flows. CAPEC: Port Scanning is the CAPEC entry linked to T1046.
 - **Bot** — The network-visible part of the scenario is the controller's commands and the infected hosts' replies; nearly all of the label's flows use TCP port 8080, registered by IANA as HTTP Alternate. CHANGED from the previous mapping T1583.005 (Botnet) + T1113 (Screen Capture): the first describes the attacker acquiring infrastructure and the second an action on the host, neither of which is observable in a flow. CAPEC: CAPEC v3.9 links no attack pattern to T1071.001 and has no entry for botnet command and control; no CAPEC passage.
@@ -98,7 +100,8 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 
 > Reference label DoS_attacks_GoldenEye (CSE-CIC-IDS2018): Denial-of-service attack on the victim's Apache web server.
 
-- [unb-ids2018 | Table 1] "DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)"
+- [unb-ids2018 | Table 1, row 'DoS attack', tools cell] "Hulk, GoldenEye, Slowloris, Slowhttptest"
+- [unb-ids2018 | Table 1, row 'DoS attack', victim cell] "Ubuntu 16.4 (Apache)"
 - [claim | port80_all__DoS_attacks_GoldenEye] Every DoS_attacks_GoldenEye flow goes to port 80. — holds on every source: yes (5 sources)
 - [decision T1499.002] Denial of service against a web service (UNB: DoS attack on Apache; every flow of the label goes to port 80). Same as the previous mapping.
 
@@ -106,7 +109,8 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 
 > Reference label DoS_attacks_Hulk (CSE-CIC-IDS2018): Denial-of-service attack on the victim's Apache web server.
 
-- [unb-ids2018 | Table 1] "DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)"
+- [unb-ids2018 | Table 1, row 'DoS attack', tools cell] "Hulk, GoldenEye, Slowloris, Slowhttptest"
+- [unb-ids2018 | Table 1, row 'DoS attack', victim cell] "Ubuntu 16.4 (Apache)"
 - [claim | port80_all__DoS_attacks_Hulk] Every DoS_attacks_Hulk flow goes to port 80. — holds on every source: yes (5 sources)
 - [decision T1499.002] Denial of service against a web service (UNB: DoS attack on Apache; every flow of the label goes to port 80). Same as the previous mapping.
 
@@ -114,7 +118,8 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 
 > Reference label DoS_attacks_SlowHTTPTest (CSE-CIC-IDS2018): The dataset page lists Slowhttptest among the denial-of-service tools run against an Apache web server. In the published CSV files every flow with this label goes to TCP port 21 (FTP) and carries no payload in either direction. An independent analysis of the original capture found no successful Slowhttptest attack and reports that the tool appears to have been launched against port 21 by mistake.
 
-- [unb-ids2018 | Table 1] "DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)"
+- [unb-ids2018 | Table 1, row 'DoS attack', tools cell] "Hulk, GoldenEye, Slowloris, Slowhttptest"
+- [unb-ids2018 | Table 1, row 'DoS attack', victim cell] "Ubuntu 16.4 (Apache)"
 - [claim | twin_tcp21_nopayload__DoS_attacks_SlowHTTPTest] Every DoS_attacks_SlowHTTPTest flow goes to TCP port 21 and carries no payload. — holds on every source: yes (5 sources)
 - [distrinet-2018 | 6. DoS Slowhttptest, 16-02-2018] "No succesful DoS Slowhttptest attack was found in this dataset. Instead, it looks like the tool was mistakenly launched against port 21."
 - [decision T1499.002] Denial of service against a web service per the dataset page; the label keeps the technique named by the scenario, while the label card states that the data show a failed attempt on port 21. Same as the previous mapping.
@@ -170,7 +175,7 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [unb-ids2018 | 2.2.6 Web Attacks] "DVWA is a PHP/MySQL web application that is vulnerable."
 - [unb-ids2018 | 2.2.6 Web Attacks] "To automate the attacks in XSS and Brute-force section we developed an automation code with Selenium framework."
 - [claim | xss_port80_ge90] At least 90% of Brute_Force_XSS flows go to port 80. — holds on every source: yes (8 sources)
-- [decision T1190] The captured flows are the attacker's automated requests to the vulnerable web application, i.e. an attempt to exploit a public-facing application. Drive-by Compromise (T1189) describes a user's browser visiting a compromised site, which is not the traffic captured in this scenario. CHANGED from the previous mapping T1189. SQL injection and XSS share T1190 and are told apart by their CAPEC entries.
+- [decision T1190] T1189 names cross-site scripting as one way to deliver exploit code to a visiting user's browser, and states that its focus, unlike Exploit Public-Facing Application, is the client endpoint. The captured flows are the attacker's automated requests to the vulnerable web application, the server side, so T1190 is kept; the browser-side compromise that T1189 describes is not in the capture. CHANGED from the previous mapping T1189. SQL injection and XSS share T1190 and are told apart by their CAPEC entries.
 
 ### A-SQL_Injection
 
@@ -275,6 +280,11 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [cicflowmeter-src-2018 | BasicFlow.java, initFlags()] "flagCounts.put("FIN", new MutableInt()); flagCounts.put("SYN", new MutableInt()); flagCounts.put("RST", new MutableInt()); flagCounts.put("PSH", new MutableInt()); flagCounts.put("ACK", new MutableInt()); flagCounts.put("URG", new MutableInt()); flagCounts.put("CWR", new MutableInt()); flagCounts.put("ECE", new MutableInt());"
 - [cicflowmeter-src-2018 | BasicFlow.java, CSV row writer] "for(String key: flagCounts.keySet()){ dump.append(flagCounts.get(key).value).append(separator); //50,51,52,53,54,55,56,57"
 - [java8-hashmap | class description] "This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time."
+- [openjdk8-src | HashMap.java, hash()] "return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);"
+- [openjdk8-src | HashMap.java, putVal()] "if ((p = tab[i = (n - 1) & hash]) == null)"
+- [openjdk8-src | String.java, hashCode()] "h = 31 * h + val[i];"
+- [cicflowmeter-src-2018 | build.gradle] "sourceCompatibility = 1.8"
+- [cicflowmeter-src-2018-06 | BasicFlow.java, CSV row writer] "dump.append(flagCounts.get("FIN").value).append(separator); //50 dump.append(flagCounts.get("SYN").value).append(separator); //51"
 - [data_facts | flag_column_holds] = {"FIN Flag Cnt": "RST", "SYN Flag Cnt": "PSH", "RST Flag Cnt": "ECE", "PSH Flag Cnt": "SYN", "ACK Flag Cnt": "ACK", "URG Flag Cnt": "FIN", "CWE Flag Count": "URG", "ECE Flag Cnt": "CWR"}
 - [claim | identical__Fwd PSH Flags__SYN Flag Cnt] 'Fwd PSH Flags' equals 'SYN Flag Cnt' in every row. — holds on every source: yes (12 sources)
 - [claim | identical__Fwd URG Flags__CWE Flag Count] 'Fwd URG Flags' equals 'CWE Flag Count' in every row. — holds on every source: yes (12 sources)
@@ -294,6 +304,11 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [cicflowmeter-src-2018 | BasicFlow.java, initFlags()] "flagCounts.put("FIN", new MutableInt()); flagCounts.put("SYN", new MutableInt()); flagCounts.put("RST", new MutableInt()); flagCounts.put("PSH", new MutableInt()); flagCounts.put("ACK", new MutableInt()); flagCounts.put("URG", new MutableInt()); flagCounts.put("CWR", new MutableInt()); flagCounts.put("ECE", new MutableInt());"
 - [cicflowmeter-src-2018 | BasicFlow.java, CSV row writer] "for(String key: flagCounts.keySet()){ dump.append(flagCounts.get(key).value).append(separator); //50,51,52,53,54,55,56,57"
 - [java8-hashmap | class description] "This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time."
+- [openjdk8-src | HashMap.java, hash()] "return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);"
+- [openjdk8-src | HashMap.java, putVal()] "if ((p = tab[i = (n - 1) & hash]) == null)"
+- [openjdk8-src | String.java, hashCode()] "h = 31 * h + val[i];"
+- [cicflowmeter-src-2018 | build.gradle] "sourceCompatibility = 1.8"
+- [cicflowmeter-src-2018-06 | BasicFlow.java, CSV row writer] "dump.append(flagCounts.get("FIN").value).append(separator); //50 dump.append(flagCounts.get("SYN").value).append(separator); //51"
 - [data_facts | flag_column_holds] = {"FIN Flag Cnt": "RST", "SYN Flag Cnt": "PSH", "RST Flag Cnt": "ECE", "PSH Flag Cnt": "SYN", "ACK Flag Cnt": "ACK", "URG Flag Cnt": "FIN", "CWE Flag Count": "URG", "ECE Flag Cnt": "CWR"}
 - [claim | identical__Fwd PSH Flags__SYN Flag Cnt] 'Fwd PSH Flags' equals 'SYN Flag Cnt' in every row. — holds on every source: yes (12 sources)
 - [claim | identical__Fwd URG Flags__CWE Flag Count] 'Fwd URG Flags' equals 'CWE Flag Count' in every row. — holds on every source: yes (12 sources)
@@ -313,6 +328,11 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [cicflowmeter-src-2018 | BasicFlow.java, initFlags()] "flagCounts.put("FIN", new MutableInt()); flagCounts.put("SYN", new MutableInt()); flagCounts.put("RST", new MutableInt()); flagCounts.put("PSH", new MutableInt()); flagCounts.put("ACK", new MutableInt()); flagCounts.put("URG", new MutableInt()); flagCounts.put("CWR", new MutableInt()); flagCounts.put("ECE", new MutableInt());"
 - [cicflowmeter-src-2018 | BasicFlow.java, CSV row writer] "for(String key: flagCounts.keySet()){ dump.append(flagCounts.get(key).value).append(separator); //50,51,52,53,54,55,56,57"
 - [java8-hashmap | class description] "This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time."
+- [openjdk8-src | HashMap.java, hash()] "return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);"
+- [openjdk8-src | HashMap.java, putVal()] "if ((p = tab[i = (n - 1) & hash]) == null)"
+- [openjdk8-src | String.java, hashCode()] "h = 31 * h + val[i];"
+- [cicflowmeter-src-2018 | build.gradle] "sourceCompatibility = 1.8"
+- [cicflowmeter-src-2018-06 | BasicFlow.java, CSV row writer] "dump.append(flagCounts.get("FIN").value).append(separator); //50 dump.append(flagCounts.get("SYN").value).append(separator); //51"
 - [data_facts | flag_column_holds] = {"FIN Flag Cnt": "RST", "SYN Flag Cnt": "PSH", "RST Flag Cnt": "ECE", "PSH Flag Cnt": "SYN", "ACK Flag Cnt": "ACK", "URG Flag Cnt": "FIN", "CWE Flag Count": "URG", "ECE Flag Cnt": "CWR"}
 - [claim | identical__Fwd PSH Flags__SYN Flag Cnt] 'Fwd PSH Flags' equals 'SYN Flag Cnt' in every row. — holds on every source: yes (12 sources)
 - [claim | identical__Fwd URG Flags__CWE Flag Count] 'Fwd URG Flags' equals 'CWE Flag Count' in every row. — holds on every source: yes (12 sources)
@@ -332,6 +352,11 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [cicflowmeter-src-2018 | BasicFlow.java, initFlags()] "flagCounts.put("FIN", new MutableInt()); flagCounts.put("SYN", new MutableInt()); flagCounts.put("RST", new MutableInt()); flagCounts.put("PSH", new MutableInt()); flagCounts.put("ACK", new MutableInt()); flagCounts.put("URG", new MutableInt()); flagCounts.put("CWR", new MutableInt()); flagCounts.put("ECE", new MutableInt());"
 - [cicflowmeter-src-2018 | BasicFlow.java, CSV row writer] "for(String key: flagCounts.keySet()){ dump.append(flagCounts.get(key).value).append(separator); //50,51,52,53,54,55,56,57"
 - [java8-hashmap | class description] "This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time."
+- [openjdk8-src | HashMap.java, hash()] "return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);"
+- [openjdk8-src | HashMap.java, putVal()] "if ((p = tab[i = (n - 1) & hash]) == null)"
+- [openjdk8-src | String.java, hashCode()] "h = 31 * h + val[i];"
+- [cicflowmeter-src-2018 | build.gradle] "sourceCompatibility = 1.8"
+- [cicflowmeter-src-2018-06 | BasicFlow.java, CSV row writer] "dump.append(flagCounts.get("FIN").value).append(separator); //50 dump.append(flagCounts.get("SYN").value).append(separator); //51"
 - [data_facts | flag_column_holds] = {"FIN Flag Cnt": "RST", "SYN Flag Cnt": "PSH", "RST Flag Cnt": "ECE", "PSH Flag Cnt": "SYN", "ACK Flag Cnt": "ACK", "URG Flag Cnt": "FIN", "CWE Flag Count": "URG", "ECE Flag Cnt": "CWR"}
 - [claim | identical__Fwd PSH Flags__SYN Flag Cnt] 'Fwd PSH Flags' equals 'SYN Flag Cnt' in every row. — holds on every source: yes (12 sources)
 - [claim | identical__Fwd URG Flags__CWE Flag Count] 'Fwd URG Flags' equals 'CWE Flag Count' in every row. — holds on every source: yes (12 sources)
@@ -362,6 +387,11 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [cicflowmeter-src-2018 | BasicFlow.java, initFlags()] "flagCounts.put("FIN", new MutableInt()); flagCounts.put("SYN", new MutableInt()); flagCounts.put("RST", new MutableInt()); flagCounts.put("PSH", new MutableInt()); flagCounts.put("ACK", new MutableInt()); flagCounts.put("URG", new MutableInt()); flagCounts.put("CWR", new MutableInt()); flagCounts.put("ECE", new MutableInt());"
 - [cicflowmeter-src-2018 | BasicFlow.java, CSV row writer] "for(String key: flagCounts.keySet()){ dump.append(flagCounts.get(key).value).append(separator); //50,51,52,53,54,55,56,57"
 - [java8-hashmap | class description] "This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time."
+- [openjdk8-src | HashMap.java, hash()] "return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);"
+- [openjdk8-src | HashMap.java, putVal()] "if ((p = tab[i = (n - 1) & hash]) == null)"
+- [openjdk8-src | String.java, hashCode()] "h = 31 * h + val[i];"
+- [cicflowmeter-src-2018 | build.gradle] "sourceCompatibility = 1.8"
+- [cicflowmeter-src-2018-06 | BasicFlow.java, CSV row writer] "dump.append(flagCounts.get("FIN").value).append(separator); //50 dump.append(flagCounts.get("SYN").value).append(separator); //51"
 - [data_facts | flag_column_holds] = {"FIN Flag Cnt": "RST", "SYN Flag Cnt": "PSH", "RST Flag Cnt": "ECE", "PSH Flag Cnt": "SYN", "ACK Flag Cnt": "ACK", "URG Flag Cnt": "FIN", "CWE Flag Count": "URG", "ECE Flag Cnt": "CWR"}
 - [claim | identical__Fwd PSH Flags__SYN Flag Cnt] 'Fwd PSH Flags' equals 'SYN Flag Cnt' in every row. — holds on every source: yes (12 sources)
 - [claim | identical__Fwd URG Flags__CWE Flag Count] 'Fwd URG Flags' equals 'CWE Flag Count' in every row. — holds on every source: yes (12 sources)
@@ -381,6 +411,11 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [cicflowmeter-src-2018 | BasicFlow.java, initFlags()] "flagCounts.put("FIN", new MutableInt()); flagCounts.put("SYN", new MutableInt()); flagCounts.put("RST", new MutableInt()); flagCounts.put("PSH", new MutableInt()); flagCounts.put("ACK", new MutableInt()); flagCounts.put("URG", new MutableInt()); flagCounts.put("CWR", new MutableInt()); flagCounts.put("ECE", new MutableInt());"
 - [cicflowmeter-src-2018 | BasicFlow.java, CSV row writer] "for(String key: flagCounts.keySet()){ dump.append(flagCounts.get(key).value).append(separator); //50,51,52,53,54,55,56,57"
 - [java8-hashmap | class description] "This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time."
+- [openjdk8-src | HashMap.java, hash()] "return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);"
+- [openjdk8-src | HashMap.java, putVal()] "if ((p = tab[i = (n - 1) & hash]) == null)"
+- [openjdk8-src | String.java, hashCode()] "h = 31 * h + val[i];"
+- [cicflowmeter-src-2018 | build.gradle] "sourceCompatibility = 1.8"
+- [cicflowmeter-src-2018-06 | BasicFlow.java, CSV row writer] "dump.append(flagCounts.get("FIN").value).append(separator); //50 dump.append(flagCounts.get("SYN").value).append(separator); //51"
 - [data_facts | flag_column_holds] = {"FIN Flag Cnt": "RST", "SYN Flag Cnt": "PSH", "RST Flag Cnt": "ECE", "PSH Flag Cnt": "SYN", "ACK Flag Cnt": "ACK", "URG Flag Cnt": "FIN", "CWE Flag Count": "URG", "ECE Flag Cnt": "CWR"}
 - [claim | identical__Fwd PSH Flags__SYN Flag Cnt] 'Fwd PSH Flags' equals 'SYN Flag Cnt' in every row. — holds on every source: yes (12 sources)
 - [claim | identical__Fwd URG Flags__CWE Flag Count] 'Fwd URG Flags' equals 'CWE Flag Count' in every row. — holds on every source: yes (12 sources)
@@ -400,6 +435,11 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [cicflowmeter-src-2018 | BasicFlow.java, initFlags()] "flagCounts.put("FIN", new MutableInt()); flagCounts.put("SYN", new MutableInt()); flagCounts.put("RST", new MutableInt()); flagCounts.put("PSH", new MutableInt()); flagCounts.put("ACK", new MutableInt()); flagCounts.put("URG", new MutableInt()); flagCounts.put("CWR", new MutableInt()); flagCounts.put("ECE", new MutableInt());"
 - [cicflowmeter-src-2018 | BasicFlow.java, CSV row writer] "for(String key: flagCounts.keySet()){ dump.append(flagCounts.get(key).value).append(separator); //50,51,52,53,54,55,56,57"
 - [java8-hashmap | class description] "This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time."
+- [openjdk8-src | HashMap.java, hash()] "return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);"
+- [openjdk8-src | HashMap.java, putVal()] "if ((p = tab[i = (n - 1) & hash]) == null)"
+- [openjdk8-src | String.java, hashCode()] "h = 31 * h + val[i];"
+- [cicflowmeter-src-2018 | build.gradle] "sourceCompatibility = 1.8"
+- [cicflowmeter-src-2018-06 | BasicFlow.java, CSV row writer] "dump.append(flagCounts.get("FIN").value).append(separator); //50 dump.append(flagCounts.get("SYN").value).append(separator); //51"
 - [data_facts | flag_column_holds] = {"FIN Flag Cnt": "RST", "SYN Flag Cnt": "PSH", "RST Flag Cnt": "ECE", "PSH Flag Cnt": "SYN", "ACK Flag Cnt": "ACK", "URG Flag Cnt": "FIN", "CWE Flag Count": "URG", "ECE Flag Cnt": "CWR"}
 - [claim | identical__Fwd PSH Flags__SYN Flag Cnt] 'Fwd PSH Flags' equals 'SYN Flag Cnt' in every row. — holds on every source: yes (12 sources)
 - [claim | identical__Fwd URG Flags__CWE Flag Count] 'Fwd URG Flags' equals 'CWE Flag Count' in every row. — holds on every source: yes (12 sources)
@@ -566,9 +606,10 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 
 ### H3-TIMEOUT
 
-> The flow lasted until the extractor's 120 s flow timeout. A longer connection is split into several consecutive flows, so this duration does not cover the whole session.
+> The flow lasted until the extractor's default 120 s flow timeout. A longer connection is split into several consecutive flows, so this duration does not cover the whole session.
 
-- [cicflowmeter-src-2018 | CICFlowMeter.java, main()] "flowGen = new FlowGenerator(true,120000000L, 5000000L);"
+- [cicflowmeter-src-2018 | ReadPcapFileWorker.java, constructor] "flowTimeout = 120000000L;"
+- [cicflowmeter-src-2018 | TrafficFlowWorker.java, doInBackground()] "FlowGenerator flowGen = new FlowGenerator(true,120000000L, 5000000L);"
 - [cicflowmeter-src-2018 | FlowGenerator.java, addPacket()] "// Flow finished due flowtimeout: // 1.- we move the flow to finished flow list // 2.- we eliminate the flow from the current flow list // 3.- we create a new flow with the packet-in-process"
 - [claim | duration_le_120s] Flow Duration never exceeds 120,000,000 microseconds. — holds on every source: yes (12 sources)
 
@@ -603,9 +644,12 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 
 **XN-FLOW-TIMEOUT** (on: Flow Duration)
 
-> The command-line extractor closes a flow 120 s (120,000,000 microseconds) after its first packet and starts a new flow; no flow in the published CSE-CIC-IDS2018 CSV files lasts longer than that.
+> The extractor's default flow timeout is 120 s (120,000,000 microseconds): a flow is closed when a packet arrives more than that after the flow's first packet, and that packet starts a new flow. No flow in the published CSE-CIC-IDS2018 CSV files lasts longer than that.
 
-- [cicflowmeter-src-2018 | CICFlowMeter.java, main()] "flowGen = new FlowGenerator(true,120000000L, 5000000L);"
+- [cicflowmeter-src-2018 | FlowOfflinePane.java, initSettingPane()] "param1Ele.add(120000000L);"
+- [cicflowmeter-src-2018 | ReadPcapFileWorker.java, constructor] "flowTimeout = 120000000L;"
+- [cicflowmeter-src-2018 | TrafficFlowWorker.java, doInBackground()] "FlowGenerator flowGen = new FlowGenerator(true,120000000L, 5000000L);"
+- [cicflowmeter-src-2018 | build.gradle, jar task] "exclude '**/CICFlowMeter.java'"
 - [cicflowmeter-src-2018 | FlowGenerator.java, addPacket()] "if((currentTimestamp -flow.getFlowStartTime())>flowTimeOut){"
 - [claim | duration_le_120s] Flow Duration never exceeds 120,000,000 microseconds. — holds on every source: yes (12 sources)
 
@@ -785,6 +829,238 @@ Consistency in the data: {"SYN_Flag_Cnt_equals_Fwd_PSH_Flags": 1.0, "CWE_Flag_Co
 Constant columns: Bwd PSH Flags, Bwd URG Flags, Fwd Byts/b Avg, Fwd Pkts/b Avg, Fwd Blk Rate Avg, Bwd Byts/b Avg, Bwd Pkts/b Avg, Bwd Blk Rate Avg
 
 Identical column pairs: [['Tot Fwd Pkts', 'Subflow Fwd Pkts'], ['Tot Bwd Pkts', 'Subflow Bwd Pkts'], ['TotLen Fwd Pkts', 'Subflow Fwd Byts'], ['Fwd PSH Flags', 'SYN Flag Cnt'], ['Fwd URG Flags', 'CWE Flag Count']]; near-identical: [['TotLen Bwd Pkts', 'Subflow Bwd Byts', 0.999993], ['RST Flag Cnt', 'ECE Flag Cnt', 0.999999]]
+
+## 6a. Extractor version bracket
+
+No commit can be shown to have produced the published CSV files. The data are consistent with the CICFlowMeter-V3 code from eaa853dd (2018-02-13) to 50d668db (2018-03-07), whose BasicFlow.java is identical, and inconsistent with later code:
+
+- flags only from the first packet: claim `flags_binary` (code commented out in addPacket(); counting for every packet came back only in ed1d6bcb, 2019-10-15);
+- first packet counted twice in the length statistics: claim `pkt_len_double_count`;
+- integer Down/Up Ratio: claim `downup_integer`;
+- Timestamp written as 12-hour time without AM/PM, matching `format = "dd/MM/yyyy hh:mm:ss";` in DateFormatter.java at 50d668db; commit 21790da0 (2018-05-31) added AM/PM;
+- flag columns in Java HashMap order; commit 6833ccd4 (2018-06-04) writes them in an explicit order (source `cicflowmeter-src-2018-06`).
+
+## 6c. Short quotations (fewer than five words) for manual review
+
+Each is verbatim in its locked source (and in the file named by its locator); short Java statements, label names of Table 2 and IANA rows are expected here.
+
+| source | locator | quote |
+|---|---|---|
+| cicflowmeter-readme | FlowFeature.java (master), feature //56 | `CWR_cnt("CWR Flag Count","CWRCT"` |
+| cicflowmeter-readme | FlowFeature.java, feature //75 | `Fw_act_pkt("Fwd Act Data Pkts","FwAP"` |
+| cicflowmeter-readme | FlowFeature.java, feature //54 | `ack_cnt("ACK Flag Count","ACKCT"` |
+| cicflowmeter-readme | FlowFeature.java, feature //77 | `atv_avg("Active Mean","AcAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //79 | `atv_max("Active Max","AcMA"` |
+| cicflowmeter-readme | FlowFeature.java, feature //80 | `atv_min("Active Min","AcMI"` |
+| cicflowmeter-readme | FlowFeature.java, feature //78 | `atv_std("Active Std","AcSD"` |
+| cicflowmeter-readme | FlowFeature.java, feature //68 | `bw_blk_rate_avg("Bwd Bulk Rate Avg","BwBRAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //66 | `bw_byt_blk_avg("Bwd Bytes/Bulk Avg","BwB/BAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //42 | `bw_hdr_len("Bwd Header Length","BwHL"` |
+| cicflowmeter-readme | FlowFeature.java, feature //33 | `bw_iat_avg("Bwd IAT Mean","BwIATAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //35 | `bw_iat_max("Bwd IAT Max","BwIATMA"` |
+| cicflowmeter-readme | FlowFeature.java, feature //36 | `bw_iat_min("Bwd IAT Min","BwIATMI"` |
+| cicflowmeter-readme | FlowFeature.java, feature //34 | `bw_iat_std("Bwd IAT Std","BwIATSD"` |
+| cicflowmeter-readme | FlowFeature.java, feature //32 | `bw_iat_tot("Bwd IAT Total","BwIATTO"` |
+| cicflowmeter-readme | FlowFeature.java, feature //67 | `bw_pkt_blk_avg("Bwd Packet/Bulk Avg","BwP/BAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //19 | `bw_pkt_l_avg("Bwd Packet Length Mean","BwPLAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //17 | `bw_pkt_l_max("Bwd Packet Length Max","BwPLMA"` |
+| cicflowmeter-readme | FlowFeature.java, feature //18 | `bw_pkt_l_min("Bwd Packet Length Min","BwPLMI"` |
+| cicflowmeter-readme | FlowFeature.java, feature //20 | `bw_pkt_l_std("Bwd Packet Length Std","BwPLSD"` |
+| cicflowmeter-readme | FlowFeature.java, feature //44 | `bw_pkt_s("Bwd Packets/s","Bwp/s"` |
+| cicflowmeter-readme | FlowFeature.java, feature //38 | `bw_psh_flag("Bwd PSH Flags","BwPSH"` |
+| cicflowmeter-readme | FlowFeature.java, feature //61 | `bw_seg_avg("Bwd Segment Size Avg","BwSgAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //40 | `bw_urg_flag("Bwd URG Flags","BwURG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //74 | `bw_win_byt("Bwd Init Win Bytes","BwWB"` |
+| cicflowmeter-readme | FlowFeature.java, feature //58 | `down_up_ratio("Down/Up Ratio","D/URO"` |
+| cicflowmeter-readme | FlowFeature.java, feature //5 | `dst_pot("Dst Port","DPT"` |
+| cicflowmeter-readme | FlowFeature.java, feature //57 | `ece_cnt("ECE Flag Count","ECECT"` |
+| cicflowmeter-readme | FlowFeature.java, feature //50 | `fin_cnt("FIN Flag Count","FINCT"` |
+| cicflowmeter-readme | FlowFeature.java, feature //21 | `fl_byt_s("Flow Bytes/s","FB/s"` |
+| cicflowmeter-readme | FlowFeature.java, feature //8 | `fl_dur("Flow Duration","DUR"` |
+| cicflowmeter-readme | FlowFeature.java, feature //23 | `fl_iat_avg("Flow IAT Mean","FLIATAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //25 | `fl_iat_max("Flow IAT Max","FLIATMA"` |
+| cicflowmeter-readme | FlowFeature.java, feature //26 | `fl_iat_min("Flow IAT Min","FLIATMI"` |
+| cicflowmeter-readme | FlowFeature.java, feature //24 | `fl_iat_std("Flow IAT Std","FLIATSD"` |
+| cicflowmeter-readme | FlowFeature.java, feature //22 | `fl_pkt_s("Flow Packets/s","FP/s"` |
+| cicflowmeter-readme | FlowFeature.java, feature //65 | `fw_blk_rate_avg("Fwd Bulk Rate Avg","FwBRAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //63 | `fw_byt_blk_avg("Fwd Bytes/Bulk Avg","FwB/BAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //41 | `fw_hdr_len("Fwd Header Length","FwHL"` |
+| cicflowmeter-readme | FlowFeature.java, feature //28 | `fw_iat_avg("Fwd IAT Mean","FwIATAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //30 | `fw_iat_max("Fwd IAT Max","FwIATMA"` |
+| cicflowmeter-readme | FlowFeature.java, feature //31 | `fw_iat_min("Fwd IAT Min","FwIATMI"` |
+| cicflowmeter-readme | FlowFeature.java, feature //29 | `fw_iat_std("Fwd IAT Std","FwIATSD"` |
+| cicflowmeter-readme | FlowFeature.java, feature //27 | `fw_iat_tot("Fwd IAT Total","FwIATTO"` |
+| cicflowmeter-readme | FlowFeature.java, feature //64 | `fw_pkt_blk_avg("Fwd Packet/Bulk Avg","FwP/BAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //15 | `fw_pkt_l_avg("Fwd Packet Length Mean","FwPLAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //13 | `fw_pkt_l_max("Fwd Packet Length Max","FwPLMA"` |
+| cicflowmeter-readme | FlowFeature.java, feature //14 | `fw_pkt_l_min("Fwd Packet Length Min","FwPLMI"` |
+| cicflowmeter-readme | FlowFeature.java, feature //16 | `fw_pkt_l_std("Fwd Packet Length Std","FwPLSD"` |
+| cicflowmeter-readme | FlowFeature.java, feature //43 | `fw_pkt_s("Fwd Packets/s","FwP/s"` |
+| cicflowmeter-readme | FlowFeature.java, feature //37 | `fw_psh_flag("Fwd PSH Flags","FwPSH"` |
+| cicflowmeter-readme | FlowFeature.java, feature //60 | `fw_seg_avg("Fwd Segment Size Avg","FwSgAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //76 | `fw_seg_min("Fwd Seg Size Min","FwSgMI"` |
+| cicflowmeter-readme | FlowFeature.java, feature //39 | `fw_urg_flag("Fwd URG Flags","FwURG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //73 | `fw_win_byt("FWD Init Win Bytes","FwWB"` |
+| cicflowmeter-readme | FlowFeature.java, feature //81 | `idl_avg("Idle Mean","IlAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //83 | `idl_max("Idle Max","IlMA"` |
+| cicflowmeter-readme | FlowFeature.java, feature //84 | `idl_min("Idle Min","IlMI"` |
+| cicflowmeter-readme | FlowFeature.java, feature //82 | `idl_std("Idle Std","IlSD"` |
+| cicflowmeter-readme | FlowFeature.java, feature //47 | `pkt_len_avg("Packet Length Mean","PLAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //46 | `pkt_len_max("Packet Length Max","PLMA"` |
+| cicflowmeter-readme | FlowFeature.java, feature //45 | `pkt_len_min("Packet Length Min","PLMI"` |
+| cicflowmeter-readme | FlowFeature.java, feature //48 | `pkt_len_std("Packet Length Std","PLSD"` |
+| cicflowmeter-readme | FlowFeature.java, feature //49 | `pkt_len_var("Packet Length Variance","PLVA"` |
+| cicflowmeter-readme | FlowFeature.java, feature //59 | `pkt_size_avg("Average Packet Size","PSAG"` |
+| cicflowmeter-readme | FlowFeature.java, feature //6 | `prot("Protocol","PROT"` |
+| cicflowmeter-readme | FlowFeature.java, feature //53 | `pst_cnt("PSH Flag Count","PSHCT"` |
+| cicflowmeter-readme | FlowFeature.java, feature //52 | `rst_cnt("RST Flag Count","RSTCT"` |
+| cicflowmeter-readme | FlowFeature.java, feature //72 | `subfl_bw_byt("Subflow Bwd Bytes","SFBwB"` |
+| cicflowmeter-readme | FlowFeature.java, feature //71 | `subfl_bw_pkt("Subflow Bwd Packets","SFBwP"` |
+| cicflowmeter-readme | FlowFeature.java, feature //70 | `subfl_fw_byt("Subflow Fwd Bytes","SFFwB"` |
+| cicflowmeter-readme | FlowFeature.java, feature //69 | `subfl_fw_pkt("Subflow Fwd Packets","SFFwP"` |
+| cicflowmeter-readme | FlowFeature.java, feature //51 | `syn_cnt("SYN Flag Count","SYNCT"` |
+| cicflowmeter-readme | FlowFeature.java, feature //10 | `tot_bw_pkt("Total Bwd packets","TBwP"` |
+| cicflowmeter-readme | FlowFeature.java, feature //9 | `tot_fw_pkt("Total Fwd Packet","TFwP"` |
+| cicflowmeter-readme | FlowFeature.java, feature //55 | `urg_cnt("URG Flag Count","URGCT"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //75 | `Fw_act_pkt("Fwd Act Data Pkts","FwAP"` |
+| cicflowmeter-src-2018 | BasicFlow.java, firstPacket(), forward branch | `Init_Win_bytes_forward = packet.getTCPWindow(); this.flowLengthStats.addValue((double)packet.getPayloadBytes());` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //54 | `ack_cnt("ACK Flag Cnt","ACKCT"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //77 | `atv_avg("Active Mean","AcAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //79 | `atv_max("Active Max","AcMA"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //80 | `atv_min("Active Min","AcMI"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //78 | `atv_std("Active Std","AcSD"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //68 | `bw_blk_rate_avg("Bwd Blk Rate Avg","BwBRAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //66 | `bw_byt_blk_avg("Bwd Byts/b Avg","BwB/BAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //42 | `bw_hdr_len("Bwd Header Len","BwHL"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //33 | `bw_iat_avg("Bwd IAT Mean","BwIATAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //35 | `bw_iat_max("Bwd IAT Max","BwIATMA"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //36 | `bw_iat_min("Bwd IAT Min","BwIATMI"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //34 | `bw_iat_std("Bwd IAT Std","BwIATSD"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //32 | `bw_iat_tot("Bwd IAT Tot","BwIATTO"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //67 | `bw_pkt_blk_avg("Bwd Pkts/b Avg","BwP/BAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //19 | `bw_pkt_l_avg("Bwd Pkt Len Mean","BwPLAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //17 | `bw_pkt_l_max("Bwd Pkt Len Max","BwPLMA"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //18 | `bw_pkt_l_min("Bwd Pkt Len Min","BwPLMI"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //20 | `bw_pkt_l_std("Bwd Pkt Len Std","BwPLSD"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //44 | `bw_pkt_s("Bwd Pkts/s","Bwp/s"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //38 | `bw_psh_flag("Bwd PSH Flags","BwPSH"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //61 | `bw_seg_avg("Bwd Seg Size Avg","BwSgAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //40 | `bw_urg_flag("Bwd URG Flags","BwURG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //74 | `bw_win_byt("Init Bwd Win Byts","BwWB"` |
+| cicflowmeter-src-2018 | FlowGenerator.java, addPacket(), packet without an open flow | `currentFlows.put(packet.getFlowId(), new BasicFlow(bidirectional,packet));` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //56 | `cwe_cnt("CWE Flag Count","CWECT"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //58 | `down_up_ratio("Down/Up Ratio","D/URO"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //5 | `dst_pot("Dst Port","DPT"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //57 | `ece_cnt("ECE Flag Cnt","ECECT"` |
+| cicflowmeter-src-2018 | build.gradle, jar task | `exclude '**/CICFlowMeter.java'` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //50 | `fin_cnt("FIN Flag Cnt","FINCT"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //21 | `fl_byt_s("Flow Byts/s","FB/s"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //8 | `fl_dur("Flow Duration","DUR"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //23 | `fl_iat_avg("Flow IAT Mean","FLIATAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //25 | `fl_iat_max("Flow IAT Max","FLIATMA"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //26 | `fl_iat_min("Flow IAT Min","FLIATMI"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //24 | `fl_iat_std("Flow IAT Std","FLIATSD"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //22 | `fl_pkt_s("Flow Pkts/s","FP/s"` |
+| cicflowmeter-src-2018 | ReadPcapFileWorker.java, constructor | `flowTimeout = 120000000L;` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //65 | `fw_blk_rate_avg("Fwd Blk Rate Avg","FwBRAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //63 | `fw_byt_blk_avg("Fwd Byts/b Avg","FwB/BAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //41 | `fw_hdr_len("Fwd Header Len","FwHL"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //28 | `fw_iat_avg("Fwd IAT Mean","FwIATAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //30 | `fw_iat_max("Fwd IAT Max","FwIATMA"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //31 | `fw_iat_min("Fwd IAT Min","FwIATMI"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //29 | `fw_iat_std("Fwd IAT Std","FwIATSD"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //27 | `fw_iat_tot("Fwd IAT Tot","FwIATTO"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //64 | `fw_pkt_blk_avg("Fwd Pkts/b Avg","FwP/BAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //15 | `fw_pkt_l_avg("Fwd Pkt Len Mean","FwPLAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //13 | `fw_pkt_l_max("Fwd Pkt Len Max","FwPLMA"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //14 | `fw_pkt_l_min("Fwd Pkt Len Min","FwPLMI"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //16 | `fw_pkt_l_std("Fwd Pkt Len Std","FwPLSD"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //43 | `fw_pkt_s("Fwd Pkts/s","FwP/s"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //37 | `fw_psh_flag("Fwd PSH Flags","FwPSH"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //60 | `fw_seg_avg("Fwd Seg Size Avg","FwSgAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //76 | `fw_seg_min("Fwd Seg Size Min","FwSgMI"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //39 | `fw_urg_flag("Fwd URG Flags","FwURG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //73 | `fw_win_byt("Init Fwd Win Byts","FwWB"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //81 | `idl_avg("Idle Mean","IlAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //83 | `idl_max("Idle Max","IlMA"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //84 | `idl_min("Idle Min","IlMI"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //82 | `idl_std("Idle Std","IlSD"` |
+| cicflowmeter-src-2018 | FlowGenerator.java, addPacket() | `if((currentTimestamp -flow.getFlowStartTime())>flowTimeOut){` |
+| cicflowmeter-src-2018 | BasicFlow.java, addPacket() | `if(packet.getPayloadBytes() >=1){ this.Act_data_pkt_forward++; }` |
+| cicflowmeter-src-2018 | BasicFlow.java, firstPacket() | `if(this.src==null){ this.src = packet.getSrc();` |
+| cicflowmeter-src-2018 | PacketReader.java, TCP branch | `packetInfo.setDstPort(tcp.destination());` |
+| cicflowmeter-src-2018 | PacketReader.java, UDP branch | `packetInfo.setDstPort(udp.destination());` |
+| cicflowmeter-src-2018 | PacketReader.java, TCP branch | `packetInfo.setFlagRST(tcp.flags_RST());` |
+| cicflowmeter-src-2018 | PacketReader.java, TCP branch | `packetInfo.setHeaderBytes(tcp.getHeaderLength());` |
+| cicflowmeter-src-2018 | PacketReader.java, TCP branch | `packetInfo.setPayloadBytes(tcp.getPayloadLength());` |
+| cicflowmeter-src-2018 | PacketReader.java, UDP branch | `packetInfo.setPayloadBytes(udp.getPayloadLength());` |
+| cicflowmeter-src-2018 | PacketReader.java, UDP branch | `packetInfo.setProtocol(17);` |
+| cicflowmeter-src-2018 | PacketReader.java, TCP branch | `packetInfo.setProtocol(6);` |
+| cicflowmeter-src-2018 | PacketReader.java, TCP branch | `packetInfo.setTCPWindow(tcp.window());` |
+| cicflowmeter-src-2018 | PacketReader.java, IPv4 packet parsing | `packetInfo.setTimeStamp(packet.getCaptureHeader().timestampInMicros());` |
+| cicflowmeter-src-2018 | FlowOfflinePane.java, initSettingPane() | `param1Ele.add(120000000L);` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //47 | `pkt_len_avg("Pkt Len Mean","PLAG"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //46 | `pkt_len_max("Pkt Len Max","PLMA"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //45 | `pkt_len_min("Pkt Len Min","PLMI"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //48 | `pkt_len_std("Pkt Len Std","PLSD"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //49 | `pkt_len_var("Pkt Len Var","PLVA"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //59 | `pkt_size_avg("Pkt Size Avg","PSAG"` |
+| cicflowmeter-src-2018 | BasicFlow.java, field declaration | `private HashMap<String, MutableInt> flagCounts;` |
+| cicflowmeter-src-2018 | BasicPacketInfo.java, field declaration | `private int TCPWindow=-1;` |
+| cicflowmeter-src-2018 | BasicPacketInfo.java, field declarations | `private int protocol;` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //6 | `prot("Protocol","PROT"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //53 | `pst_cnt("PSH Flag Cnt","PSHCT"` |
+| cicflowmeter-src-2018 | BasicFlow.java, getDownUpRatio() | `return (double)(this.backward.size()/this.forward.size());` |
+| cicflowmeter-src-2018 | BasicFlow.java, getAvgPacketSize() | `return (this.flowLengthStats.getSum()/this.packetCount());` |
+| cicflowmeter-src-2018 | BasicFlow.java, fAvgSegmentSize() | `return (this.fwdPktStats.getSum() / (double)this.forward.size());` |
+| cicflowmeter-src-2018 | BasicFlow.java, getSflow_fpackets() | `return this.forward.size()/sfCount;` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //52 | `rst_cnt("RST Flag Cnt","RSTCT"` |
+| cicflowmeter-src-2018 | build.gradle | `sourceCompatibility = 1.8` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //72 | `subfl_bw_byt("Subflow Bwd Byts","SFBwB"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //71 | `subfl_bw_pkt("Subflow Bwd Pkts","SFBwP"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //70 | `subfl_fw_byt("Subflow Fwd Byts","SFFwB"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //69 | `subfl_fw_pkt("Subflow Fwd Pkts","SFFwP"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //51 | `syn_cnt("SYN Flag Cnt","SYNCT"` |
+| cicflowmeter-src-2018 | BasicFlow.java, addPacket(), backward branch | `this.bwdPktStats.addValue((double)packet.getPayloadBytes()); Init_Win_bytes_backward = packet.getTCPWindow();` |
+| cicflowmeter-src-2018 | BasicFlow.java, firstPacket() | `this.endActiveTime = packet.getTimeStamp(); this.flowLengthStats.addValue((double)packet.getPayloadBytes());` |
+| cicflowmeter-src-2018 | BasicFlow.java, firstPacket() | `this.fwdPktStats.addValue((double)packet.getPayloadBytes());` |
+| cicflowmeter-src-2018 | BasicFlow.java, addPacket() | `this.min_seg_size_forward = Math.min(packet.getHeaderBytes(),this.min_seg_size_forward);` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //10 | `tot_bw_pkt("Tot Bwd Pkts","TBwP"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //9 | `tot_fw_pkt("Tot Fwd Pkts","TFwP"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //12 | `tot_l_bw_pkt("TotLen Bwd Pkts","TLBwP"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //11 | `tot_l_fw_pkt("TotLen Fwd Pkts","TLFwP"` |
+| cicflowmeter-src-2018 | FlowFeature.java, feature //55 | `urg_cnt("URG Flag Cnt","URGCT"` |
+| cicflowmeter-src-2018 | FlowGenerator.java, addPacket() | `}else if(packet.hasFlagFIN()){` |
+| cicflowmeter-src-2018-06 | BasicFlow.java, CSV row writer | `dump.append(flagCounts.get("FIN").value).append(separator); //50 dump.append(flagCounts.get("SYN").value).append(separator); //51` |
+| iana-ports | service-names-port-numbers.csv, domain 53/tcp | `domain,53,tcp,Domain Name Server` |
+| iana-ports | service-names-port-numbers.csv, epmap 135/tcp | `epmap,135,tcp,DCE endpoint resolution` |
+| iana-ports | service-names-port-numbers.csv, ftp 21/tcp | `ftp,21,tcp,File Transfer Protocol [Control]` |
+| iana-ports | service-names-port-numbers.csv, http 80/tcp | `http,80,tcp,World Wide Web HTTP` |
+| iana-ports | service-names-port-numbers.csv, https 443/tcp | `https,443,tcp,http protocol over TLS/SSL` |
+| iana-ports | service-names-port-numbers.csv, isakmp 500/tcp | `isakmp,500,tcp,isakmp` |
+| iana-ports | service-names-port-numbers.csv, microsoft-ds 445/tcp | `microsoft-ds,445,tcp,Microsoft-DS` |
+| iana-ports | service-names-port-numbers.csv, ms-wbt-server 3389/tcp | `ms-wbt-server,3389,tcp,MS WBT Server` |
+| iana-protocols | protocol-numbers-1.csv, row 0 | `0,HOPOPT,IPv6 Hop-by-Hop Option` |
+| iana-protocols | protocol-numbers-1.csv, row 17 | `17,UDP,User Datagram,,[RFC 768]; [Jon_Postel]` |
+| iana-protocols | protocol-numbers-1.csv, row 6 | `6,TCP,Transmission Control,,[RFC 9293]` |
+| layer1-code | train_protocol_b.py, configuration | `AE_BOTTLENECK = 16` |
+| layer1-code | train_protocol_b.py, scaling | `return np.clip(sc.transform(clean(X)), -CLIP_VAL, CLIP_VAL)` |
+| unb-ids2018 | Table 2 | `Bot` |
+| unb-ids2018 | Table 2 | `Brute Force -Web` |
+| unb-ids2018 | Table 2 | `Brute Force -XSS` |
+| unb-ids2018 | Table 2 | `DDOS-HOIC` |
+| unb-ids2018 | Table 2 | `DDoS attacks-LOIC-HTTP` |
+| unb-ids2018 | Table 2 | `DDoS-LOIC-UDP` |
+| unb-ids2018 | Table 2 | `DoS-GoldenEye` |
+| unb-ids2018 | Table 2 | `DoS-Hulk` |
+| unb-ids2018 | Table 2 | `DoS-SlowHTTPTest` |
+| unb-ids2018 | Table 2 | `DoS-Slowloris` |
+| unb-ids2018 | Table 2 | `FTP-BruteForce` |
+| unb-ids2018 | Table 1, row 'DoS attack', tools cell | `Hulk, GoldenEye, Slowloris, Slowhttptest` |
+| unb-ids2018 | Table 2 | `Infiltration` |
+| unb-ids2018 | Table 2 | `SQL Injection` |
+| unb-ids2018 | Table 2 | `SSH-Bruteforce` |
+| unb-ids2018 | Table 1, row 'DoS attack', victim cell | `Ubuntu 16.4 (Apache)` |
 
 ## 6b. ReadMe definitions that do not hold for CSE-CIC-IDS2018
 

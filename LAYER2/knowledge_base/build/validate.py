@@ -32,6 +32,10 @@ KINDS = {"verbatim", "rendered", "authored"}
 #   4.6  khong co phan tram trong `text` gui VLM va trong `text`/`rationale` cua authored/*.yaml; chi cho phep
 #        "99.9%" (nguong cua claim bat bien gan dung, vd near_identical).
 DERIVED_KEYS = {"flag_column_holds"}
+
+# checklist 5.2 (ban nhe): trich dan < 5 tu (cau lenh Java ngan, ten nhan trong Table 2, dong IANA) van hop le
+# neu dung nguyen van, nhung duoc liet ke trong build_report.md de nguoi duyet doc lai.
+SHORT_QUOTES = {}          # {(src, quote): locator dau tien gap}
 PERCENT = re.compile(r"\d+(?:[.,]\d+)?\s*%")
 PERCENT_ALLOWED = {"99.9%"}
 
@@ -58,8 +62,11 @@ def check_evidence(node, where, facts, sources, errors):
         if "quote" in d and "src" in d:
             if d["src"] not in sources:
                 errors.append(f"{where}:{path}: nguon '{d['src']}' khong co trong sources.yaml")
-            elif not C.quote_ok(d["src"], d["quote"]):
-                errors.append(f"{where}:{path}: quote KHONG nam nguyen van trong {d['src']}: {d['quote'][:90]!r}")
+            elif not C.quote_ok(d["src"], d["quote"], d.get("locator")):
+                scope = C.locator_file(d["src"], d.get("locator")) or d["src"]
+                errors.append(f"{where}:{path}: quote KHONG nam nguyen van trong {scope}: {d['quote'][:90]!r}")
+            elif len(d["quote"].split()) < 5:
+                SHORT_QUOTES.setdefault((d["src"], d["quote"]), d.get("locator", ""))
         if "data" in d and isinstance(d["data"], str):
             try:
                 v = C.fact(facts, d["data"])
@@ -70,8 +77,9 @@ def check_evidence(node, where, facts, sources, errors):
         if "decision" in d:
             if not d.get("support"):
                 errors.append(f"{where}:{path}: quyet dinh '{d['decision']}' khong co support")
-            if not d.get("rationale") and not d.get("route"):
-                errors.append(f"{where}:{path}: quyet dinh '{d['decision']}' khong co rationale/route")
+            # checklist 5.4: `route` chi la cach kiem lien ket (part_mechanism.py), khong thay duoc ly do
+            if not d.get("rationale"):
+                errors.append(f"{where}:{path}: quyet dinh '{d['decision']}' khong co rationale")
 
 
 def check_lock(errors):
@@ -131,7 +139,7 @@ def check_passages(facts, sources, errors):
             errors.append(f"passage {pid}: text rong")
         if p.get("kind") == "verbatim":
             src = p.get("source", {})
-            if not C.quote_ok(src.get("src", ""), p["text"]):
+            if not C.quote_ok(src.get("src", ""), p["text"], src.get("locator")):
                 errors.append(f"passage {pid}: text 'verbatim' khong nam nguyen van trong {src.get('src')}")
         elif not p.get("support"):
             errors.append(f"passage {pid}: doan {p.get('kind')} khong co support")
@@ -148,6 +156,9 @@ def check_coverage(ps, errors):
             errors.append(f"do phu: nhan {label} khong co doan A")
         if f"B-{m['technique']['decision']}" not in pids:
             errors.append(f"do phu: technique {m['technique']['decision']} ({label}) khong co doan B")
+        for ex in m.get("mechanism_extra", []):
+            if f"B-{ex['decision']}" not in pids:
+                errors.append(f"do phu: technique phu {ex['decision']} ({label}) khong co doan B")
     for f in C.load_yaml(C.AUTHORED_DIR / "feature_names.yaml"):
         if f"H1-{C.pid_safe(f['csv'])}" not in pids:
             errors.append(f"do phu: cot {f['csv']} khong co doan H1")
@@ -160,6 +171,7 @@ def check_coverage(ps, errors):
 
 def run(authored_only=False):
     errors = []
+    SHORT_QUOTES.clear()
     facts, sources = C.load_facts(), C.load_sources()
     check_lock(errors)
     check_authored(facts, sources, errors)

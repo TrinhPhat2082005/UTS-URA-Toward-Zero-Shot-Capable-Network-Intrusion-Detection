@@ -16,6 +16,9 @@
   title: "CSE-CIC-IDS2018 on AWS (Canadian Institute for Cybersecurity, University of New Brunswick)"
   version: "page retrieved on the date in sources.lock.json"
   license: "Dataset page; short quotations for research use with citation"
+  # Checklist 4.9: nguon "song". Ban Wayback gan nhat (2026-11-07) khong trung byte voi ban da khoa, nhung ca 36
+  # trich dan cua KB deu co nguyen van trong ban do (kiem 2026-11-13).
+  archive_url: "http://web.archive.org/web/20261107103837/https://www.unb.ca/cic/datasets/ids-2018.html"
   files:
     - {name: page.html, url: "https://www.unb.ca/cic/datasets/ids-2018.html"}
 
@@ -33,9 +36,14 @@
 
 # Commit 2018-03-07: ten cot trong FlowFeature.java trung khop tung chu voi header CSV cua
 # CSE-CIC-IDS2018 (vd "Tot Fwd Pkts", "CWE Flag Count"); ban master (2022) da doi ten cot.
+# Checklist 4.1: KHONG chung minh duoc commit nao sinh ra dataset. Chi noi: du lieu KHOP voi code tu eaa853dd
+# (2018-02-13) toi 50d668db (2018-03-07) (BasicFlow.java giong het o hai commit), va KHONG khop voi code tu
+# 21790da0 (2018-05-31, Timestamp them AM/PM) va 6833ccd4 (2018-06-04, thu tu cot co tuong minh) tro di.
+# Checklist 4.2: build.gradle loai CICFlowMeter.java (ban CLI) khoi ban build; timeout 120 s lay tu GUI
+# (FlowOfflinePane, ReadPcapFileWorker) va worker bat goi truc tiep (TrafficFlowWorker).
 - id: cicflowmeter-src-2018
   tier: tool
-  title: "CICFlowMeter-V3 Java source at the commit whose column names match the CSE-CIC-IDS2018 CSV header"
+  title: "CICFlowMeter-V3 Java source at 50d668db (2018-03-07); the published CSV files match this code (BasicFlow.java is identical at eaa853dd, 2018-02-13)"
   version: "git 50d668db9bdb0a5fae457916dae4538ba8b41876 (2018-03-07)"
   license: "CICFlowMeter LICENSE.txt (MIT-style permission notice)"
   files:
@@ -45,6 +53,32 @@
     - {name: PacketReader.java,    url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/PacketReader.java"}
     - {name: FlowGenerator.java,   url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/FlowGenerator.java"}
     - {name: CICFlowMeter.java,    url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/ifm/CICFlowMeter.java"}
+    - {name: DateFormatter.java,   url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/DateFormatter.java"}
+    - {name: FlowOfflinePane.java, url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/flow/ui/FlowOfflinePane.java"}
+    - {name: ReadPcapFileWorker.java, url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/worker/ReadPcapFileWorker.java"}
+    - {name: TrafficFlowWorker.java, url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/worker/TrafficFlowWorker.java"}
+    - {name: build.gradle,         url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/build.gradle"}
+
+# Checklist 4.3 (ban nhe): bang chung doc lap rang thu tu cot co cu sai. Commit 6833ccd4 (2018-06-04) cua chinh
+# repo CICFlowMeter bo vong lap keySet() khi ghi CSV va ghi 8 co theo thu tu tuong minh FIN, SYN, ..., ECE.
+- id: cicflowmeter-src-2018-06
+  tier: tool
+  title: "CICFlowMeter BasicFlow.java at 6833ccd4 (2018-06-04): CSV flag output changed to an explicit order"
+  version: "git 6833ccd4ff2953fdd2ab703060d43e349494151e (2018-06-04)"
+  license: "CICFlowMeter LICENSE.txt (MIT-style permission notice)"
+  files:
+    - {name: BasicFlow.java, url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/6833ccd4ff2953fdd2ab703060d43e349494151e/src/main/java/cic/cs/unb/ca/jnetpcap/BasicFlow.java"}
+
+# Checklist 4.3: ma nguon OpenJDK 8 (tag jdk8-b132, ban GA) cua HashMap.hash() va String.hashCode(); build.gradle
+# cua CICFlowMeter khai bao sourceCompatibility = 1.8. data_facts.java_hashmap_order() tai hien dung hai ham nay.
+- id: openjdk8-src
+  tier: platform
+  title: "OpenJDK 8 source (jdk8u, tag jdk8-b132): java.util.HashMap and java.lang.String"
+  version: "jdk8-b132"
+  license: "GPLv2 with Classpath Exception; short quotation"
+  files:
+    - {name: HashMap.java, url: "https://raw.githubusercontent.com/openjdk/jdk8u/jdk8-b132/jdk/src/share/classes/java/util/HashMap.java"}
+    - {name: String.java,  url: "https://raw.githubusercontent.com/openjdk/jdk8u/jdk8-b132/jdk/src/share/classes/java/lang/String.java"}
 
 - id: attack-20.1
   tier: knowledge
@@ -67,6 +101,8 @@
   title: "IANA Service Name and Transport Protocol Port Number Registry"
   version: "registry retrieved on the date in sources.lock.json"
   license: "IANA registries are public"
+  # 4.9: ban Wayback 2026-11-09 khong trung byte nhung ca 10 dong duoc trich deu co nguyen van (kiem 2026-11-13)
+  archive_url: "http://web.archive.org/web/20261109064527/https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv"
   files:
     - {name: service-names-port-numbers.csv, url: "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv"}
 
@@ -75,6 +111,10 @@
   title: "IANA Assigned Internet Protocol Numbers"
   version: "registry retrieved on the date in sources.lock.json"
   license: "IANA registries are public"
+  # 4.9: ban Wayback gan nhat (2026-10-01) CU HON ban da khoa va ghi tham chieu khac ("[RFC9293]" thay vi
+  # "[RFC 9293]"), nen 2/3 dong duoc trich khong co nguyen van trong ban do. Day dung la rui ro cua nguon song:
+  # goi tai lap phai kem ban da khoa (IANA cho phep phan phoi lai).
+  archive_url: "http://web.archive.org/web/20261001163806/https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv"
   files:
     - {name: protocol-numbers-1.csv, url: "https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv"}
 
@@ -126,6 +166,8 @@
   title: "DistriNet: CSE-CIC-IDS2018 day-by-day analysis (companion page of Liu et al., IEEE CNS 2022)"
   version: "page retrieved on the date in sources.lock.json"
   license: "Research web page; short quotations for research use with citation"
+  # 4.9: ban Wayback 2026-02-06 trung tung byte voi ban da khoa (kiem 2026-11-13)
+  archive_url: "http://web.archive.org/web/20260206025216/https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html"
   files:
     - {name: CSECICIDS2018.html, url: "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html"}
 

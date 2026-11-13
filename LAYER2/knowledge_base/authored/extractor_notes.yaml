@@ -109,6 +109,14 @@
        quote: 'for(String key: flagCounts.keySet()){ dump.append(flagCounts.get(key).value).append(separator); //50,51,52,53,54,55,56,57'}
     - {src: java8-hashmap, locator: "class description",
        quote: 'This class makes no guarantees as to the order of the map; in particular, it does not guarantee that the order will remain constant over time.'}
+    # checklist 4.3 (ban nhe): thu tu duyet do data_facts.java_hashmap_order() tinh lai dung hai ham cua OpenJDK 8,
+    # ban Java ma build.gradle khai bao; commit 6833ccd4 cua chinh CICFlowMeter sau do ghi co theo thu tu tuong minh.
+    - {src: openjdk8-src, locator: "HashMap.java, hash()", quote: 'return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);'}
+    - {src: openjdk8-src, locator: "HashMap.java, putVal()", quote: 'if ((p = tab[i = (n - 1) & hash]) == null)'}
+    - {src: openjdk8-src, locator: "String.java, hashCode()", quote: 'h = 31 * h + val[i];'}
+    - {src: cicflowmeter-src-2018, locator: "build.gradle", quote: 'sourceCompatibility = 1.8'}
+    - {src: cicflowmeter-src-2018-06, locator: "BasicFlow.java, CSV row writer",
+       quote: 'dump.append(flagCounts.get("FIN").value).append(separator); //50 dump.append(flagCounts.get("SYN").value).append(separator); //51'}
     - {data: flag_column_holds}
     - {data: "claims.identical__Fwd PSH Flags__SYN Flag Cnt"}
     - {data: "claims.identical__Fwd URG Flags__CWE Flag Count"}
@@ -187,13 +195,19 @@
     - {data: claims.tcp_init_fwd_never_minus1}
     - {data: claims.tcp_with_bwd_init_bwd_never_minus1}
 
+# checklist 4.2: CICFlowMeter.java (ban dong lenh) bi build.gradle loai khoi ban build; timeout trich tu GUI
+# (gia tri mac dinh, sua duoc) va worker bat goi truc tiep. Gia tri ma tac gia dataset dung khong duoc ghi;
+# du lieu khop voi no (claim duration_le_120s).
 - id: XN-FLOW-TIMEOUT
   relation: adds
   applies_to: [Flow Duration]
-  text: "The command-line extractor closes a flow 120 s (120,000,000 microseconds) after its first packet and starts a new flow; no flow in the published CSE-CIC-IDS2018 CSV files lasts longer than that."
+  text: "The extractor's default flow timeout is 120 s (120,000,000 microseconds): a flow is closed when a packet arrives more than that after the flow's first packet, and that packet starts a new flow. No flow in the published CSE-CIC-IDS2018 CSV files lasts longer than that."
   support:
-    - {src: cicflowmeter-src-2018, locator: "CICFlowMeter.java, main()",
-       quote: 'flowGen = new FlowGenerator(true,120000000L, 5000000L);'}
+    - {src: cicflowmeter-src-2018, locator: "FlowOfflinePane.java, initSettingPane()", quote: 'param1Ele.add(120000000L);'}
+    - {src: cicflowmeter-src-2018, locator: "ReadPcapFileWorker.java, constructor", quote: 'flowTimeout = 120000000L;'}
+    - {src: cicflowmeter-src-2018, locator: "TrafficFlowWorker.java, doInBackground()",
+       quote: 'FlowGenerator flowGen = new FlowGenerator(true,120000000L, 5000000L);'}
+    - {src: cicflowmeter-src-2018, locator: "build.gradle, jar task", quote: "exclude '**/CICFlowMeter.java'"}
     - {src: cicflowmeter-src-2018, locator: "FlowGenerator.java, addPacket()",
        quote: 'if((currentTimestamp -flow.getFlowStartTime())>flowTimeOut){'}
     - {data: claims.duration_le_120s}

@@ -37,6 +37,7 @@ def load_ctx():
             "extra_features": C.load_yaml(a / "extra_features.yaml"),
             "extractor_notes": C.load_yaml(a / "extractor_notes.yaml"),
             "artefacts": C.load_yaml(a / "artefacts.yaml"),
+            "mechanism": C.load_yaml(a / "mechanism.yaml"),
             "facts": C.load_facts()}
 
 
@@ -140,6 +141,28 @@ def report(passages, ctx, kb_sha, errors):
           f"Constant columns: {', '.join(facts['constant_columns'])}", "",
           f"Identical column pairs: {facts['identical_columns']}; near-identical: {facts['near_identical_columns']}", ""]
 
+    # checklist 4.1: khoang phien ban cua extractor (khong chung minh duoc commit nao sinh dataset)
+    L += ["## 6a. Extractor version bracket", "",
+          "No commit can be shown to have produced the published CSV files. The data are consistent with the "
+          "CICFlowMeter-V3 code from eaa853dd (2018-02-13) to 50d668db (2018-03-07), whose BasicFlow.java is "
+          "identical, and inconsistent with later code:", "",
+          "- flags only from the first packet: claim `flags_binary` (code commented out in addPacket(); counting "
+          "for every packet came back only in ed1d6bcb, 2019-10-15);",
+          "- first packet counted twice in the length statistics: claim `pkt_len_double_count`;",
+          "- integer Down/Up Ratio: claim `downup_integer`;",
+          "- Timestamp written as 12-hour time without AM/PM, matching `format = \"dd/MM/yyyy hh:mm:ss\";` in "
+          "DateFormatter.java at 50d668db; commit 21790da0 (2018-05-31) added AM/PM;",
+          "- flag columns in Java HashMap order; commit 6833ccd4 (2018-06-04) writes them in an explicit order "
+          "(source `cicflowmeter-src-2018-06`).", ""]
+
+    # checklist 5.2: trich dan ngan (< 5 tu) hop le nhung can nguoi duyet doc lai
+    L += ["## 6c. Short quotations (fewer than five words) for manual review", "",
+          "Each is verbatim in its locked source (and in the file named by its locator); short Java statements, "
+          "label names of Table 2 and IANA rows are expected here.", "", "| source | locator | quote |", "|---|---|---|"]
+    for (src, q), loc in sorted(validate.SHORT_QUOTES.items()):
+        L.append(f"| {src} | {loc} | `{q}` |")
+    L.append("")
+
     # checklist 1.1: cot ma dinh nghia ReadMe khong dung voi dataset nay (khong con trong text gui VLM)
     L += ["## 6b. ReadMe definitions that do not hold for CSE-CIC-IDS2018", "",
           "These columns start with their real meaning; the ReadMe definition is kept only in "
@@ -180,7 +203,8 @@ def main():
     # Chi muc nho cho retrieve.py (luc chay khong can yaml): nhan -> technique/CAPEC; cot co -> co thuc chua.
     C.write_json(C.STORE_DIR / "index.json", {
         "kb_sha256": kb_sha,
-        "labels": {lab: {"technique": m["technique"]["decision"], "capec": m["capec"]["decision"]}
+        "labels": {lab: {"technique": m["technique"]["decision"], "capec": m["capec"]["decision"],
+                         "extra_mechanisms": [ex["decision"] for ex in m.get("mechanism_extra", [])]}
                    for lab, m in ctx["mapping"].items()},
         "flag_column_holds": {**ctx["facts"]["flag_column_holds"], "Fwd PSH Flags": "PSH", "Fwd URG Flags": "URG"},
         # cot roi rac (cong, giao thuc, co, Init Win co gia tri thay the -1): bang C ghi tan suat, khong lay trung binh

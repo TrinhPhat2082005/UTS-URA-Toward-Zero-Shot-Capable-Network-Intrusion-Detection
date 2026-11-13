@@ -63,6 +63,31 @@
     "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/ifm/CICFlowMeter.java",
     "sha256": "9b74a25ae29230020dc7115ad6327e165caed8a7c06f21fde2e417597c76411e",
     "bytes": 3376
+   },
+   "DateFormatter.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/DateFormatter.java",
+    "sha256": "b50d3489f41ec5a09aa6008c35860406c62b3c28b7f284330475118267f4117d",
+    "bytes": 521
+   },
+   "FlowOfflinePane.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/flow/ui/FlowOfflinePane.java",
+    "sha256": "37bf07e7d4ac3fb3677b70b8fd47d6beca16c7b09d380432369881cfae55e961",
+    "bytes": 13069
+   },
+   "ReadPcapFileWorker.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/worker/ReadPcapFileWorker.java",
+    "sha256": "049bd42c3c8cdfa22397c354c5986799b87511c3e1c7391c44fc7a7bf6a40140",
+    "bytes": 6299
+   },
+   "TrafficFlowWorker.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/worker/TrafficFlowWorker.java",
+    "sha256": "201da46d4d66197f8516decd18b6ffde354b04830870547e344046311158ea84",
+    "bytes": 3291
+   },
+   "build.gradle": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/build.gradle",
+    "sha256": "2f09973fe4ecc208fb541e2d011ef5085cc1d086994d5f6a8fc4818603b6acf9",
+    "bytes": 4254
    }
   },
   "retrieved": "2026-11-13"
@@ -213,6 +238,33 @@
     "url": "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html",
     "sha256": "c9edddbcba999cf4a004a090d991e915ded9226cae3f0e9589fa302631f9803b",
     "bytes": 70001
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "cicflowmeter-src-2018-06": {
+  "version": "git 6833ccd4ff2953fdd2ab703060d43e349494151e (2018-06-04)",
+  "files": {
+   "BasicFlow.java": {
+    "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/6833ccd4ff2953fdd2ab703060d43e349494151e/src/main/java/cic/cs/unb/ca/jnetpcap/BasicFlow.java",
+    "sha256": "797fb5370c35f0aab1cf749f179c716a8124178938b1ccbe4b68e62b33622316",
+    "bytes": 36966
+   }
+  },
+  "retrieved": "2026-11-13"
+ },
+ "openjdk8-src": {
+  "version": "jdk8-b132",
+  "files": {
+   "HashMap.java": {
+    "url": "https://raw.githubusercontent.com/openjdk/jdk8u/jdk8-b132/jdk/src/share/classes/java/util/HashMap.java",
+    "sha256": "78dc23b1dc9362745cc5dc8a53ca385d263892238dc8830ac459629b4b94a978",
+    "bytes": 91985
+   },
+   "String.java": {
+    "url": "https://raw.githubusercontent.com/openjdk/jdk8u/jdk8-b132/jdk/src/share/classes/java/lang/String.java",
+    "sha256": "af751f86c9bd6bd3701d57fe88de63bb8422b638d4c16d765e46c7db58a4c5e1",
+    "bytes": 124853
    }
   },
   "retrieved": "2026-11-13"

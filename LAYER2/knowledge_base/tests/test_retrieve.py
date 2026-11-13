@@ -91,6 +91,34 @@ def test_port_passage_warns_registration_is_not_usage():
     assert "does not mean" in KB._text(KB.passages["H2-PORT-80"])
 
 
+def test_flag_order_agrees_with_data_claims():
+    # checklist 4.3 (ban nhe): thu tu HashMap tinh lai tu ma nguon phai khop cac cap cot trung nhau trong du lieu
+    claims = json.loads((LAYER2 / "knowledge_base" / "store" / "claims.json").read_text(encoding="utf-8"))
+    holds = KB.index["flag_column_holds"]
+    assert claims["identical__Fwd PSH Flags__SYN Flag Cnt"]["holds_all"] and holds["SYN Flag Cnt"] == "PSH"
+    assert claims["identical__Fwd URG Flags__CWE Flag Count"]["holds_all"] and holds["CWE Flag Count"] == "URG"
+    # ECE va CWR duoc dat cung nhau trong SYN ECN-setup (RFC 3168): hai cot chua ECE / CWR gan nhu trung nhau
+    assert claims["near_identical__RST Flag Cnt__ECE Flag Cnt"]["holds_all"]
+    assert {holds["RST Flag Cnt"], holds["ECE Flag Cnt"]} == {"ECE", "CWR"}
+
+
+def test_infiltration_has_extra_mechanism_hidden_when_flagged():
+    # checklist 6.2: B' phu T1018 (IP sweep), technique cua nhan van la T1046
+    s = KB.select("Infiltration", False, ["Dst Port"], TCP_WEB)
+    assert "B-T1018" in s.pids() and KB.index["labels"]["Infiltration"]["technique"] == "T1046"
+    s = KB.select("Infiltration", True, ["Dst Port"], TCP_WEB)
+    b = [p for p in s.passages if p["part"] == "B"]
+    assert [p["cite"] for p in b] == ["REF-MECH-1", "REF-MECH-2", "REF-MECH-3"]
+    assert not any("T10" in f"{p['cite']} {p['title']}" for p in b)
+
+
+def test_mechanism_paragraph_selection():
+    # checklist 6.5: T1499.002 lay ca doan HTTP flood
+    p = KB.passages["B-T1499.002"]
+    assert "simple HTTP flood" in p["text"] and "paragraphs 1-2" in p["source"]["locator"]
+    assert "<code>" not in KB.passages["B-T1018"]["text"]
+
+
 def test_dictionary_attacks_use_capec_16():
     # checklist 6.3: CAPEC-16 cho SSH/FTP (kich ban tu dien), BFW giu CAPEC-49
     assert KB.index["labels"]["SSH_Bruteforce"]["capec"] == "CAPEC-16"

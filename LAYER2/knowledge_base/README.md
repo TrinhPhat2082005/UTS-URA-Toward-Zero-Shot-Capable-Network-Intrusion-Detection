@@ -22,7 +22,8 @@ Mỗi giá trị trong yaml thuộc đúng một loại:
 | Số liệu | `{data: <khóa>}` | khóa có trong `store/data_facts.json` |
 | Quyết định | `{decision, support, rationale}` | có bằng chứng và lý do; nội dung do người duyệt |
 
-Quyết định chỉ có trong `authored/mapping.yaml`: nhãn → technique ATT&CK và CAPEC.
+Quyết định chỉ có trong `authored/mapping.yaml` (nhãn → technique ATT&CK, CAPEC, đoạn B′ phụ) và
+`authored/mechanism.yaml` (đoạn nào của mô tả ATT&CK được dùng cho mỗi technique).
 
 ## Cấu trúc
 
@@ -33,9 +34,10 @@ knowledge_base/
 │   ├── feature_names.yaml    78 cột CSV ↔ mã nguồn CICFlowMeter 2018 ↔ ReadMe (SINH BẰNG MÁY)
 │   ├── extractor_notes.yaml  ghi chú cách CICFlowMeter 2018 tính từng cột (trích mã nguồn)
 │   ├── extra_features.yaml   Dst Port, Protocol, feature của AE (không có trong ReadMe)
-│   └── artefacts.yaml        H3: điều kiện `when` + câu cơ chế
+│   ├── artefacts.yaml        H3: điều kiện `when` + câu cơ chế
+│   └── mechanism.yaml        B′: chọn đoạn liền nhau của mô tả ATT&CK theo technique
 ├── build/                    CODE: NGUỒN → ĐOẠN VĂN (chạy offline)
-│   ├── sources.yaml          16 nguồn: id, tầng, phiên bản, url, giấy phép
+│   ├── sources.yaml          18 nguồn: id, tầng, phiên bản, url, giấy phép, archive_url (nguồn sống)
 │   ├── fetch_sources.py      tải nguồn → $UTS_DATA/kb_sources/, ghi sha256 (file trong repo: sha của nội dung LF + commit)
 │   ├── data_facts.py         số liệu mô tả trên train → store/data_facts.json (chỉ cho báo cáo + danh sách cột trùng)
 │   ├── claims.py             claim số liệu có kiểm tính dừng → store/claims.json (--raw: đọc 10 file CSV gốc)
@@ -50,7 +52,7 @@ knowledge_base/
 │   ├── build_kb.py           chạy mọi phần → store/
 │   └── validate.py           kiểm trích dẫn, số liệu, quyết định, độ phủ
 ├── store/                    KẾT QUẢ (commit) — Kaggle chỉ cần thư mục này
-│   ├── passages.jsonl        155 đoạn
+│   ├── passages.jsonl        156 đoạn
 │   ├── claims.json           45 claim, giá trị trên từng nguồn, holds_all
 │   ├── index.json            nhãn → technique/CAPEC; cột cờ → cờ thực chứa; cột rời rạc
 │   ├── sources.lock.json     sha256 từng file nguồn
@@ -131,3 +133,16 @@ Mỗi thay đổi ghi mã mục trong `workspace/kb_checklist.md` và loại s�
 | 2026-11-13 | 4.6 | build | validate cấm `%` trong text gửi VLM và trong text/rationale của yaml (trừ "99.9%"); rationale Bot/Infiltration/GoldenEye/Hulk/LOIC-UDP trỏ claim |
 | 2026-11-13 | 6.3 | build | SSH, FTP → CAPEC-16 qua route mới `child_of_linked` (CAPEC-16 ChildOf 49, 49 → T1110.001); BFW giữ CAPEC-49 |
 | 2026-11-13 | nguồn | build | Thêm nguồn `distrinet-2018` (tầng audit, trang đi kèm Liu et al. 2022) |
+| 2026-11-14 | 4.1 | build | `cicflowmeter-src-2018` ghi "dữ liệu khớp code eaa853dd…50d668db", không nói commit nào sinh dataset; thêm `DateFormatter.java`; build_report §6a "version bracket" |
+| 2026-11-14 | 4.2 | build | Timeout 120 s trích từ GUI (FlowOfflinePane, ReadPcapFileWorker) và TrafficFlowWorker, kèm `build.gradle` loại CICFlowMeter.java; XN-FLOW-TIMEOUT, H3-TIMEOUT nói "default" |
+| 2026-11-14 | 4.3 | build | Bản nhẹ: nguồn `openjdk8-src` (HashMap.hash, putVal, String.hashCode tại jdk8-b132), `build.gradle` (Java 1.8), `cicflowmeter-src-2018-06` (BasicFlow @6833ccd4, thứ tự cờ tường minh) làm support của XN-FLAG-ORDER; test đối chiếu thứ tự với claim cột trùng |
+| 2026-11-14 | 4.9 | build | `archive_url` (Wayback) cho UNB, IANA ports, IANA protocols, DistriNet; kết quả so với bản khóa ghi trong comment sources.yaml |
+| 2026-11-14 | 5.1 | build | `quote_ok(src, quote, locator)`: locator bắt đầu bằng tên file của nguồn thì chỉ kiểm trong file đó |
+| 2026-11-14 | 5.2 | build | Câu trích < 5 từ được liệt kê trong build_report §6c để người duyệt |
+| 2026-11-14 | 5.3 | build | HTML: chèn dấu ngăn ô bảng; câu trích không được vượt ô. Câu Table 1 dòng DoS (vượt ô) tách thành hai câu, mỗi ô một câu |
+| 2026-11-14 | 5.4 | build | Mọi quyết định bắt buộc có rationale (`route` không thay được); route `description` chỉ hợp lệ khi CAPEC không liên kết mục nào tới technique |
+| 2026-11-14 | 6.1 | build | Rationale XSS → T1190 trích cả câu XSS và câu "Unlike Exploit Public-Facing Application" của T1189 |
+| 2026-11-14 | 6.2 | build | Không đổi schema; thêm B′ phụ `B-T1018` cho Infiltration (`mechanism_extra`), ẩn ID khi bật cờ, không có G′ |
+| 2026-11-14 | 6.4 | build | Rationale GoldenEye ghi rõ trang dataset không mô tả cách tool hoạt động |
+| 2026-11-14 | 6.5 | build | `authored/mechanism.yaml`: chọn đoạn liền nhau của mô tả ATT&CK theo technique (T1499.002 đoạn 1–2, T1110.001 đoạn 1–4); `normalize` bỏ thẻ `<code>` |
+| 2026-11-14 | 6.6 | quy trình | Phiếu gán mù cho người thứ hai: `workspace/kb_fix/06_second_annotator.md` (chưa có người gán) |

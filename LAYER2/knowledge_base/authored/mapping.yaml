@@ -72,11 +72,14 @@ FTP_BruteForce:
 DoS_attacks_GoldenEye:
   dataset_name: {src: unb-ids2018, locator: "Table 2", quote: 'DoS-GoldenEye'}
   scenario:
-    - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
+    # checklist 5.3: quote cu ghep nhieu o cua Table 1; nay moi o mot quote
+    - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', tools cell", quote: 'Hulk, GoldenEye, Slowloris, Slowhttptest'}
+    - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', victim cell", quote: 'Ubuntu 16.4 (Apache)'}
   behaviour:
     text: "Denial-of-service attack on the victim's Apache web server."
     support:
-      - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
+      - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', tools cell", quote: 'Hulk, GoldenEye, Slowloris, Slowhttptest'}
+      - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', victim cell", quote: 'Ubuntu 16.4 (Apache)'}
       - {data: claims.port80_all__DoS_attacks_GoldenEye}
   technique:
     decision: T1499.002
@@ -89,16 +92,19 @@ DoS_attacks_GoldenEye:
     decision: CAPEC-488
     route: taxonomy_mapping
     support: [{src: capec-3.9, locator: "CAPEC-488 Description", quote: 'An adversary may execute a flooding attack using the HTTP protocol with the intent to deny legitimate users access to a service by consuming resources at the application layer such as web services and their infrastructure.'}]
-    rationale: "Of the CAPEC entries linked to T1499.002 (469, 482, 488, 489, 528), HTTP Flood matches a DoS on a web server reached on port 80; the dataset page does not describe a slow-request attack for this tool."
+    rationale: "Of the CAPEC entries linked to T1499.002 (469, 482, 488, 489, 528), HTTP Flood matches a DoS on a web server reached on port 80; the dataset page names the tool (Table 1) but does not describe how it works, and it does not describe a slow-request attack for this tool."
 
 DoS_attacks_Hulk:
   dataset_name: {src: unb-ids2018, locator: "Table 2", quote: 'DoS-Hulk'}
   scenario:
-    - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
+    # checklist 5.3: quote cu ghep nhieu o cua Table 1; nay moi o mot quote
+    - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', tools cell", quote: 'Hulk, GoldenEye, Slowloris, Slowhttptest'}
+    - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', victim cell", quote: 'Ubuntu 16.4 (Apache)'}
   behaviour:
     text: "Denial-of-service attack on the victim's Apache web server."
     support:
-      - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
+      - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', tools cell", quote: 'Hulk, GoldenEye, Slowloris, Slowhttptest'}
+      - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', victim cell", quote: 'Ubuntu 16.4 (Apache)'}
       - {data: claims.port80_all__DoS_attacks_Hulk}
   technique:
     decision: T1499.002
@@ -116,12 +122,15 @@ DoS_attacks_Hulk:
 DoS_attacks_SlowHTTPTest:
   dataset_name: {src: unb-ids2018, locator: "Table 2", quote: 'DoS-SlowHTTPTest'}
   scenario:
-    - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
+    # checklist 5.3: quote cu ghep nhieu o cua Table 1; nay moi o mot quote
+    - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', tools cell", quote: 'Hulk, GoldenEye, Slowloris, Slowhttptest'}
+    - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', victim cell", quote: 'Ubuntu 16.4 (Apache)'}
   # checklist 1.2d: the cu ("DoS on Apache") trai du lieu; nay noi ca kich ban, du lieu (bat bien) va audit
   behaviour:
     text: "The dataset page lists Slowhttptest among the denial-of-service tools run against an Apache web server. In the published CSV files every flow with this label goes to TCP port 21 (FTP) and carries no payload in either direction. An independent analysis of the original capture found no successful Slowhttptest attack and reports that the tool appears to have been launched against port 21 by mistake."
     support:
-      - {src: unb-ids2018, locator: "Table 1", quote: 'DoS attack Hulk, GoldenEye, Slowloris, Slowhttptest One day Kali linux Ubuntu 16.4 (Apache)'}
+      - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', tools cell", quote: 'Hulk, GoldenEye, Slowloris, Slowhttptest'}
+      - {src: unb-ids2018, locator: "Table 1, row 'DoS attack', victim cell", quote: 'Ubuntu 16.4 (Apache)'}
       - {data: claims.twin_tcp21_nopayload__DoS_attacks_SlowHTTPTest}
       - {src: distrinet-2018, locator: "6. DoS Slowhttptest, 16-02-2018",
          quote: 'No succesful DoS Slowhttptest attack was found in this dataset. Instead, it looks like the tool was mistakenly launched against port 21.'}
@@ -278,7 +287,12 @@ Brute_Force_XSS:
          quote: 'Adversaries may attempt to exploit a weakness in an Internet-facing host or system to initially access a network.'}
       - {src: attack-20.1, locator: "T1189 description (not chosen)",
          quote: 'Adversaries may gain access to a system through a user visiting a website over the normal course of browsing.'}
-    rationale: "The captured flows are the attacker's automated requests to the vulnerable web application, i.e. an attempt to exploit a public-facing application. Drive-by Compromise (T1189) describes a user's browser visiting a compromised site, which is not the traffic captured in this scenario. CHANGED from the previous mapping T1189. SQL injection and XSS share T1190 and are told apart by their CAPEC entries."
+      # checklist 6.1: rationale cu chi trich cau dau cua T1189; T1189 co nhac XSS va noi ro khac T1190 o dau
+      - {src: attack-20.1, locator: "T1189 description (not chosen), list of delivery methods",
+         quote: 'Built-in web application interfaces that allow user-controllable content are leveraged for the insertion of malicious scripts or iFrames (e.g., cross-site scripting)'}
+      - {src: attack-20.1, locator: "T1189 description (not chosen), last paragraph",
+         quote: 'Unlike Exploit Public-Facing Application, the focus of this technique is to exploit software on a client endpoint upon visiting a website.'}
+    rationale: "T1189 names cross-site scripting as one way to deliver exploit code to a visiting user's browser, and states that its focus, unlike Exploit Public-Facing Application, is the client endpoint. The captured flows are the attacker's automated requests to the vulnerable web application, the server side, so T1190 is kept; the browser-side compromise that T1189 describes is not in the capture. CHANGED from the previous mapping T1189. SQL injection and XSS share T1190 and are told apart by their CAPEC entries."
   capec:
     decision: CAPEC-63
     route: description
@@ -342,6 +356,15 @@ Infiltration:
     route: taxonomy_mapping
     support: [{src: capec-3.9, locator: "CAPEC-300 Description", quote: 'An adversary uses a combination of techniques to determine the state of the ports on a remote target.'}]
     rationale: "Port Scanning is the CAPEC entry linked to T1046."
+  # checklist 6.2 (ban da duyet: KHONG doi schema "mot technique / nhan"): them doan B' phu cho IP sweep.
+  # part_mechanism.py sinh B-T1018; retrieve.py chon no cung A'/B' cua nhan; khong co G' rieng cho T1018.
+  mechanism_extra:
+    - decision: T1018
+      support:
+        - {src: unb-ids2018, locator: "2.2.7 Infiltration of the network from inside", quote: 'IP sweep, full port scan and service enumerations using Nmap.'}
+        - {src: attack-20.1, locator: "T1018 description",
+           quote: 'Adversaries may attempt to get a listing of other systems by IP address, hostname, or other logical identifier on a network that may be used for Lateral Movement from the current system.'}
+      rationale: "The IP sweep named on the dataset page lists other systems by IP address, which ATT&CK describes as Remote System Discovery (T1018). It is added as a second mechanism passage; the label keeps one technique (T1046) because the report and its evaluation name one technique per label, and no mitigation passage is added for T1018."
 
 Bot:
   dataset_name: {src: unb-ids2018, locator: "Table 2", quote: 'Bot'}

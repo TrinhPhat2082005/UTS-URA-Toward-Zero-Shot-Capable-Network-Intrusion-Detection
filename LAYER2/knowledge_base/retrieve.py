@@ -131,6 +131,9 @@ class KnowledgeBase:
             self._add(sel, seen, f"B-{info['technique']}", role, f"attack mechanism of reference label {label}", flagged)
             if info.get("capec"):
                 self._add(sel, seen, f"B-{info['capec']}", role, f"attack pattern of reference label {label}", flagged)
+            for tid in info.get("extra_mechanisms", []):          # checklist 6.2: vd B-T1018 cho Infiltration
+                self._add(sel, seen, f"B-{tid}", role, f"additional attack mechanism of reference label {label}",
+                          flagged)
 
         # H1: top feature, roi cac dong cua bang C (chi khi co co)
         feats = list(top_features) + (list(contrast_features) if flagged else [])
