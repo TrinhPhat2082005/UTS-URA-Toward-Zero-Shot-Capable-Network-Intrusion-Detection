@@ -54,6 +54,10 @@ material, write "not available" instead of inventing it.
 Knowledge passages describe attack types, features and protocols in general; they do not describe this
 alert. Use them to interpret the evidence, not as evidence that something happened.
 
+Where the alert evidence and a knowledge passage disagree, say so and cite both, rather than making them
+agree. The reference label of an alert is the label of its nearest known precedents, and the published
+labels of this dataset contain errors, so the background of that label may not fit this flow.
+
 Use the exact section headings given in the task. Do not add, omit or reorder sections.\
 """
 
@@ -210,7 +214,9 @@ def build_report_prompt(ev, kb_mode="on", kb_parts=KB_ALL_PARTS):
                 "Largest SHAP contributions (log-odds; positive pushes towards attack):"]
     for f in ev["top_features"]:
         raw = "" if f["raw_value"] is None else f"; raw value {_fmt(f['raw_value'])}"
-        ev_lines.append(f"[{f['id']}] {f['name']}: SHAP {f['phi']:+.3f}{raw}")
+        # cot co: noi ngay o day co ma cot THUC SU chua (ten cot bi hoan vi trong ban CICFlowMeter nay)
+        hold = f" (this column holds the {f['holds']} flag of the first packet)" if f.get("holds") else ""
+        ev_lines.append(f"[{f['id']}] {f['name']}{hold}: SHAP {f['phi']:+.3f}{raw}")
     if ev["x_facts"]:
         ev_lines.append("Flow facts:")
         ev_lines += [f"[{f['id']}] {f['name']} = {_fmt(f['raw_value'])}" for f in ev["x_facts"]]
@@ -314,6 +320,26 @@ def citations(text):
     return out
 
 
+_FIELD_RE = re.compile(r"^\s*[-*]?\s*\**\s*(predicted class|severity|top indicators|technique|tactic|assessment)\b",
+                       re.IGNORECASE)
+
+
+def cited_units(text):
+    """Do phu trich dan cua mot muc: tach thanh cau (theo dong / gach dau dong, roi theo dau cham), bo dong truong
+    (Predicted class:, Technique:, ...) va cau qua ngan; tra (so cau, so cau co it nhat mot id)."""
+    n = cited = 0
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or _FIELD_RE.match(line):
+            continue
+        for s in re.split(r"(?<=[.!?])\s+(?=[A-Z*(\[])", line):
+            if len(re.sub(r"\[[^\]]*\]", "", s).strip(" -*")) < 25:
+                continue
+            n += 1
+            cited += bool(citations(s))
+    return n, cited
+
+
 def parse_assessment(raw):
     """'variant' | 'different' | 'undetermined' | None tu muc 4 (lay lan xuat hien cuoi); khong co muc 4 thi tim
     trong ca van ban."""
@@ -326,8 +352,8 @@ def parse_assessment(raw):
 
 def parse_report(raw, allowed_ids=None):
     """Tach cac truong may doc duoc tu bao cao. Khong doan khi thieu: truong khong tim thay -> None + parse_error."""
-    out = {"predicted_class": None, "severity": None, "top_indicators": None, "mitre_id": None,
-           "mitre_tactic": None, "assessment": None, "sections": {}, "n_sections": 0,
+    out = {"predicted_class": None, "severity": None, "top_indicators": None, "mitre_id": None, "mitre_ids": [],
+           "mitre_tactic": None, "assessment": None, "sections": {}, "n_sections": 0, "n_units": 0, "n_cited_units": 0,
            "citations": [], "citations_by_section": {}, "mitigations_chosen": [], "unknown_citations": [],
            "parse_error": None}
     if not raw or not raw.strip():
@@ -356,9 +382,12 @@ def parse_report(raw, allowed_ids=None):
         out["parse_error"] = (out["parse_error"] or "") + f"|only_{out['n_sections']}_sections"
 
     sec4 = out["sections"].get("mitre_mapping", "")
-    m = _MITRE_RE.search(sec4)
-    if m:
-        out["mitre_id"] = m.group(1)
+    out["mitre_ids"] = list(dict.fromkeys(_MITRE_RE.findall(sec4)))
+    out["mitre_id"] = out["mitre_ids"][0] if out["mitre_ids"] else None
+    for name in ("forensic_reasoning", "mitre_mapping", "analyst_notes"):     # cac muc phai co trich dan
+        n, c = cited_units(out["sections"].get(name, ""))
+        out["n_units"] += n
+        out["n_cited_units"] += c
     m = _TACTIC_RE.search(sec4)
     if m:
         out["mitre_tactic"] = m.group(1).strip().strip("*").strip()

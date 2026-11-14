@@ -1,5 +1,5 @@
 {
- "kb_sha256": "5928571baf7822b0394ad251276cce42f409d0d01173d22afd3378590d687b65",
+ "kb_sha256": "1e846acf4aaea9b9d0d74d855eaf59cb90d07c9907e729dc943204c8d38d67d6",
  "labels": {
   "FTP_BruteForce": {
    "entries": [
@@ -244,7 +244,7 @@
     "T1189": []
    },
    "detection": {
-    "T1189": true
+    "T1189": false
    }
   },
   "SQL_Injection": {

@@ -1,6 +1,6 @@
 # Knowledge base build report
 
-Built 2026-11-14 | passages.jsonl sha256 `5928571baf7822b0394ad251276cce42f409d0d01173d22afd3378590d687b65`
+Built 2026-11-14 | passages.jsonl sha256 `1e846acf4aaea9b9d0d74d855eaf59cb90d07c9907e729dc943204c8d38d67d6`
 
 Validation: **passed** (every quote verbatim in its locked source, Borisenko key matches, coverage complete)
 
@@ -35,10 +35,10 @@ Validation: **passed** (every quote verbatim in its locked source, Borisenko key
 | part | passages | verbatim | rendered | defined | sent to VLM |
 |---|---|---|---|---|---|
 | M  label -> technique (Borisenko et al. 2022, Table II) | 14 | 0 | 14 | 0 | yes |
-| B  technique knowledge (ATT&CK v20.1, CAPEC v3.9) | 20 | 16 | 4 | 0 | yes |
+| B  technique knowledge (ATT&CK v20.1, CAPEC v3.9) | 19 | 16 | 3 | 0 | yes |
 | H1 feature definitions (CICFlowMeter-V3 2018) | 81 | 1 | 54 | 26 | yes |
 | H2 protocol / port / TCP flag (IANA, IETF) | 6077 | 10 | 6067 | 0 | yes |
-| H3 conditional extractor artefacts | 6 | 0 | 0 | 6 | yes |
+| H3 conditional extractor artefacts | 7 | 0 | 0 | 7 | yes |
 | G  mitigation candidates (ATT&CK mitigates + CAPEC Mitigations), chosen by the VLM | 40 | 15 | 25 | 0 | yes |
 
 ## 3. Label -> technique key (Borisenko et al. 2022, Table II)
@@ -55,14 +55,14 @@ Validation: **passed** (every quote verbatim in its locked source, Borisenko key
 | DDOS_attack_LOIC_UDP | 8 DDoS- LOIC- UDP Impact (TA0040) Endpoint Denial of Service (T1499) Service Exhaustion Flood (T1499.002) LOIC | T1499.002 Service Exhaustion Flood | T1499.002: CAPEC-469, CAPEC-482, CAPEC-488, CAPEC-489, CAPEC-528 | T1499.002: yes |
 | DDOS_attack_HOIC | 9 DDOS- HOIC Impact (TA0040) Endpoint Denial of Service (T1499) Service Exhaustion Flood (T1499.002) HOIC | T1499.002 Service Exhaustion Flood | T1499.002: CAPEC-469, CAPEC-482, CAPEC-488, CAPEC-489, CAPEC-528 | T1499.002: yes |
 | Brute_Force_Web | 10 Brute Force - Web Credential Access (TA0006) Brute Force (T1110) Password Guessing (T1110.001) DVWA, Selenium Framework | T1110.001 Password Guessing | T1110.001: CAPEC-49 | T1110.001: **none** |
-| Brute_Force_XSS | 11 Brute Force - XSS Initial Access (TA0001) Drive-by Compromise (T1189) - DVWA, Selenium Framework | T1189 Drive-by Compromise | T1189: none | T1189: yes |
+| Brute_Force_XSS | 11 Brute Force - XSS Initial Access (TA0001) Drive-by Compromise (T1189) - DVWA, Selenium Framework | T1189 Drive-by Compromise | T1189: none | T1189: **none** |
 | SQL_Injection | 12 SQL Injection Initial Access (TA0001) Exploit Public- Facing Application (T1190) - DVWA, sqlmap | T1190 Exploit Public-Facing Application | T1190: none | T1190: yes |
 | Infiltration | 13 Infiltration Execution (TA0002) User Execution (T1204) Malicious File (T1204.002) Dropbox, Adobe Acrobat Reader 9 Discovery (TA0007) Network Service Scanning (T1046) - Nmap, portscan | T1204.002 Malicious File, T1046 Network Service Discovery | T1204.002: none; T1046: CAPEC-300 | T1204.002: **none**; T1046: yes |
 | Bot | 14 Bot Resource Developm ent (TA0042) Acquire Infrastructur e (T1583) Botnet (T1583.005) Ares, Zeus Collection (TA0009) Screen Capture (T1113) - screenshots | T1583.005 Botnet, T1113 Screen Capture | T1583.005: none; T1113: CAPEC-648 | T1583.005: **none**; T1113: **none** |
 
 ### Gaps
 
-Techniques without any ATT&CK v20.1 analytic on a network data component (no B-DET passage): T1110.001 Password Guessing, T1113 Screen Capture, T1204.002 Malicious File, T1583.005 Botnet.
+Techniques without any ATT&CK v20.1 analytic on a network data component (no B-DET passage): T1110.001 Password Guessing, T1113 Screen Capture, T1189 Drive-by Compromise, T1204.002 Malicious File, T1583.005 Botnet.
 
 ## 4. Defined sentences next to their evidence
 
@@ -375,6 +375,16 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [layer1-code | autoencoder.py, module docstring] "Encoder: input_dim -> 64 -> 32 -> bottleneck_dim"
 - [layer1-code | train_protocol_b.py, configuration] "AE_BOTTLENECK = 16"
 - [layer1-code | train_protocol_b.py, AE features] "names = feats + [f"ae_latent_{i}" for i in range(AE_BOTTLENECK)] + ["ae_recon_error"]"
+
+### H3-LABELNOISE
+
+> The reference label of this alert comes from the labels published with CSE-CIC-IDS2018, and an independent re-analysis of the original packet captures found labelling errors in that release: on one day a large share of the flows labelled as web brute force are mislabelled, including a block of UDP flows to port 500 rather than web traffic; every DDoS-LOIC-UDP flow of that day carries the label DDoS-LOIC-HTTP; and the Infiltration flows between the two hosts named on the dataset page are labelled Benign. Where the flow evidence contradicts the background of the reference label, report the contradiction instead of resolving it in favour of either side.
+
+- [distrinet-2018 | CSECICIDS2018.html, 23-02-2018 (Brute Force -Web)] "On this day, the attack has significant label contamination."
+- [distrinet-2018 | CSECICIDS2018.html, 23-02-2018 (Brute Force -Web)] "Besides these, there are 151 additional flows that are also mislabelled wrong (i.e 41.7% mislabeled)."
+- [distrinet-2018 | CSECICIDS2018.html, 23-02-2018 (Brute Force -Web)] "Of these, 128 flows have protocol = 17 (i.e. not tcp) with port = 500."
+- [distrinet-2018 | CSECICIDS2018.html, DDoS LOIC UDP] "all DDoS-LOIC-UDP attacks are incorrectly labelled as DDoS-LOIC-HTTP"
+- [distrinet-2018 | CSECICIDS2018.html, Infiltration] "in the originally released dataset, all flows going between the 2 IP's described above are labelled as Benign"
 
 ### H3-NOPAYLOAD
 

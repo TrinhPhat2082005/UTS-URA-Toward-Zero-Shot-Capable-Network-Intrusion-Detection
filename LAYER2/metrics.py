@@ -51,6 +51,7 @@ def summary(res):
         for c in ("class_correct", "technique_ok", "mitigations_valid"):
             r[c] = _rate(g[c].astype(float)) if c in g else "-"
         r["citation_precision (mean)"] = round(g["citation_precision"].mean(), 3) if "citation_precision" in g else "-"
+        r["citation_coverage (mean)"] = round(g["citation_coverage"].mean(), 3) if "citation_coverage" in g else "-"
         r["unknown citations (sum)"] = int(g["n_unknown_citations"].sum()) if "n_unknown_citations" in g else "-"
         r["6 sections"] = _rate((g["n_sections"] == 6).astype(float)) if "n_sections" in g else "-"
         rows.append(r)
@@ -62,7 +63,7 @@ def per_label(res):
     ok["lookup_ok"] = (ok["pred_label"] == ok["label_true"]).astype(float)
     cols = {"n": ("sample_id", "count"), "alert": ("alert", "mean"), "flagged": ("flagged", "mean"),
             "lookup_ok": ("lookup_ok", "mean")}
-    for c in ("class_correct", "technique_ok", "citation_precision", "mitigations_valid"):
+    for c in ("class_correct", "technique_ok", "citation_precision", "citation_coverage", "mitigations_valid"):
         if c in ok:
             ok[c] = ok[c].astype(float)
             cols[c] = (c, "mean")

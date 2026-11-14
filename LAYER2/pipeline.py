@@ -129,14 +129,17 @@ def run_sample(row, eb, vlm, out_root, kb_mode=None, kb_parts=None):
                 with t("parse"):
                     parsed = prompts.parse_report(raw, pr["allowed_ids"])
                 cites, bad = parsed["citations"], set(parsed["unknown_citations"])
+                # technique hop le: technique Borisenko cua nhan + technique cha cua sub-technique (Table II ghi ca hai)
+                tech_ok = set(ev["kb"]["techniques"]) | {t.split(".")[0] for t in ev["kb"]["techniques"]}
                 score = {
                     "n_citations": len(cites),
                     "n_unknown_citations": len(bad),
                     "citation_precision": (sum(c not in bad for c in cites) / len(cites)) if cites else None,
+                    "citation_coverage": (parsed["n_cited_units"] / parsed["n_units"]) if parsed["n_units"] else None,
                     "class_correct": parsed["predicted_class"] == (prompts.UNKNOWN if look["flagged"]
                                                                    else rec["label_true"]),
-                    "technique_ok": (parsed["mitre_id"] is None) if look["flagged"]
-                    else (parsed["mitre_id"] in ev["kb"]["techniques"]),
+                    "technique_ok": (not parsed["mitre_ids"]) if look["flagged"]
+                    else (bool(parsed["mitre_ids"]) and set(parsed["mitre_ids"]) <= tech_ok),
                     "mitigations_valid": all(c in pr["allowed_ids"] for c in parsed["mitigations_chosen"]),
                 }
                 _write(os.path.join(d, "output", "report.md"), raw)

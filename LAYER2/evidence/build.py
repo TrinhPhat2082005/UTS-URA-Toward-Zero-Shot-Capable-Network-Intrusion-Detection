@@ -94,7 +94,7 @@ class EvidenceBuilder:
 
         rec.update({
             "top_features": top,
-            "x_facts": self._facts(x_raw, top),
+            "x_facts": self._facts(x_raw, top),       # Protocol, Dst Port, co cua goi dau (TCP)
             "lookup": {
                 "label": look.label, "votes": look.votes, "novelty": look.novelty, "tau_zd": look.tau_zd,
                 "flagged": look.flagged, "n_winners": int(len(look.winners)),
@@ -110,21 +110,36 @@ class EvidenceBuilder:
 
     # ------------------------------------------------------------------------------------------
     def _top_features(self, phi, a, x_raw):
-        """N_TOP chieu |phi| lon nhat: [E1]..[E5] voi phi, gia tri model thay (da scale) va gia tri tho."""
+        """N_TOP chieu |phi| lon nhat: [E1]..[E5] voi phi, gia tri model thay (da scale) va gia tri tho.
+        Cot co kem `holds` = co ma cot do THUC SU chua (ten cot bi hoan vi), de prompt noi ro ngay tai dong
+        bang chung chu khong doi VLM doc dinh nghia H1 o cuoi."""
+        holds = self.kb.index["flag_column_holds"]
         idx = np.argsort(-np.abs(phi))[:N_TOP]
-        return [{"id": f"E{k}", "name": self.names[i], "phi": float(phi[i]), "model_value": float(a[i]),
-                 "raw_value": _json_num(x_raw[self.names[i]]) if self.names[i] in x_raw else None}
-                for k, i in enumerate(idx, 1)]
+        out = []
+        for k, i in enumerate(idx, 1):
+            n = self.names[i]
+            f = {"id": f"E{k}", "name": n, "phi": float(phi[i]), "model_value": float(a[i]),
+                 "raw_value": _json_num(x_raw[n]) if n in x_raw else None}
+            if n in holds:
+                f["holds"] = holds[n]
+            out.append(f)
+        return out
 
-    @staticmethod
-    def _facts(x_raw, top):
-        """Protocol va Dst Port luon co trong prompt ([E6], [E7]) neu chua nam trong top."""
+    def _facts(self, x_raw, top):
+        """Protocol, Dst Port va cac co cua goi dau (flow TCP) luon co trong prompt ([E6]...), ke ca khi khong
+        nam trong top-|phi|: VLM can chung de doc dung anh va cac doan H2."""
         have = {f["name"] for f in top}
         out, k = [], len(top)
         for c in FACT_COLUMNS:
             if c not in have:
                 k += 1
                 out.append({"id": f"E{k}", "name": c, "raw_value": _json_num(x_raw.get(c))})
+        if x_raw.get("Protocol") == 6:
+            holds = self.kb.index["flag_column_holds"]
+            on = sorted({flag for col, flag in holds.items() if x_raw.get(col)})
+            k += 1
+            out.append({"id": f"E{k}", "name": "TCP flags of the first packet",
+                        "raw_value": ", ".join(on) if on else "none set"})
         return out
 
     def _images(self, row, phi, a, p, out_dir):

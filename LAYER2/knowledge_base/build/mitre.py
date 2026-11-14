@@ -60,7 +60,12 @@ NETWORK_COMPONENT_PREFIX = "Network"        # DC0078 Network Traffic Flow, DC008
 
 
 def network_analytics(tid):
-    """Analytic cua technique co nguon log la data component mang (ten bat dau bang 'Network').
+    """Analytic cua technique ma DA SO nguon log la data component mang (ten bat dau bang 'Network').
+
+    He thong chi thay flow, khong thay tien trinh hay file tren may. Analytic chu yeu dua vao nguon log cua may
+    (Process Creation, File Creation, Application Log Content...) mo ta buoc khong quan sat duoc tu flow, nen bi bo:
+    chung chi lam dai context va de dan toi suy dien sai. Nguong: so component mang >= mot nua tong so component.
+
     Duong noi trong ATT&CK v18+: x-mitre-detection-strategy --detects--> technique; strategy.x_mitre_analytic_refs
     -> x-mitre-analytic; analytic.x_mitre_log_source_references[].x_mitre_data_component_ref -> data component.
     Tra [{id, platforms, components, description}] sap theo ID, bo mo ta trung lap (cung text, khac platform)."""
@@ -78,7 +83,8 @@ def network_analytics(tid):
                 continue
             comps = sorted({comp.get(l.get("x_mitre_data_component_ref"), "")
                             for l in a.get("x_mitre_log_source_references", [])} - {""})
-            if not any(c.startswith(NETWORK_COMPONENT_PREFIX) for c in comps):
+            n_net = sum(c.startswith(NETWORK_COMPONENT_PREFIX) for c in comps)
+            if not comps or n_net * 2 < len(comps):
                 continue
             desc = a.get("description", "").strip()
             if not desc or desc in seen:
