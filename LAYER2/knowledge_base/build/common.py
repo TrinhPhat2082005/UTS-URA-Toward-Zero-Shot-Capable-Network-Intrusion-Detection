@@ -198,7 +198,7 @@ def passage(pid, part, keys, kind, text, *, title=None, source=None, support=Non
       rendered  `text` do CODE ghep tu cac truong nguyen van trong `support` (vd dong IANA, dong Table II).
       defined   `text` la dinh nghia viet trong definitions/*.yaml (feature, co, feature AE, artefact H3), kem `support`.
     notes: [{id, text, support, relation}] ghi chu gan them (H1).
-    for_vlm: False voi G' (code dien vao report, khong dua cho VLM).
+    for_vlm: mac dinh True (moi phan, ke ca G: ung vien mitigation de VLM chon).
     """
     assert kind in ("verbatim", "rendered", "defined"), kind
     assert part in PART_ORDER, part

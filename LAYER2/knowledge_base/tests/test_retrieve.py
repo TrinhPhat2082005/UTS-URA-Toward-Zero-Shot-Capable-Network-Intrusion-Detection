@@ -53,7 +53,21 @@ def test_label_passages_and_mitigations():
     assert all(p["role"] == "attack_type_background" for p in s.passages if p["part"] in ("M", "B"))
     assert "Borisenko et al. (2022), Table II" in s.passages[0]["text"]
     assert s.mitigations and all(m["pid"].startswith("G-T1190-") for m in s.mitigations)
-    assert not any(p["part"] == "G" for p in s.passages), "G khong duoc dua cho VLM"
+    g = [p for p in s.passages if p["part"] == "G"]
+    assert [p["pid"] for p in g] == [m["pid"] for m in s.mitigations], "G la ung vien gui VLM, cung danh sach cham"
+    assert all(p["role"] == "mitigation_option" for p in g)
+
+
+def test_capec_mitigations_enrich_g():
+    s = KB.select("DoS_attacks_Slowloris", False, ["Flow Duration"], TCP_WEB)
+    pids = [m["pid"] for m in s.mitigations]
+    assert "G-T1499.002-M1037" in pids, "ATT&CK mitigates"
+    capec = [p for p in pids if "-CAPEC-" in p]
+    assert len(capec) >= 10 and "G-T1499.002-CAPEC-469-1" in capec
+    assert "waiting period" in KB.passages["G-T1499.002-CAPEC-469-1"]["text"]
+    assert KB.passages["G-T1499.002-CAPEC-469-1"]["kind"] == "verbatim"
+    # nhan dung chung technique -> cung danh sach ung vien (ghi nhan cho phan danh gia)
+    assert pids == [m["pid"] for m in KB.select("DDOS_attack_LOIC_UDP", False, [], TCP_WEB).mitigations]
 
 
 def test_two_technique_label_gets_both():

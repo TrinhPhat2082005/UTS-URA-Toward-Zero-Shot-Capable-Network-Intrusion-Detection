@@ -21,7 +21,9 @@ Luat chon:
   H2      giao thuc va cong cua alert (moi cong co dang ky IANA); co doan cong thi kem H2-PORT-NOTE (RFC 6335);
           co TCP: doan cua co MA COT THUC SU CHUA (index.json flag_column_holds), khong theo ten cot.
   H3      moi doan co `when` dung voi x_raw.
-  G       mitigation cua moi technique, tra rieng cho code dien muc 6 (khong dua VLM); khong co khi bat co.
+  G       ung vien mitigation cua moi technique (ATT&CK mitigates + CAPEC Mitigations), role "mitigation_option",
+          dua VLM de chon cho muc Mitigations (trich [K:G-...]); sel.mitigations giu cung danh sach de cham.
+          Khong co khi bat co.
 
 Xu ly loi:
   - Protocol / Dst Port khong huu han (NaN, Inf, chuoi) -> bo qua doan H2 cua truong do; dieu kien `when`
@@ -61,7 +63,7 @@ def _finite_int(v):
 @dataclass
 class Selection:
     passages: list = field(default_factory=list)      # [{pid, cite, part, role, reason, title, text}] theo thu tu
-    mitigations: list = field(default_factory=list)   # [{pid, title, text}] cho code dien muc 6
+    mitigations: list = field(default_factory=list)   # [{pid, title, text}] ung vien G (cung co trong passages)
     missing: list = field(default_factory=list)       # [{pid, reason}] pid can chon nhung KB khong co
     techniques: list = field(default_factory=list)    # technique cua nhan (rong khi bat co / nhan bi loai)
     kb_sha256: str = ""
@@ -169,8 +171,13 @@ class KnowledgeBase:
             if conditions.holds(p["when"], x_raw):
                 self._add(sel, seen, p["pid"], "caveat", "condition holds on this flow")
 
-        # G: mitigation cho code (khong dua VLM); khong co khi bat co
+        # G: ung vien mitigation (ATT&CK + CAPEC) cua moi technique, dua VLM de chon cho muc Mitigations;
+        #    sel.mitigations giu danh sach ung vien de cham (muc VLM chon phai thuoc danh sach). Khong co khi bat co.
         if use_label and not flagged:
+            for tid in info["techniques"]:
+                for p in self.mitigations_of.get(tid, []):
+                    self._add(sel, seen, p["pid"], "mitigation_option",
+                              f"mitigation candidate for technique {tid} of reference label {label}")
             sel.mitigations = [{"pid": p["pid"], "title": p["title"], "text": p["text"]}
                                for tid in info["techniques"] for p in self.mitigations_of.get(tid, [])]
         return sel

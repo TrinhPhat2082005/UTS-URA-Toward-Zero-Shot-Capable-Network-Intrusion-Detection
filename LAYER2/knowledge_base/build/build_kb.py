@@ -31,7 +31,7 @@ PART_NAMES = {"M": "M  label -> technique (Borisenko et al. 2022, Table II)",
               "H1": "H1 feature definitions (CICFlowMeter-V3 2018)",
               "H2": "H2 protocol / port / TCP flag (IANA, IETF)",
               "H3": "H3 conditional extractor artefacts",
-              "G": "G  mitigations (code-filled, not sent to the VLM)"}
+              "G": "G  mitigation candidates (ATT&CK mitigates + CAPEC Mitigations), chosen by the VLM"}
 
 
 def load_ctx():

@@ -1,6 +1,6 @@
 # Knowledge base build report
 
-Built 2026-11-14 | passages.jsonl sha256 `ef4cfdf42e8c1df94ab0bafa4337e969d099904b395d7c0624e7061cfb94a334`
+Built 2026-11-14 | passages.jsonl sha256 `5928571baf7822b0394ad251276cce42f409d0d01173d22afd3378590d687b65`
 
 Validation: **passed** (every quote verbatim in its locked source, Borisenko key matches, coverage complete)
 
@@ -39,7 +39,7 @@ Validation: **passed** (every quote verbatim in its locked source, Borisenko key
 | H1 feature definitions (CICFlowMeter-V3 2018) | 81 | 1 | 54 | 26 | yes |
 | H2 protocol / port / TCP flag (IANA, IETF) | 6077 | 10 | 6067 | 0 | yes |
 | H3 conditional extractor artefacts | 6 | 0 | 0 | 6 | yes |
-| G  mitigations (code-filled, not sent to the VLM) | 25 | 0 | 25 | 0 | no |
+| G  mitigation candidates (ATT&CK mitigates + CAPEC Mitigations), chosen by the VLM | 40 | 15 | 25 | 0 | yes |
 
 ## 3. Label -> technique key (Borisenko et al. 2022, Table II)
 

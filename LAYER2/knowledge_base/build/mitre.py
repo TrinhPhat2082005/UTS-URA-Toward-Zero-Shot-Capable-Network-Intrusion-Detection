@@ -118,10 +118,12 @@ def _capec():
                 maps.append("T" + e.text.strip())
         parents = [f"CAPEC-{r.get('CAPEC_ID')}" for r in ap.findall(".//c:Related_Attack_Pattern", CAPEC_NS)
                    if r.get("Nature") == "ChildOf"]
+        # Mitigations: noi cac nut con bang " " giong common._xml_text, de text van la chuoi con nguyen van cua nguon
+        mitig = [C.normalize(" ".join(m.itertext())) for m in ap.findall("c:Mitigations/c:Mitigation", CAPEC_NS)]
         out[f"CAPEC-{ap.get('ID')}"] = {
             "id": f"CAPEC-{ap.get('ID')}", "name": ap.get("Name"), "status": ap.get("Status"),
             "description": " ".join("".join(desc.itertext()).split()) if desc is not None else "",
-            "attack": maps, "parents": parents,
+            "attack": maps, "parents": parents, "mitigations": [m for m in mitig if m],
         }
     return out
 

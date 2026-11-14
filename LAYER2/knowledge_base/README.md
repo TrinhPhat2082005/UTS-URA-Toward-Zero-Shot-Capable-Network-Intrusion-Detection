@@ -48,7 +48,7 @@ knowledge_base/
 │   ├── build_kb.py           chạy mọi phần → store/
 │   └── validate.py           kiểm khóa sha256, trích dẫn, khóa Borisenko, độ phủ
 ├── store/                    KẾT QUẢ (commit) — Kaggle chỉ cần thư mục này
-│   ├── passages.jsonl        6.223 đoạn
+│   ├── passages.jsonl        6.238 đoạn
 │   ├── index.json            nhãn → techniques, CAPEC, có analytic mạng không; cột cờ → cờ thực chứa; cột rời rạc
 │   ├── sources.lock.json     sha256 từng file nguồn
 │   └── build_report.md       báo cáo duyệt: bảng Borisenko, gaps, mọi câu `defined` đặt cạnh bằng chứng
@@ -66,7 +66,7 @@ knowledge_base/
 | H1 feature | 3: feature trong waterfall là gì | tên feature | ReadMe + mã nguồn CICFlowMeter 2018, Engelen et al. 2021, DistriNet (Liu et al. 2022); mã Layer 1 | 81 |
 | H2 giao thức/cổng/cờ | 2: hành vi quan sát | Protocol, Dst Port, cột cờ | IANA (mọi cổng có đăng ký tcp/udp, không chọn lọc), RFC 6335 §9, RFC 9293, RFC 3168 | 6.077 |
 | H3 artefact | 5: giới hạn của bằng chứng | điều kiện trên giá trị thô | mã nguồn CICFlowMeter, RFC 9293/7323, JLS, IANA | 6 |
-| G mitigation | 6 (code điền, không đưa VLM) | technique ID | quan hệ `mitigates` của ATT&CK | 25 |
+| G mitigation (ứng viên) | Mitigations: VLM chọn mục hợp với bằng chứng, trích `[K:G-…]` | technique ID | quan hệ `mitigates` của ATT&CK (`G-<T>-<M>`) + trường Mitigations của CAPEC liên kết (`G-<T>-CAPEC-n-k`) | 25 + 15 |
 
 Gaps (build_report §3): T1110.001, T1204.002, T1583.005, T1113 không có analytic ATT&CK nào dùng data component
 mạng, nên các nhãn đó chỉ có `B-<T>` (+ CAPEC nếu có).
@@ -93,11 +93,12 @@ sel = KnowledgeBase().select(label, flagged, top_features, x_raw, contrast_featu
 sel.passages      # đoạn đưa VLM, theo thứ tự; mỗi đoạn có cite (mã để VLM trích) và role
                   #   (attack_type_background | comparison_only | definition | caveat)
 sel.techniques    # technique của nhãn theo Borisenko (rỗng khi bật cờ)
-sel.mitigations   # G cho code điền mục 6
+sel.mitigations   # danh sách ứng viên G (cũng nằm trong sel.passages) để chấm mục VLM chọn
 sel.missing       # [{pid, reason}] đoạn lẽ ra được chọn nhưng KB không có
 ```
 
-- Không cờ: M-<nhãn>, rồi với mỗi technique: `B-<T>`, `B-DET-<T>` (nếu có), các `B-CAPEC-n`; G cho mọi technique.
+- Không cờ: M-<nhãn>, rồi với mỗi technique: `B-<T>`, `B-DET-<T>` (nếu có), các `B-CAPEC-n`; cuối cùng các ứng
+  viên G của mọi technique (role `mitigation_option`). Nhãn dùng chung technique nhận cùng danh sách G (vd 7 nhãn DoS).
 - Bật cờ zero-day: bỏ M, B giữ nội dung nhưng ẩn tiêu đề và `cite` = `REF-MECH-n`; không có G.
 - Protocol A: nhãn trong `exclude_labels` không bao giờ được chọn.
 - Có đoạn cổng thì kèm `H2-PORT-NOTE` (RFC 6335: cổng đăng ký không cho biết dịch vụ thực dùng).
