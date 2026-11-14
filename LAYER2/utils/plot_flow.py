@@ -72,15 +72,39 @@ def plot_packet_length_profile(row, out_dir, filename="chart_pkt_length_profile.
     return _finalize(fig, os.path.join(out_dir, filename))
 
 
+_FLAG_HOLDS = None
+
+
+def _flag_holds():
+    """{cot CSV: co ma cot THUC SU chua} theo CICFlowMeter-V3 2018 (thu tu HashMap), doc tu KB
+    (knowledge_base/store/index.json, sinh boi build/flag_order.py). Vd 'SYN Flag Cnt' chua PSH."""
+    global _FLAG_HOLDS
+    if _FLAG_HOLDS is None:
+        import json
+        p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "knowledge_base", "store", "index.json")
+        with open(p, encoding="utf-8") as f:
+            _FLAG_HOLDS = json.load(f)["flag_column_holds"]
+    return _FLAG_HOLDS
+
+
+FLAG_ORDER = ["FIN", "SYN", "RST", "PSH", "ACK", "URG", "CWR", "ECE"]
+
+
 def plot_flag_composition(row, out_dir, filename="chart_flag_composition.png"):
-    flags = ["SYN", "ACK", "RST", "FIN", "PSH", "URG"]
-    vals = [max(float(row.get(f"{f} Flag Cnt", 0.0)), 0.0) for f in flags]
+    """8 co TCP cua GOI DAU TIEN (ban 2018 chi doc co o goi dau; gia tri 0/1). Nhan thanh = co ma cot thuc su
+    chua, khong phai ten cot (ten cot bi hoan vi), de anh khop voi dinh nghia H1/H2 cua KB."""
+    holds = _flag_holds()
+    col_of = {flag: col for col, flag in holds.items() if col.endswith(("Flag Cnt", "Flag Count"))}
+    vals = [max(float(row.get(col_of[f], 0.0)), 0.0) for f in FLAG_ORDER]
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    colors = [TAB10[i % 10] for i in range(len(flags))]
-    ax.bar(flags, vals, color=colors, edgecolor="white")
-    ax.set_ylabel("Flag Count")
-    ax.set_title("TCP Flag Composition (this flow)")
+    colors = [TAB10[i % 10] for i in range(len(FLAG_ORDER))]
+    ax.bar(FLAG_ORDER, vals, color=colors, edgecolor="white")
+    ax.set_ylim(0, 1.25)
+    ax.set_yticks([0, 1])
+    ax.set_ylabel("Set in the first packet (0/1)")
+    ax.set_title("TCP Flags of the First Packet (this flow)")
     for i, v in enumerate(vals):
         ax.text(i, v, f"{v:.0f}", ha="center", va="bottom", fontsize=8)
     return _finalize(fig, os.path.join(out_dir, filename))

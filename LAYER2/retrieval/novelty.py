@@ -1,13 +1,12 @@
-"""Co zero-day cua retriever (paper Eq. zeroday-flag).
+"""Co "khong co tien le gan" cua buoc tra tap R (paper Eq. zeroday-flag).
 
-    s(q)    = trung binh L2 tu q toi k = 10 vector gan nhat cua R      (SHAPKNNRetriever.score)
+    s(q)    = trung binh L2 tu q toi k = 10 vector gan nhat cua R      (retrieval/store.py, ReferenceStore.lookup)
     co      = s(q) > tau_zd
     tau_zd  = Q_0.95 cua s tren alert da biet giu ngoai R               (experiments/rq3_retrieval/02_calibrate_novelty.py)
               luu trong <tap R>.meta.json, khoa "novelty" -> "tau_zd"
 
-Co luon duoc tinh va ghi vao evidence. Co dua lua chon UNKNOWN cho VLM hay khong la viec cua prompt
-(prompts.build_candidate_prompt, tham so allow_unknown: Setup 1 False, Setup 2 va pipeline True),
-nen bat/tat UNKNOWN khong can build lai evidence.
+Co luon duoc tinh va ghi vao evidence. Khi co bat, prompts.py chuyen sang nhanh nearest_background (khong gan
+technique, bang C, danh gia variant / different / undetermined).
 """
 import json
 from pathlib import Path

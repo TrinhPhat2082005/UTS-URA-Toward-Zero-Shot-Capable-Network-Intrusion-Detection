@@ -5,10 +5,12 @@ cua tab:res-known va tab:res-ident).
 Moi lan goi xu ly MOT flow/alert nhu khi trien khai; 20 lan khoi dong + 300 lan do,
 time.perf_counter, CPU (GPU bi an). Bao cao mean, p95.
 
-  Layer 1, Protocol B (pipeline.Layer1Engine)  : quyet dinh; quyet dinh + TreeSHAP chinh xac
+  Layer 1, Protocol B (gate.engine.Layer1Engine): quyet dinh; quyet dinh + TreeSHAP chinh xac
   Layer 1 baseline (checkpoint fold Bot)       : XGBoost-only (+ TreeSHAP), AE-only, SVDD-only, CLAD
-  Retrieval (SHAPKNNRetriever, R = 122,090)    : mot lan tinh L2 -> top-3 + novelty,
+  Tra cuu (retrieval/store.py, R = 122,090)    : mot lan tinh L2 -> vote 5-NN + novelty (10-NN),
                                                  khoa SHAP va khoa feature tho, do xen ke
+  Chon doan KB (knowledge_base/retrieve.py)    : sau tra cuu SHAP, nhu trong pipeline
+  (Do latency day du ca VLM theo tung sample: notebook vlm_run.ipynb, latency.csv)
 
 CHAY:  python LAYER2/experiments/rq5_latency/latency_detection_path.py
 Output: output/rq5_latency/latency.json
@@ -34,9 +36,10 @@ import paths  # noqa: E402
 paths.use_layer2_code()
 paths.use_layer1_code()
 import config    # noqa: E402
-import pipeline  # noqa: E402
+from gate.engine import Layer1Engine                  # noqa: E402
+from knowledge_base.retrieve import KnowledgeBase     # noqa: E402
 from retrieval import reference_set                   # noqa: E402
-from retrieval.retriever import SHAPKNNRetriever      # noqa: E402
+from retrieval.store import ReferenceStore            # noqa: E402
 from models.autoencoder import BenignAutoencoder       # noqa: E402
 from models.svdd import MixtureSVDD                    # noqa: E402
 from models.clad.model import build_model              # noqa: E402
@@ -70,7 +73,7 @@ def main():
 
     # --- Layer 1, Protocol B ---
     for v in ["ae_xgboost", "svdd_xgboost"]:
-        l1 = pipeline.Layer1Engine(v)
+        l1 = Layer1Engine(v)
         l1.model.get_booster().set_param({"device": "cpu"})
         X = va[l1.base_feature_columns(va)].to_numpy("float64")[idx]
         rows = [X[i:i + 1] for i in range(len(X))]
@@ -122,36 +125,36 @@ def main():
             return -cosine_scores_to_centroid(z, cen)
     res["layer1/clad/decision"] = bench(clad_score, rows)
 
-    # --- Retrieval: khoa SHAP (pipeline) va khoa feature tho, do xen ke tren cung alert ---
+    # --- Tra cuu (retrieval/store.py): khoa SHAP (pipeline) va khoa feature tho, do xen ke tren cung alert;
+    #     them chon doan KB (knowledge_base/retrieve.py) ngay sau tra cuu SHAP, nhu trong pipeline ---
+    kb = KnowledgeBase()
     for v in ["ae_xgboost", "svdd_xgboost"]:
-        l1 = pipeline.Layer1Engine(v)
+        l1 = Layer1Engine(v)
         l1.model.get_booster().set_param({"device": "cpu"})
         f78 = l1.base_feature_columns(va)
+        names = list(l1.feature_names)
         Xq = va[f78].to_numpy("float64")[idx]
-        SQ = np.vstack([np.asarray(l1.score(Xq[i:i + 1])[1], dtype="float32") for i in range(len(Xq))])
-        RQ = l1.preprocess(Xq).astype("float32")
-        npz = reference_set.protocol_b_path(v)
-        ret = SHAPKNNRetriever(str(npz), config.ATTACK_PROFILES_DIR, k=config.RAG_NOVELTY_K)
-        tr = pd.read_csv(config.TRAIN_FULL_CSV, usecols=list(f78) + ["Label", "Label_Text"])
-        tr = tr[tr["Label"] == 1]
-        # Cung luat va cung thu tu nhan, R = feature da scale cua cung cac flow attack
-        raw = SHAPKNNRetriever.__new__(SHAPKNNRetriever)
-        raw.k, raw.labels, raw.sizes, raw.starts = ret.k, ret.labels, ret.sizes, ret.starts
-        raw.pool = np.vstack([l1.preprocess(tr.loc[tr["Label_Text"] == l, f78].to_numpy("float64"))
-                              .astype("float32") for l in ret.labels])
-        raw.pool_sq = (raw.pool ** 2).sum(axis=1)
-        tr = None
-        t_s, t_r = [], []
+        SQ = np.vstack([np.asarray(l1.score(Xq[i:i + 1])[1], dtype="float64") for i in range(len(Xq))])
+        RQ = l1.preprocess(Xq)
+        store = ReferenceStore.load(reference_set.protocol_b_path(v))
+        # Cung luat, cung cac flow attack, khoa = 78 feature da scale (gia tri tho x__ cua tap R qua cung scaler)
+        raw = ReferenceStore(l1.preprocess(store.x), store.labels, tau_zd=store.tau_zd)
+        t_s, t_r, t_k = [], [], []
         for i in range(len(SQ)):
+            top = [names[j] for j in np.argsort(-np.abs(SQ[i]))[:5]]
+            x_raw = dict(zip(f78, Xq[i]))
             t0 = time.perf_counter()
-            ret.score(SQ[i:i + 1])
+            look = store.lookup(SQ[i])
             t1 = time.perf_counter()
-            raw.score(RQ[i:i + 1])
+            raw.lookup(RQ[i])
             t2 = time.perf_counter()
+            kb.select(look.label, look.flagged, top, x_raw)
+            t3 = time.perf_counter()
             if i >= N_WARM:
                 t_s.append((t1 - t0) * 1000)
                 t_r.append((t2 - t1) * 1000)
-        for key, ts in (("shap", t_s), ("raw", t_r)):
+                t_k.append((t3 - t2) * 1000)
+        for key, ts in (("shap", t_s), ("raw", t_r), ("kb_select", t_k)):
             ts = np.array(ts)
             res[f"retrieval/{v}/{key}"] = {"mean_ms": float(ts.mean()), "p95_ms": float(np.percentile(ts, 95)),
                                            "n": int(len(ts))}

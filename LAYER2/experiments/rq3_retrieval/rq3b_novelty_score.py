@@ -21,10 +21,10 @@ from scipy.stats import wilcoxon
 HERE = paths.ensure(paths.OUT_RQ3B)
 F = HERE / "r3_full"
 paths.use_layer2_code()
-from knowledge_base.profiles import LABEL_TO_PROFILE_ID  # noqa: E402
-PROF = paths.PROFILES
-TAC = {l: json.loads((PROF / f"{p}.json").read_text(encoding="utf-8"))["mitre_tactic"]
-       for l, p in LABEL_TO_PROFILE_ID.items() if (PROF / f"{p}.json").exists()}
+# Tactic cua moi nhan theo Borisenko et al. 2022 Table II (knowledge_base/store/index.json); nhan co hai entry
+# (Infiltration, Bot) co hai tactic -> so sanh theo tap tactic
+_KB_INDEX = json.loads((paths.LAYER2 / "knowledge_base" / "store" / "index.json").read_text(encoding="utf-8"))
+TAC = {l: tuple(sorted({e["tactic"] for e in v["entries"]})) for l, v in _KB_INDEX["labels"].items()}
 S = dict(np.load(paths.L1_SCORES / "paper.npz"))  # diem 6 model paper, tu LAYER1/04_experiments
 VARS = ["xgboost_only", "ae_xgboost_mono", "svdd_xgboost_mono"]
 NAME = {"xgboost_only": "XGBoost-only", "ae_xgboost_mono": "AE-XGBoost", "svdd_xgboost_mono": "SVDD-XGBoost",

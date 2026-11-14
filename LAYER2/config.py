@@ -108,8 +108,7 @@ META_COLS = ["Label", "Label_Text", "Flow ID", "Src IP", "Src Port", "Dst IP",
 REFERENCE_SETS_DIR = os.path.join(DATA_ROOT, "artifacts", "reference_sets")
 REFERENCE_SET_NPZ = os.path.join(REFERENCE_SETS_DIR, "protocol_b", f"{VARIANT}.npz")
 
-RAG_TOP_K = 3                     # 3 loai co khoang cach L2 toi flow gan nhat nho nhat
-RAG_NOVELTY_K = 10                # s(q) = trung binh L2 toi 10 lang gieng gan nhat
+RAG_NOVELTY_K = 10                # s(q) = trung binh L2 toi 10 lang gieng gan nhat (nhan l* = vote 5-NN)
 # tau_zd: None -> doc tu <tap R>.meta.json ("novelty" -> "tau_zd"), hieu chinh boi
 # experiments/rq3_retrieval/02_calibrate_novelty.py (Q_0.95 tren alert da biet).
 RAG_ZERODAY_THRESHOLD = None
@@ -117,6 +116,13 @@ RAG_ZERODAY_THRESHOLD = None
 # Khong loai nhan nao: tap Layer 2 co du 14 loai tan cong, Infiltration gio la
 # nhan binh thuong chu khong con bi giu lam zero-shot.
 RAG_EXCLUDE_LABELS = []
+
+# --------------------------------------------------------------------------
+# Knowledge base (knowledge_base/, store/ commit trong repo)
+# --------------------------------------------------------------------------
+KB_MODE = "on"                                   # "off": prompt khong co khoi KNOWLEDGE (ablation)
+KB_PARTS = ("M", "B", "H1", "H2", "H3", "G")     # nhom doan gui VLM (ablation tung nhom)
+KB_STRICT = True                                 # thieu doan M/B/H1/H3 -> dung ngay
 
 # --------------------------------------------------------------------------
 # VLM
@@ -160,8 +166,11 @@ ARTIFACTS_DIR = os.path.join(DATA_ROOT, "artifacts")
 # phai tro OUT_DIR sang /kaggle/working: dat bien moi truong UTS_OUT truoc khi
 # import config.
 OUT_DIR = os.environ.get("UTS_OUT", ARTIFACTS_DIR)
-EVIDENCE_DIR = os.path.join(OUT_DIR, "evidence_cache")
-RESULTS_JSONL = os.path.join(OUT_DIR, "results.jsonl")
+RUN_DIR = os.path.join(OUT_DIR, "vlm_run")       # <sample_id>/evidence|text|output + results/ragas/latency
+RESULTS_JSONL = os.path.join(RUN_DIR, "results.jsonl")
+
+# Mau cua lan chay VLM: 10 alert TP moi nhan tu val_full (experiments/rq4_vlm/prepare_kaggle_dataset.py)
+SAMPLES_CSV = os.path.join(DATA_ROOT, "samples.csv")
 
 
 def layer1_threshold(variant=None):
@@ -188,9 +197,10 @@ def describe():
         ("L1 model", art["model"], os.path.exists(art["model"])),
         ("L1 scaler", art["scaler"], os.path.exists(art["scaler"])),
         ("L1 encoder", art["encoder"], os.path.exists(art["encoder"])),
-        ("train_full", TRAIN_FULL_CSV, os.path.exists(TRAIN_FULL_CSV)),
-        ("val_full", VAL_BINARY_CSV, os.path.exists(VAL_BINARY_CSV)),
+        ("samples", SAMPLES_CSV, os.path.exists(SAMPLES_CSV)),
         ("reference R", REFERENCE_SET_NPZ, os.path.exists(REFERENCE_SET_NPZ)),
+        ("KB store", os.path.join(LAYER2_DIR, "knowledge_base", "store", "passages.jsonl"),
+         os.path.exists(os.path.join(LAYER2_DIR, "knowledge_base", "store", "passages.jsonl"))),
     ]
     missing = []
     for name, val, ok in rows:
@@ -203,10 +213,10 @@ def describe():
         thr = f"{layer1_threshold():.4f}" + (" (tu metrics.json)" if LAYER1_THRESHOLD is None else "")
     except Exception:
         thr = "chua co metrics.json"
-    print(f"\n  threshold={thr}  top_k={RAG_TOP_K}  "
-          f"zero_day_thr={RAG_ZERODAY_THRESHOLD if RAG_ZERODAY_THRESHOLD is not None else 'doc tu meta.json cua tap R'}")
-    print(f"  mau: {PER_CLASS}/nhan x 14 nhan = {PER_CLASS * 14}  seed={SAMPLE_SEED}")
-    print(f"  ghi ket qua vao: {OUT_DIR}")
+    print(f"\n  threshold={thr}  vote=5-NN  novelty k={RAG_NOVELTY_K}  "
+          f"tau_zd={RAG_ZERODAY_THRESHOLD if RAG_ZERODAY_THRESHOLD is not None else 'doc tu meta.json cua tap R'}")
+    print(f"  KB_MODE={KB_MODE}  KB_PARTS={','.join(KB_PARTS)}")
+    print(f"  ghi ket qua vao: {RUN_DIR}")
     if missing:
         print(f"\n  !! thieu: {', '.join(missing)}")
     return not missing

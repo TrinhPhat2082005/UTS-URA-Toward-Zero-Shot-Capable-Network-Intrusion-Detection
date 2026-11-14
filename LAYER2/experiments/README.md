@@ -12,9 +12,8 @@ chạy theo thứ tự; file trung gian và kết quả ghi vào `output/<thư m
 | `tab:res-novelty`, tỉ lệ end-to-end zero-day (RQ3b) | `rq3_retrieval/rq3b_novelty_build.py` → `rq3b_novelty_score.py` (cần cache điểm của RQ1/RQ2 trong `LAYER1/output/scores/`) | `rq3b_novelty/R3_full_tables.md` |
 | Ngưỡng τ_zd của pipeline (Eq. `zeroday-flag`) | `rq3_retrieval/02_calibrate_novelty.py` | khoá `novelty` trong `artifacts/reference_sets/protocol_b/<variant>.meta.json` |
 | Tập tham chiếu R từng fold (Setup 2) | `rq3_retrieval/01_build_loao_pools.py` | `artifacts/reference_sets/protocol_a/<fold>/<variant>.npz` |
-| `tab:res-pilot` (RQ4) | `run_layer2.ipynb` (dùng `pipeline.py`) + `metrics.py` | `rq4_vlm/pilot_results_ae_xgboost_neutral_v1.jsonl`, `rq4_vlm/PILOT_RESULTS.md` |
-| `tab:res-vlm-zeroday` (RQ4, Setup 2) | `rq3_retrieval/02_calibrate_novelty.py --protocol A` → `rq4_vlm/setup2_build_evidence.py` (local) → `rq4_vlm/setup2_vlm.ipynb` (Kaggle, VLM) → `rq4_vlm/setup2_score.py` | `rq4_vlm/setup2_bundle/` (evidence), `setup2_out/` trên Kaggle: `results.jsonl`, `run_meta.json`, `prompt_template.txt`, `scored/` |
-| `tab:res-ablation` (RQ4, Setup 1) | `rq4_vlm/setup1_build_evidence.py` (local) → `rq4_vlm/setup1_vlm.ipynb` (Kaggle, VLM) → `rq4_vlm/setup1_score.py` | `rq4_vlm/setup1_bundle/<variant>/` (evidence), `setup1_out/` trên Kaggle |
+| Báo cáo VLM, đánh giá + latency từng chặng (RQ4, Protocol B) | `rq4_vlm/prepare_kaggle_dataset.py` (local: 10 alert TP / nhãn + checkpoint + tập R) → `LAYER2/vlm_run.ipynb` (Kaggle, toàn bộ pipeline cho từng sample) → RAGAS trên `ragas.jsonl` | `vlm_run/<sample_id>/{evidence,text,output}`, `results.jsonl`, `ragas.jsonl`, `latency.csv`, `run_meta.json` |
+| Ablation KB (RQ4) | cùng notebook, `KB_MODE = "off"` hoặc bớt nhóm trong `KB_PARTS` | `vlm_run_<mode>_<parts>/` |
 
 ## Thành phần pipeline mà các thí nghiệm dùng
 
@@ -24,9 +23,10 @@ chạy theo thứ tự; file trung gian và kết quả ghi vào `output/<thư m
 | Layer 1 Protocol B, ngưỡng τ_α (Eq. `tau-alpha`, ngân sách FPR α = 0.5%) | `LAYER1/03_training/train_protocol_b.py` |
 | Vector SHAP (cả hai protocol) | `LAYER2/gate/engine.py` (`Layer1Engine`, `Layer1Engine.from_fold`) |
 | Tập tham chiếu R | `LAYER2/retrieval/reference_set.py` (Protocol B), `rq3_retrieval/01_build_loao_pools.py` (Protocol A) |
-| SHAP-KNN Retriever (Eq. `type-dist`, `novelty`, `zeroday-flag`) | `LAYER2/retrieval/retriever.py`, `LAYER2/retrieval/novelty.py` |
-| Evidence và bundle gửi VLM | `LAYER2/evidence/build.py`, `LAYER2/evidence/bundle.py` |
-| Báo cáo VLM (Fig. `vlmio`) | `LAYER2/vlm/runner.py`, `LAYER2/prompts.py` (bật/tắt UNKNOWN: `allow_unknown`) |
+| Tra cứu tập R: vote 5-NN, novelty, cờ (Eq. `novelty`, `zeroday-flag`) | `LAYER2/retrieval/store.py`, `LAYER2/retrieval/novelty.py` |
+| Knowledge base (nhãn → technique theo Borisenko 2022) | `LAYER2/knowledge_base/` |
+| Evidence của một alert | `LAYER2/evidence/build.py`, `LAYER2/evidence/contrast.py` |
+| Báo cáo VLM (Fig. `vlmio`) | `LAYER2/prompts.py`, `LAYER2/vlm/runner.py`, `LAYER2/pipeline.py`, `LAYER2/metrics.py` |
 
 ## Biến môi trường
 

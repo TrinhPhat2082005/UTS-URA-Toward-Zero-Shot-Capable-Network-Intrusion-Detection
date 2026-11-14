@@ -11,7 +11,7 @@ Moi fold f (giu lai nhan h):
   SHAP = Layer1Engine.from_fold (gate/engine.py): TreeSHAP chinh xac cua checkpoint Layer 1 cua chinh
          fold do, tren khong gian input day du cua bien the (78 goc + augmented).
 
-Output (cung dinh dang tap R Protocol B, SHAPKNNRetriever nap truc tiep):
+Output (cung dinh dang tap R Protocol B, retrieval/store.ReferenceStore.load nap truc tiep):
   <UTS_DATA>/artifacts/reference_sets/protocol_a/<fold>/<variant>.npz + .meta.json
   (meta co them layer1_thresholds_by_alpha: tau_alpha cua fold tren benign train)
 

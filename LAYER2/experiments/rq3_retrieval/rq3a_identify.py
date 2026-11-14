@@ -5,7 +5,9 @@ Protocol B: query = moi alert TP tren val_full o nguong van hanh cua Layer 1; ta
 chieu R = reference_sets/protocol_b/<variant>.npz (moi flow attack cua train_full, 122,090 vector).
 Ba luat tren cung tap alert, cho hai khoa (vector SHAP / 78 feature da scale):
 
-  l2      luat cua pipeline (Eq. type-dist, retrieval/retriever.py): d_l = min L2 toi R_l,
+  vote5   luat cua pipeline (retrieval/store.py): da so phieu trong 5 lang gieng L2, hoa -> nhan cua flow gan
+          nhat                                                   -> Top-1, Technique (Borisenko, knowledge_base)
+  l2      luat cu (top-3 theo min L2 tung loai): d_l = min L2 toi R_l,
           top-3 = 3 loai co d_l nho nhat                       -> Top-1, Hit@3, Technique
   cosine  baseline: S_l = max cosine toi R_l                    -> Top-1, Technique
   vote    baseline: da so phieu trong 10 lang gieng L2           -> Top-1, Technique,
@@ -40,13 +42,15 @@ import paths  # noqa: E402
 
 paths.use_layer2_code()
 import config  # noqa: E402
-from knowledge_base.profiles import LABEL_TO_PROFILE_ID  # noqa: E402
 from retrieval import reference_set  # noqa: E402
 
 K = 10
+K_VOTE = 5                      # luat cua pipeline (retrieval/store.py): vote 5-NN, hoa -> nhan cua flow gan nhat
 OUT = paths.ensure(paths.OUT_RQ3A)
-TECH = {l: json.loads((paths.PROFILES / f"{p}.json").read_text(encoding="utf-8"))["mitre_id"]
-        for l, p in LABEL_TO_PROFILE_ID.items()}
+# Technique cua moi nhan theo Borisenko et al. 2022 Table II (knowledge_base/store/index.json); "dung technique"
+# = nhan du doan co cung bo technique voi nhan that
+_KB_INDEX = json.loads((paths.LAYER2 / "knowledge_base" / "store" / "index.json").read_text(encoding="utf-8"))
+TECH = {l: tuple(v["techniques"]) for l, v in _KB_INDEX["labels"].items()}
 
 
 def attack_rows(path, f):
@@ -107,7 +111,7 @@ def identify(P, yP, starts, labs, Q, chunk=8):
     novelty s(q) = TB L2 toi 10 NN)."""
     sqP = (P ** 2).sum(1)
     normP = np.sqrt(sqP) + 1e-12
-    t3, cos3, vote, ndist, nov = [], [], [], [], []
+    t3, cos3, vote, vote5, ndist, nov = [], [], [], [], [], []
     for i in range(0, len(Q), chunk):
         q = Q[i:i + chunk]
         dot = q @ P.T
@@ -125,16 +129,19 @@ def identify(P, yP, starts, labs, Q, chunk=8):
             for r, x in enumerate(l):
                 first.setdefault(x, r)
             vote.append(sorted(c, key=lambda x: (-c[x], first[x]))[0])
+            c5 = Counter(l[:K_VOTE])
+            vote5.append(sorted(c5, key=lambda x: (-c5[x], first[x]))[0])
             ndist.append(len(c))
-    return np.array(t3), np.array(cos3), np.array(vote), np.array(ndist), np.array(nov)
+    return np.array(t3), np.array(cos3), np.array(vote), np.array(vote5), np.array(ndist), np.array(nov)
 
 
-def summarize(y, t3, c3, vote):
+def summarize(y, t3, c3, vote, vote5):
     tech = lambda pred: [TECH[p] == TECH[a] for p, a in zip(pred, y)]
     df = pd.DataFrame({"y": y,
                        "l2_top1": t3[:, 0] == y, "l2_hit3": (t3 == y[:, None]).any(1), "l2_tech": tech(t3[:, 0]),
                        "cos_top1": c3[:, 0] == y, "cos_hit3": (c3 == y[:, None]).any(1), "cos_tech": tech(c3[:, 0]),
-                       "vote_top1": vote == y, "vote_tech": tech(vote)})
+                       "vote_top1": vote == y, "vote_tech": tech(vote),
+                       "vote5_top1": vote5 == y, "vote5_tech": tech(vote5)})
     per = df.groupby("y").mean()
     m12 = per.loc[[t for t in per.index if t not in paths.TWINS]].mean()
     return per, m12, per.mean()
@@ -162,13 +169,14 @@ def main():
            "n_per_type": {t: int((y == t).sum()) for t in np.unique(y)}}
     print(f"==== {v} | {len(y):,} alert TP | R = {len(yP):,} vector ====")
     for key, P, Q in [("shap", c["P"], c["sv"]), ("raw", c["Praw"], c["Xr"])]:
-        t3, cos3, vote, ndist, nov = identify(P, yP, starts, labs, Q)
-        per, m12, m14 = summarize(y, t3, cos3, vote)
+        t3, cos3, vote, vote5, ndist, nov = identify(P, yP, starts, labs, Q)
+        per, m12, m14 = summarize(y, t3, cos3, vote, vote5)
         out[key] = {"macro12": m12.to_dict(), "macro14": m14.to_dict(), "per_type": per.to_dict(),
                     "vote_single_label_share": float((ndist == 1).mean()),
                     "tau_zd_q95": float(np.quantile(nov, 0.95))}
         print(f"  [{key}] L2     top1 {m12.l2_top1:.4f}  hit3 {m12.l2_hit3:.4f}  tech {m12.l2_tech:.4f}"
-              f"   | cosine top1 {m12.cos_top1:.4f} | vote top1 {m12.vote_top1:.4f}"
+              f"   | cosine top1 {m12.cos_top1:.4f} | vote10 top1 {m12.vote_top1:.4f}"
+              f" | vote5 (pipeline) top1 {m12.vote5_top1:.4f} tech {m12.vote5_tech:.4f}"
               f"   | 10 NN cung nhan: {(ndist == 1).mean():.3f} | tau_zd {np.quantile(nov, 0.95):.4f}")
     (OUT / f"rq3a_{v}{tag}.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
     print(f"-> {OUT / f'rq3a_{v}{tag}.json'}")

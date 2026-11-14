@@ -4,12 +4,12 @@ Hieu chinh nguong novelty tau_zd cho reference set Protocol B (paper Eq. zeroday
 CHAY:  python LAYER2/experiments/rq3_retrieval/02_calibrate_novelty.py                     # ae_xgboost + svdd_xgboost
        python LAYER2/experiments/rq3_retrieval/02_calibrate_novelty.py --variants ae_xgboost
 
-  s(q)   = trung binh L2 tu q toi 10 vector gan nhat cua R (SHAPKNNRetriever.novelty_scores)
+  s(q)   = trung binh L2 tu q toi 10 vector gan nhat cua R (retrieval/store.py, ReferenceStore.lookup)
   tau_zd = Q_0.95 cua s tren alert da biet giu ngoai R: moi alert TP tren val_full o nguong
            van hanh cua Layer 1 (R chi chua flow attack cua train_full).
 
 Ghi vao meta cua tap R (reference_sets/protocol_b/<variant>.meta.json), khoa "novelty"
-(retriever doc khi tau_zd=None; quy tac co o retrieval/novelty.py).
+(ReferenceStore.load doc khi tau_zd=None; quy tac co o retrieval/novelty.py).
 Fold LOAO (Setup 2) hieu chinh rieng tren alert da biet cua val_binary tung fold
 (reference_sets/protocol_a/<fold>/<variant>.meta.json).
 """
@@ -31,7 +31,7 @@ paths.use_layer2_code()
 import config     # noqa: E402
 from gate.engine import Layer1Engine            # noqa: E402
 from retrieval import novelty, reference_set      # noqa: E402
-from retrieval.retriever import SHAPKNNRetriever  # noqa: E402
+from retrieval.store import ReferenceStore        # noqa: E402
 
 QUANTILE = novelty.QUANTILE
 
@@ -99,9 +99,8 @@ def main():
         l1 = Layer1Engine(v)
         Q = known_alerts(l1, config.layer1_threshold(v))
         l1 = None
-        ret = SHAPKNNRetriever(str(npz), config.ATTACK_PROFILES_DIR, tau_zd=float("inf"),
-                               k=config.RAG_NOVELTY_K)
-        s = ret.novelty_scores(Q, chunk=16)
+        store = ReferenceStore.load(npz, tau_zd=float("inf"))       # cung luat s(q) voi pipeline
+        s = np.array([lk.novelty for lk in store.lookup_batch(Q, chunk=16, k_novelty=config.RAG_NOVELTY_K)])
         tau = novelty.calibrate_tau(s, QUANTILE)
 
         meta_path = novelty.meta_path(npz)

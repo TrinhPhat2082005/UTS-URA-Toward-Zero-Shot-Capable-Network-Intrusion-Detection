@@ -1,85 +1,132 @@
 """
-Chang A cua Layer 2 (CPU): SHAP vector cua alert -> ket qua retriever + context cho VLM + 5 anh.
+Chang A cua Layer 2 cho MOT flow (CPU, khong goi VLM): dong flow tho -> bang chung day du de dung prompt.
 
-Ket qua cua chang nay (evidence) la tat ca nhung gi VLM can; chang B (vlm/runner.py + prompts.py)
-khong can Layer 1 hay tap R. Pipeline live chay hai chang lien nhau (pipeline.analyze_sample);
-Setup 1/2 ghi evidence thanh bundle (evidence/bundle.py) roi chay VLM tren Kaggle.
+    row (78 cot tho) -> Layer 1: p(x)                     chang "layer1"   (scale + AE + XGBoost)
+                     -> p(x) >= tau_alpha ? (alert)        neu khong: dung, khong co bao cao
+                     -> TreeSHAP phi (95 chieu)            chang "shap"
+                     -> tra tap R: vote 5-NN, s(q), co      chang "lookup"   (retrieval/store.py)
+                     -> bang C (chi khi bat co)             chang "contrast" (evidence/contrast.py)
+                     -> chon doan KB                        chang "kb_select" (knowledge_base/retrieve.py)
+                     -> 5 anh: SHAP waterfall + 4 chart     chang "images"
+
+Ket qua la dict thuan JSON (pipeline.py ghi ra <sample_id>/evidence/). Thoi gian tung chang do bang
+utils.timing.StageTimer (time.perf_counter), moi lan goi mot flow.
 """
+from __future__ import annotations
+
+import math
 import os
-import time
 
 import numpy as np
 
 import config
-from knowledge_base.profiles import LABEL_TO_PROFILE_ID
+from utils.timing import StageTimer
+
+N_TOP = 5                       # so chieu |phi| lon nhat dua vao prompt ([E1]..[E5])
+FACT_COLUMNS = ("Protocol", "Dst Port")   # luon dua vao prompt ([E6], [E7]) neu khong nam trong top
+
+
+def _num(v):
+    """Gia tri tho cua mot o: float neu doc duoc (NaN/Inf giu nguyen de KB tu bo qua), None neu khong phai so."""
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def _json_num(v):
+    return v if v is None or math.isfinite(v) else str(v)
 
 
 class EvidenceBuilder:
-    """Sinh RAG context va 5 anh cho MOT flow, ngay tai thoi diem can."""
+    """Nap mot lan Layer 1, tap R va KB; build() chay cho tung flow."""
 
-    def __init__(self, retriever=None):
-        if retriever is None:
-            from retrieval.retriever import SHAPKNNRetriever
+    def __init__(self, l1=None, store=None, kb=None, exclude_labels=None):
+        from gate.engine import Layer1Engine
+        from knowledge_base.retrieve import KnowledgeBase
+        from retrieval.store import ReferenceStore
 
-            retriever = SHAPKNNRetriever(
-                npz_path=config.REFERENCE_SET_NPZ,
-                profiles_dir=config.ATTACK_PROFILES_DIR,
-                tau_zd=config.RAG_ZERODAY_THRESHOLD,
-                k=config.RAG_NOVELTY_K,
-                exclude_labels=config.RAG_EXCLUDE_LABELS,
-            )
-        self.retriever = retriever
+        self.l1 = l1 or Layer1Engine(config.VARIANT)
+        self.exclude = list(config.RAG_EXCLUDE_LABELS if exclude_labels is None else exclude_labels)
+        self.store = store or ReferenceStore.load(config.REFERENCE_SET_NPZ, exclude_labels=self.exclude)
+        self.kb = kb or KnowledgeBase(strict=config.KB_STRICT)
+        self.names = list(self.l1.feature_names)
+        self.base = self.names[: self.l1.n_base]
+        if self.store.feature_names != self.names:
+            raise ValueError("Ten chieu cua tap R khac Layer 1: tap R phai build tu cung checkpoint")
+        if self.store.x is None:
+            raise ValueError("Tap R chua co gia tri tho (x__): chay retrieval/reference_set.py --add-raw")
 
-    def retrieve(self, shap_vector):
-        """SHAP vector -> ket qua k-NN + khoi text cho VLM."""
-        import prompts
+    # ------------------------------------------------------------------------------------------
+    def build(self, row, out_dir, timer=None):
+        t = timer or StageTimer()
+        x_raw = {c: _num(row[c]) for c in self.base}
+        X = np.array([[np.nan if x_raw[c] is None else x_raw[c] for c in self.base]], dtype="float64")
 
-        r = self.retriever
-        t0 = time.perf_counter()
-        res = r.retrieve_batch([shap_vector], top_k=config.RAG_TOP_K)[0]
-        ctx = prompts.format_retrieval_context(res, r.k, r.tau_zd, r.unknown_profile)
-        return res, ctx, time.perf_counter() - t0
+        with t("layer1"):
+            A = self.l1.build_input(X)
+            p = float(self.l1.model.predict_proba(A)[0, 1])
+        rec = {"p": p, "tau_alpha": float(self.l1.threshold), "alert": bool(p >= self.l1.threshold)}
+        if not rec["alert"]:
+            return rec
 
-    def make_images(self, row, shap_vector, feature_names, out_dir, proba,
-                    model_input=None):
-        """Ve 1 SHAP waterfall + 4 bieu do luu luong. Tra danh sach duong dan.
+        with t("shap"):
+            phi = np.asarray(self.l1.shap_values(A)[0], dtype="float64")
+        with t("lookup"):
+            look = self.store.lookup(phi)
 
-        Args:
-            feature_names: ten cua TAT CA chieu trong shap_vector (95 voi AE),
-                khong phai 78 cot goc.
-            model_input: vector da scale + augmented ma model thuc su nhin thay.
-                Waterfall hien gia tri nay, khong phai gia tri tho, de khop voi
-                SHAP dang giai thich.
-        """
+        top = self._top_features(phi, A[0], x_raw)
+        contrast = None
+        if look.flagged:
+            from evidence.contrast import contrast_table
+            with t("contrast"):
+                contrast = contrast_table(phi, x_raw, self.store, look.winners, look.label,
+                                          self.kb.index["discrete_features"])
+        with t("kb_select"):
+            sel = self.kb.select(look.label, look.flagged, [f["name"] for f in top], x_raw,
+                                 contrast_features=[r["feature_key"] for r in contrast["rows"]] if contrast else (),
+                                 exclude_labels=self.exclude)
+        with t("images"):
+            images = self._images(row, phi, A[0], p, out_dir)
+
+        rec.update({
+            "top_features": top,
+            "x_facts": self._facts(x_raw, top),
+            "lookup": {
+                "label": look.label, "votes": look.votes, "novelty": look.novelty, "tau_zd": look.tau_zd,
+                "flagged": look.flagged, "n_winners": int(len(look.winners)),
+                "neighbours": [{"label": str(self.store.labels[i]), "distance": float(d)}
+                               for i, d in zip(look.neighbours, look.distances)],
+            },
+            "contrast": contrast,
+            "kb": {"sha256": sel.kb_sha256, "techniques": sel.techniques, "passages": sel.passages,
+                   "mitigations": sel.mitigations, "missing": sel.missing},
+            "images": images,
+        })
+        return rec
+
+    # ------------------------------------------------------------------------------------------
+    def _top_features(self, phi, a, x_raw):
+        """N_TOP chieu |phi| lon nhat: [E1]..[E5] voi phi, gia tri model thay (da scale) va gia tri tho."""
+        idx = np.argsort(-np.abs(phi))[:N_TOP]
+        return [{"id": f"E{k}", "name": self.names[i], "phi": float(phi[i]), "model_value": float(a[i]),
+                 "raw_value": _json_num(x_raw[self.names[i]]) if self.names[i] in x_raw else None}
+                for k, i in enumerate(idx, 1)]
+
+    @staticmethod
+    def _facts(x_raw, top):
+        """Protocol va Dst Port luon co trong prompt ([E6], [E7]) neu chua nam trong top."""
+        have = {f["name"] for f in top}
+        out, k = [], len(top)
+        for c in FACT_COLUMNS:
+            if c not in have:
+                k += 1
+                out.append({"id": f"E{k}", "name": c, "raw_value": _json_num(x_raw.get(c))})
+        return out
+
+    def _images(self, row, phi, a, p, out_dir):
+        """5 anh: SHAP waterfall (gia tri model thay, khop SHAP) + 4 bieu do luong tu gia tri tho."""
         from utils import plot_flow, plot_shap
-
         os.makedirs(out_dir, exist_ok=True)
-        t0 = time.perf_counter()
-
-        shap_vector = np.asarray(shap_vector, dtype="float64").ravel()
-        if model_input is None:
-            model_input = row[list(feature_names)[:len(shap_vector)]].to_numpy("float64")
-        model_input = np.asarray(model_input, dtype="float64").ravel()
-
-        if not (len(shap_vector) == len(model_input) == len(feature_names)):
-            raise ValueError(
-                f"Lech so chieu: shap={len(shap_vector)}, "
-                f"data={len(model_input)}, names={len(feature_names)}"
-            )
-
-        shap_png = plot_shap.save_waterfall(shap_vector, model_input, feature_names, proba,
-                                            os.path.join(out_dir, "shap_waterfall.png"))
-        chart_paths = plot_flow.generate_flow_charts(row, out_dir)
-        return [shap_png] + list(chart_paths), time.perf_counter() - t0
-
-
-def candidates(labels, distances):
-    """3 ung vien cua retriever theo dinh dang manifest: nhan, khoang cach, id profile; gan nhat truoc."""
-    return [{"label": str(lab), "distance": float(d), "profile_id": LABEL_TO_PROFILE_ID[str(lab)]}
-            for lab, d in zip(labels, distances)]
-
-
-def top_features(shap_vector, feature_names, n=5):
-    """n chieu dong gop lon nhat (gia tri tuyet doi) cua vector SHAP."""
-    top = np.argsort(-np.abs(shap_vector))[:n]
-    return [{"name": feature_names[k], "value": float(shap_vector[k])} for k in top]
+        shap_png = plot_shap.save_waterfall(phi, a, self.names, p, os.path.join(out_dir, "shap_waterfall.png"))
+        return [shap_png] + list(plot_flow.generate_flow_charts(row, out_dir))
