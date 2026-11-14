@@ -52,6 +52,8 @@ knowledge_base/
 │   ├── index.json            nhãn → techniques, CAPEC, có analytic mạng không; cột cờ → cờ thực chứa; cột rời rạc
 │   ├── sources.lock.json     sha256 từng file nguồn
 │   └── build_report.md       báo cáo duyệt: bảng Borisenko, gaps, mọi câu `defined` đặt cạnh bằng chứng
+├── kb_map.html               bản đồ KB (nguồn + link, nhóm, cách build, độ phủ, hành trình 1 alert); ảnh chụp tĩnh
+│                             của store/ — sha256 ghi trong comment đầu file, build lại KB thì phải tạo lại trang
 ├── conditions.py             đánh giá `when` của H3 (không dùng eval)
 ├── retrieve.py               LÚC CHẠY: chọn đoạn cho một alert
 └── tests/test_retrieve.py

@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Ban do KB: anh chup tinh cua store/ (passages.jsonl sha256 5928571baf7822b0394ad251276cce42f409d0d01173d22afd3378590d687b65). Mo truc tiep bang trinh duyet. -->
+<title>Bản đồ Knowledge Base</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: một cột ~1260px, thanh dính trên cùng; sơ đồ vẽ bằng HTML (ô lớn, chữ 15–16px, mũi tên rõ), ít chữ. */
+:root{
+  --paper:#F4F6F9; --panel:#FCFCFB; --ink:#0F1722; --ink2:#4E5868; --muted:#848C99; --rule:#DCE1E8; --grid:#E6E8EC; --code:#EDF0F4; --box:#FFFFFF; --arrow:#8C95A3;
+  --gM:#2a78d6; --gB:#eb6834; --gH1:#1baf7a; --gH2:#eda100; --gH3:#e87ba4; --gG:#008300; --gC:#8a8f98;
+  --onM:#fff; --onB:#fff; --onH1:#fff; --onH2:#0b0b0b; --onH3:#fff; --onG:#fff; --onC:#fff;
+  --s1:#cde2fb; --s2:#9ec5f4; --s3:#5598e7; --s4:#256abf; --s5:#104281; --sInk1:#0b0b0b; --sInk2:#fff;
+  --kV:#184f95; --kR:#3987e5; --kD:#86b6ef;
+  --warn:#a8610b; --warn-bg:#fbefdc; --ok:#1d7f47;
+  --f-d:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-b:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-m:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0D1117; --panel:#161B22; --ink:#EEF1F5; --ink2:#C3C9D2; --muted:#8B93A0; --rule:#2B323D; --grid:#252B34; --code:#1C222B; --box:#1C232D; --arrow:#6F7887;
+  --gM:#3987e5; --gB:#d95926; --gH1:#199e70; --gH2:#c98500; --gH3:#d55181; --gG:#008300; --gC:#6c727c;
+  --s1:#0d366b; --s2:#184f95; --s3:#256abf; --s4:#3987e5; --s5:#86b6ef; --sInk1:#fff; --sInk2:#0b0b0b;
+  --kV:#b7d3f6; --kR:#5598e7; --kD:#1c5cab;
+  --warn:#e9a55a; --warn-bg:#352616; --ok:#5bc98a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0D1117; --panel:#161B22; --ink:#EEF1F5; --ink2:#C3C9D2; --muted:#8B93A0; --rule:#2B323D; --grid:#252B34; --code:#1C222B; --box:#1C232D; --arrow:#6F7887;
+  --gM:#3987e5; --gB:#d95926; --gH1:#199e70; --gH2:#c98500; --gH3:#d55181; --gG:#008300; --gC:#6c727c;
+  --s1:#0d366b; --s2:#184f95; --s3:#256abf; --s4:#3987e5; --s5:#86b6ef; --sInk1:#fff; --sInk2:#0b0b0b;
+  --kV:#b7d3f6; --kR:#5598e7; --kD:#1c5cab;
+  --warn:#e9a55a; --warn-bg:#352616; --ok:#5bc98a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:16px/1.55 var(--f-b);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.wrap{max-width:1260px;margin:0 auto;padding-block:0 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--panel);border-bottom:1px solid var(--rule);
+  margin:0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:8px max(16px,env(safe-area-inset-left,0px));display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.bar nav{display:flex;flex-wrap:wrap;gap:2px}
+.bar nav a{font:500 14px var(--f-b);color:var(--ink2);text-decoration:none;padding:5px 10px;border-radius:6px}
+.bar nav a:hover{background:var(--code);color:var(--ink)}
+.bar .chips{display:flex;flex-wrap:wrap;gap:5px;margin-left:auto}
+header.hd{padding:34px 0 6px;display:grid;gap:12px}
+h1{font:700 clamp(32px,4.6vw,46px)/1.05 var(--f-d);margin:0;letter-spacing:-.01em}
+.lede{color:var(--ink2);margin:0;max-width:72ch;font-size:16px}
+.stats{display:flex;flex-wrap:wrap;gap:30px;margin-top:4px}
+.stats div{display:grid}
+.stats b{font:700 32px/1.1 var(--f-d)}
+.stats span{font:500 12.5px var(--f-m);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+section{padding-top:48px;scroll-margin-top:58px;min-width:0}
+h2{font:700 28px/1.15 var(--f-d);margin:0 0 6px}
+.sub{color:var(--ink2);margin:0 0 18px;max-width:78ch;font-size:15px}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:12px;padding:18px;min-width:0}
+.scroll{overflow-x:auto}
+.g{display:inline-flex;align-items:center;justify-content:center;min-width:32px;font:600 12.5px/1 var(--f-m);padding:6px 8px;border-radius:5px;white-space:nowrap}
+.g.M{background:var(--gM);color:var(--onM)} .g.B{background:var(--gB);color:var(--onB)} .g.H1{background:var(--gH1);color:var(--onH1)}
+.g.H2{background:var(--gH2);color:var(--onH2)} .g.H3{background:var(--gH3);color:var(--onH3)} .g.G{background:var(--gG);color:var(--onG)} .g.C{background:var(--gC);color:var(--onC)}
+.g small{font-weight:500;margin-left:6px;opacity:.92;font-size:11.5px}
+a{color:var(--gM)} a:focus-visible{outline:2px solid var(--gM);outline-offset:2px}
+
+.flow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:34px;align-items:stretch}
+.fcol{position:relative;display:flex;flex-direction:column;gap:10px;min-width:0}
+.fcol > h4{margin:0 0 2px;font:600 12px/1.3 var(--f-m);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fcol .stack{display:flex;flex-direction:column;gap:10px;justify-content:center;flex:1}
+.fcol:not(:last-child)::after{content:"";position:absolute;top:calc(50% + 10px);right:-30px;width:24px;border-top:3px solid var(--arrow)}
+.fcol:not(:last-child)::before{content:"";position:absolute;top:calc(50% + 4px);right:-34px;border:7.5px solid transparent;border-left:10px solid var(--arrow)}
+.nb{background:var(--box);border:1.5px solid var(--rule);border-radius:10px;padding:10px 12px;min-width:0}
+.nb b{display:block;font:600 15px/1.3 var(--f-b);word-break:break-word}
+.nb span{display:block;font-size:13px;line-height:1.4;color:var(--ink2);margin-top:3px;word-break:break-word}
+.nb.db{border-radius:14px/10px;border-width:2px}
+.nb.dec{border:2px dashed var(--ink2)}
+.nb.cB{background:var(--gB);border-color:var(--gB);color:var(--onB)}
+.nb.cH1{background:var(--gH1);border-color:var(--gH1);color:var(--onH1)} .nb.cH2{background:var(--gH2);border-color:var(--gH2);color:var(--onH2)}
+.nb.cH3{background:var(--gH3);border-color:var(--gH3);color:var(--onH3)} .nb.cG{background:var(--gG);border-color:var(--gG);color:var(--onG)}
+.nb.cB span,.nb.cH1 span,.nb.cH2 span,.nb.cH3 span,.nb.cG span{color:inherit;opacity:.92}
+@media (max-width:1100px){
+  .flow{grid-template-columns:minmax(0,1fr);gap:30px}
+  .fcol .stack{flex-direction:row;flex-wrap:wrap}
+  .fcol .stack .nb{flex:1 1 200px}
+  .fcol:not(:last-child)::after{top:auto;bottom:-24px;right:auto;left:50%;width:0;height:18px;border-top:0;border-left:3px solid var(--arrow)}
+  .fcol:not(:last-child)::before{top:auto;bottom:-32px;right:auto;left:calc(50% - 6.5px);border:7.5px solid transparent;border-top:10px solid var(--arrow)}
+}
+
+.builds{display:grid;gap:18px}
+.bhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-bottom:14px}
+.bhead .nm{font:700 20px/1.2 var(--f-d)}
+.bhead .big{font:700 20px/1 var(--f-d);color:var(--ink2)}
+.bhead .scr{font:500 13px var(--f-m);color:var(--muted);margin-left:auto}
+.lanes{display:grid;gap:12px}
+.lane{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr) minmax(0,1fr);align-items:center}
+.src{display:flex;flex-wrap:wrap;gap:6px}
+.file{display:inline-block;background:var(--box);border:1.5px solid var(--rule);border-radius:8px;padding:7px 10px;font:500 13.5px/1.35 var(--f-m);color:var(--ink);text-decoration:none;word-break:break-word}
+a.file:hover{border-color:var(--gM);color:var(--gM)}
+a.file::after{content:" ↗";color:var(--muted);font-size:11px}
+.step{position:relative;text-align:center;padding:0 22px 14px 12px;font-size:14px;line-height:1.4;color:var(--ink2)}
+.step::after{content:"";position:absolute;left:10px;right:20px;bottom:5px;border-top:3px solid var(--arrow)}
+.step::before{content:"";position:absolute;right:8px;bottom:-1.5px;border:7.5px solid transparent;border-left:12px solid var(--arrow)}
+.out{border-radius:9px;padding:9px 12px;font:600 15px/1.3 var(--f-b);min-width:0;word-break:break-word}
+.out span{display:block;font:500 12.5px var(--f-m);opacity:.9;margin-top:2px}
+.out.mid{background:var(--box);border:2px solid var(--ink2);color:var(--ink)}
+.exbox{margin-top:14px;font:13px/1.55 var(--f-m);color:var(--ink2);background:var(--code);border-radius:8px;padding:10px 12px}
+.exbox b{color:var(--ink);font-weight:600}
+@media (max-width:760px){
+  .lane{grid-template-columns:minmax(0,1fr);gap:4px;padding-bottom:10px;border-bottom:1px dashed var(--rule)}
+  .step{text-align:left;padding:2px 0 2px 26px}
+  .step::after{left:8px;right:auto;top:0;bottom:0;border-top:0;border-left:3px solid var(--arrow)}
+  .step::before{display:none}
+}
+
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:9px 11px;border-bottom:1px solid var(--rule)}
+th{font:600 12px/1.3 var(--f-b);color:var(--muted);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mono{font-family:var(--f-m);font-size:13px}
+.files{display:grid;gap:4px}
+.files a,.files span.f{font:13px/1.4 var(--f-m);word-break:break-all}
+.files .meta{color:var(--muted);font-size:12px;margin-left:6px}
+.use{display:flex;flex-wrap:wrap;gap:4px}
+.unused{color:var(--warn);font:600 13px var(--f-b)}
+tr.tierhead td{background:var(--code);font:600 12.5px var(--f-m);color:var(--ink2);letter-spacing:.04em;text-transform:uppercase;padding:7px 11px}
+.heat td,.heat th{padding:0;border:0}
+.heat th{padding:6px 4px;text-align:center}
+.heat th.rowh{text-align:right;padding-right:12px;font:500 13.5px var(--f-m);color:var(--ink2);text-transform:none;letter-spacing:0;white-space:nowrap}
+.heat td.c{width:84px;height:38px;text-align:center;font:600 13.5px var(--f-m);border:2px solid var(--panel);border-radius:6px}
+.c0{background:transparent;color:var(--muted)} .c1{background:var(--s1);color:var(--sInk1)} .c2{background:var(--s2);color:var(--sInk1)}
+.c3{background:var(--s3);color:#fff} .c4{background:var(--s4);color:#fff} .c5{background:var(--s5);color:var(--sInk2)}
+.scale{display:flex;gap:5px;align-items:center;font:13px var(--f-m);color:var(--muted);margin-top:14px;flex-wrap:wrap}
+.scale i{display:inline-block;width:36px;height:15px;border-radius:3px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:18px;margin-top:18px}
+.card h3{font:600 15px var(--f-b);margin:0 0 10px}
+svg text{font-family:var(--f-m);font-size:13px;fill:var(--ink2)}
+svg .lab{fill:var(--ink);font-weight:600}
+svg .ax{stroke:var(--rule)} svg .gl{stroke:var(--grid)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--ink2);margin-top:8px}
+.legend i{display:inline-block;width:13px;height:13px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.gt .ex{font:12.5px/1.5 var(--f-m);color:var(--ink2);background:var(--code);border-radius:5px;padding:6px 8px;display:block;max-width:420px}
+.gt tr.notkb td{background:var(--warn-bg)}
+.vlm-y{color:var(--ok);font-weight:600} .vlm-n{color:var(--warn);font-weight:600}
+.cov td.cc{text-align:center;font:600 14px var(--f-m);width:90px;border-left:2px solid var(--panel)}
+.cov td.z{color:var(--warn)}
+.tip{position:fixed;z-index:30;pointer-events:none;background:var(--ink);color:var(--paper);font:13px/1.4 var(--f-b);padding:7px 10px;border-radius:6px;max-width:340px;opacity:0;transition:opacity .1s}
+/* ---------- journey of one alert ---------- */
+.journey{display:grid}
+.jstep{display:grid;grid-template-columns:44px minmax(0,1fr);gap:16px;position:relative;padding-bottom:30px}
+.jstep:not(:last-child)::before{content:"";position:absolute;left:19px;top:44px;bottom:6px;border-left:3px solid var(--arrow)}
+.jstep:not(:last-child)::after{content:"";position:absolute;left:13.5px;bottom:-2px;border:7px solid transparent;border-top:10px solid var(--arrow)}
+.jn{width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font:700 18px var(--f-d)}
+.jbody{min-width:0}
+.jbody > h3{font:700 21px/1.2 var(--f-d);margin:6px 0 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tag{font:600 11px/1 var(--f-m);letter-spacing:.04em;padding:4px 7px;border-radius:4px;text-transform:uppercase}
+.tag.done{background:color-mix(in srgb,var(--ok) 16%,var(--panel));color:var(--ok)}
+.tag.plan{background:var(--warn-bg);color:var(--warn)}
+.tag.st{background:var(--code);color:var(--ink2)}
+.jrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.jrow .nb{flex:0 1 auto}
+.jarrow{font:700 22px var(--f-b);color:var(--arrow)}
+.cond{display:inline-block;border:2px dashed var(--ink2);border-radius:10px;padding:8px 12px;font:600 15px var(--f-m)}
+.split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.br{border:2.5px solid var(--rule);border-radius:12px;padding:14px 16px;background:var(--box);min-width:0}
+.br.off{border-color:var(--ok)} .br.on{border-color:var(--warn)}
+.br > h4{margin:0 0 4px;font:700 17px/1.25 var(--f-d)}
+.br.off > h4{color:var(--ok)} .br.on > h4{color:var(--warn)}
+.br > p{margin:0 0 10px;font-size:13.5px;color:var(--ink2)}
+.dl{display:grid;gap:7px}
+.dl > div{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:baseline;font-size:14px;line-height:1.4}
+.dl code{font:12.5px var(--f-m);background:var(--code);padding:1px 5px;border-radius:4px}
+.dl .no{color:var(--muted);text-decoration:line-through}
+.g.E{background:var(--ink2);color:var(--paper)} .g.X{background:transparent;color:var(--muted);border:1.5px dashed var(--muted)}
+.pbox{font:13px/1.6 var(--f-m);background:var(--code);border-radius:8px;padding:12px 14px;margin:0;white-space:pre-wrap;overflow-x:auto;color:var(--ink)}
+.pbox b{color:var(--gM);font-weight:600}
+.pbox i{font-style:normal;color:var(--warn);font-weight:600}
+.rep td{font-size:13.5px;vertical-align:top}
+.rep td:first-child{font-weight:600;white-space:nowrap}
+.rep .cite{font:12px var(--f-m);color:var(--ink2)}
+@media (max-width:760px){.split{grid-template-columns:minmax(0,1fr)} .jstep{grid-template-columns:32px minmax(0,1fr);gap:10px} .jn{width:32px;height:32px;font-size:15px} .jstep:not(:last-child)::before{left:15px;top:36px} .jstep:not(:last-child)::after{left:9.5px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="bar">
+  <nav aria-label="Mục"><a href="#toan-canh">Toàn cảnh</a><a href="#dau-vao">Đầu vào</a><a href="#nhom">Nhóm KB</a><a href="#build">Build</a><a href="#do-phu">Độ phủ nhãn</a><a href="#hanh-trinh">Hành trình 1 alert</a></nav>
+  <div class="chips" id="barChips"></div>
+</div>
+
+<header class="hd">
+  <h1>Bản đồ Knowledge Base</h1>
+  <p class="lede">Tải gì, từ đâu → chia thành nhóm nào → mỗi nhóm build từ file nào. Phần nối KB với pipeline VLM ở <a href="https://claude.ai/artifact/Ua4fJqMRJZH3M8JpknLpyX" target="_blank" rel="noopener">trang duyệt trước</a>.</p>
+  <div class="stats" id="stats"></div>
+</header>
+
+<section id="toan-canh">
+  <h2>Toàn cảnh</h2>
+  <p class="sub">Đọc từ trái sang phải.</p>
+  <div class="card"><div class="flow">
+    <div class="fcol"><h4>1 · Đầu vào</h4><div class="stack">
+      <div class="nb"><b>19 nguồn tải tự động</b><span>MITRE · IANA · IETF · GitHub · Oracle · DistriNet · UNB</span></div>
+      <div class="nb"><b>PDF Borisenko 2022</b><span>đặt tay</span></div>
+      <div class="nb"><b>Mã Layer 1</b><span>trong repo</span></div></div></div>
+    <div class="fcol"><h4>2 · Tải + khóa</h4><div class="stack">
+      <div class="nb"><b>fetch_sources.py</b><span>tải về, tính sha256</span></div>
+      <div class="nb db"><b>kb_sources/raw/</b><span>+ sources.lock.json</span></div></div></div>
+    <div class="fcol"><h4>3 · Viết tay, có trích dẫn</h4><div class="stack">
+      <div class="nb"><b>mapping/</b><span>borisenko2022_table2.yaml</span></div>
+      <div class="nb"><b>definitions/</b><span>feature_names · feature_notes · model_features · artefacts</span></div></div></div>
+    <div class="fcol"><h4>4 · build_kb.py</h4><div class="stack">
+      <div class="nb cB"><b>part_technique</b><span>M + B</span></div>
+      <div class="nb cH1"><b>part_feature</b><span>H1</span></div>
+      <div class="nb cH2"><b>part_protocol</b><span>H2</span></div>
+      <div class="nb cH3"><b>part_artefact</b><span>H3</span></div>
+      <div class="nb cG"><b>part_mitigation</b><span>G</span></div></div></div>
+    <div class="fcol"><h4>5 · Kiểm</h4><div class="stack">
+      <div class="nb dec"><b>validate.py</b><span>trích dẫn nguyên văn? khóa Borisenko khớp? đủ độ phủ?</span></div></div></div>
+    <div class="fcol"><h4>6 · Kết quả</h4><div class="stack">
+      <div class="nb db"><b>passages.jsonl</b><span id="flowTotal"></span></div>
+      <div class="nb db"><b>index.json</b><span>nhãn → technique</span></div></div></div>
+    <div class="fcol"><h4>7 · Lúc chạy</h4><div class="stack">
+      <div class="nb"><b>retrieve.py</b><span>chọn đoạn cho 1 alert</span></div></div></div>
+  </div></div>
+</section>
+
+<section id="dau-vao">
+  <h2>Đầu vào: tải gì, từ đâu</h2>
+  <p class="sub">Ma trận: mỗi ô là số đoạn KB trích dẫn nguồn đó. Bảng dưới: link gốc từng file, bấm để kiểm.</p>
+  <div class="card scroll"><table class="heat" id="heat"></table><div class="scale" id="heatScale"></div></div>
+  <div class="card scroll" style="margin-top:18px;padding:0"><table id="srcTbl">
+    <thead><tr><th>Nguồn</th><th>File tải về (bấm để mở bản gốc)</th><th>Ngày lấy</th><th>Dùng cho</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section id="nhom">
+  <h2>Các nhóm KB</h2>
+  <p class="sub">Sáu nhóm trong KB, cộng bảng C do code tính lúc chạy (không thuộc KB).</p>
+  <div class="card scroll" style="padding:0"><table class="gt" id="grpTbl">
+    <thead><tr><th>Nhóm</th><th>Là gì</th><th>Tra bằng</th><th>Lấy từ</th><th class="num">Số đoạn</th><th>Gửi VLM</th><th>Ví dụ</th></tr></thead><tbody></tbody></table></div>
+  <div class="charts">
+    <div class="card"><h3>Số đoạn mỗi nhóm (thang log)</h3><div id="chCount"></div></div>
+    <div class="card"><h3>Đoạn được tạo thế nào</h3><div id="chKind"></div>
+      <div class="legend"><span><i style="background:var(--kV)"></i>verbatim · chép nguyên văn</span><span><i style="background:var(--kR)"></i>rendered · code ghép từ trường nguyên văn</span><span><i style="background:var(--kD)"></i>defined · câu định nghĩa + trích dẫn</span></div></div>
+  </div>
+</section>
+
+<section id="build">
+  <h2>Build từng nhóm từ file tải về</h2>
+  <p class="sub">Mỗi dòng: file nguồn (bấm để mở) → việc script làm → kết quả.</p>
+  <div class="builds" id="builds"></div>
+</section>
+
+<section id="do-phu">
+  <h2>Độ phủ theo nhãn</h2>
+  <p class="sub">Mỗi nhãn tiền lệ lấy được bao nhiêu đoạn tri thức tấn công. Ô "—": nguồn MITRE không có dữ liệu.</p>
+  <div class="card scroll" style="padding:0"><table class="cov" id="covTbl"></table></div>
+</section>
+
+<section id="hanh-trinh">
+  <h2>Hành trình một alert</h2>
+  <p class="sub">Từ flow bị báo bất thường tới báo cáo. Bước 1–3 đã có code; bước 4–6 là thiết kế đã thống nhất, sẽ viết trong prompts.py.</p>
+  <div class="card"><div class="journey">
+
+  <div class="jstep"><div class="jn">1</div><div class="jbody">
+    <h3>Layer 1 phát hiện bất thường <span class="tag done">đã có code</span><span class="tag st">chặng A · CPU</span></h3>
+    <div class="jrow">
+      <div class="nb"><b>Flow mới</b><span>78 cột CICFlowMeter (x thô)</span></div><span class="jarrow">→</span>
+      <div class="nb"><b>XGBoost + AE</b><span>p(x) và TreeSHAP φ (95 chiều)</span></div><span class="jarrow">→</span>
+      <span class="cond">p(x) ≥ τ<sub>α</sub> ?</span><span class="jarrow">→</span>
+      <div class="nb"><b>Alert</b><span>không đạt ngưỡng thì dừng, không tạo báo cáo</span></div>
+    </div></div></div>
+
+  <div class="jstep"><div class="jn">2</div><div class="jbody">
+    <h3>Tra tập tham chiếu R bằng φ <span class="tag done">đã có code</span><span class="tag st">store.lookup</span></h3>
+    <div class="jrow">
+      <div class="nb"><b>Khoảng cách L2</b><span>từ φ tới mọi flow tấn công của train</span></div><span class="jarrow">→</span>
+      <div class="nb"><b>Vote 5-NN</b><span>nhãn ℓ* + các tiền lệ thắng (winners)</span></div><span class="jarrow">→</span>
+      <div class="nb"><b>Độ lạ s(q)</b><span>trung bình L2 tới 10 láng giềng gần nhất</span></div><span class="jarrow">→</span>
+      <span class="cond">s(q) &gt; τ<sub>zd</sub> ?</span>
+    </div></div></div>
+
+  <div class="jstep"><div class="jn">3</div><div class="jbody">
+    <h3>Rẽ nhánh theo cờ, gọi dữ liệu <span class="tag done">đã có code</span><span class="tag st">kb.select · contrast_table</span></h3>
+    <div class="split">
+      <div class="br off"><h4>Cờ TẮT · có tiền lệ gần</h4><p>ℓ* là loại tấn công đã biết; KB đóng vai bối cảnh của ℓ*.</p>
+        <div class="dl">
+          <div><span class="g E">E</span><span>5 ảnh + top-5 |φ| của alert</span></div>
+          <div><span class="g M">M</span><span><code>M-ℓ*</code> nhãn → technique (Borisenko)</span></div>
+          <div><span class="g B">B</span><span><code>B-‹T›</code> · <code>B-DET-‹T›</code> · <code>B-CAPEC-n</code></span></div>
+          <div><span class="g H1">H1</span><span>định nghĩa top-5 feature</span></div>
+          <div><span class="g H2">H2</span><span>Protocol, Dst Port (+ PORT-NOTE), cờ thực chứa</span></div>
+          <div><span class="g H3">H3</span><span>artefact có điều kiện đúng trên x</span></div>
+          <div><span class="g G">G</span><span>ứng viên mitigation (ATT&amp;CK + CAPEC)</span></div>
+          <div><span class="g X">C</span><span class="no">bảng đối chiếu</span></div>
+        </div></div>
+      <div class="br on"><h4>Cờ BẬT · không có tiền lệ gần</h4><p>Có thể là hành vi chưa thấy; ℓ* chỉ dùng để so sánh, không gán technique.</p>
+        <div class="dl">
+          <div><span class="g E">E</span><span>5 ảnh + top-5 |φ| + thông báo cờ (s, τ<sub>zd</sub>, ℓ* gần nhất)</span></div>
+          <div><span class="g C">C</span><span>bảng C: alert so với trung bình winners theo φ và x, tối đa 8 dòng <code>[C1…]</code></span></div>
+          <div><span class="g B">B</span><span>khối <code>nearest_background</code>: ẩn ID và tiêu đề, trích <code>REF-MECH-n</code>, có câu dẫn "bối cảnh của tiền lệ gần nhất, chỉ để so sánh"</span></div>
+          <div><span class="g H1">H1</span><span>top-5 feature + các dòng của bảng C</span></div>
+          <div><span class="g H2">H2</span><span>như nhánh tắt</span></div>
+          <div><span class="g H3">H3</span><span>như nhánh tắt</span></div>
+          <div><span class="g X">M</span><span class="no">mapping technique</span></div>
+          <div><span class="g X">G</span><span class="no">mitigation</span></div>
+        </div></div>
+    </div></div></div>
+
+  <div class="jstep"><div class="jn">4</div><div class="jbody">
+    <h3>Dựng prompt <span class="tag plan">thiết kế · chưa code</span><span class="tag st">chặng B · GPU Kaggle</span></h3>
+    <div class="split">
+<pre class="pbox"><b>SYSTEM</b>  vai trò + luật: mọi khẳng định phải trích
+        đoạn KB mô tả loại tấn công, không mô tả flow này
+[ảnh 1] SHAP waterfall   [ảnh 2–5] flow charts
+<b>### ALERT</b>
+  p(x), τα, top-5 φ                  → [E1]…[E5]
+<b>### KNOWLEDGE</b>  (KB_MODE = on, lọc KB_PARTS)
+  background    [K:M-ℓ*] [K:B-…]
+  definitions   [K:H1-…] [K:H2-…]
+  caveats       [K:H3-…] [K:H2-PORT-NOTE]
+  mitigations   [K:G-…]  (ứng viên)
+<b>### REPORT SCHEMA</b>  6 mục</pre>
+<pre class="pbox"><b>SYSTEM</b>  như nhánh tắt
+[ảnh 1] SHAP waterfall   [ảnh 2–5] flow charts
+<b>### ALERT</b>
+  p(x), τα, top-5 φ                  → [E1]…[E5]
+<i>### NOVELTY FLAG</i>
+  s(q), τ_zd, ℓ* gần nhất (chỉ để so sánh)
+<i>### TABLE C</i>                         → [C1]…[C8]
+<b>### KNOWLEDGE</b>
+  <i>nearest_background</i>   [K:REF-MECH-n]
+    "Nearest-precedent background (for comparison
+     only). These passages describe the attack type
+     of the closest known precedent, not this alert.
+     Use them to judge where this alert resembles or
+     departs from that known behaviour; do not
+     attribute their technique, tactic or name to
+     this alert."
+  definitions   [K:H1-…] [K:H2-…]
+  caveats       [K:H3-…]
+<b>### REPORT SCHEMA</b>  6 mục
+<i>+ FLAGGED_ADDENDUM</i>  không gán technique;
+  đánh giá: variant / different / undetermined</pre>
+    </div></div></div>
+
+  <div class="jstep"><div class="jn">5</div><div class="jbody">
+    <h3>Báo cáo 6 mục <span class="tag plan">thiết kế · chưa code</span><span class="tag st">Qwen2.5-VL 7B</span></h3>
+    <div class="scroll"><table class="rep">
+      <thead><tr><th>Mục</th><th>Cờ TẮT</th><th>Cờ BẬT</th><th>Trích được</th></tr></thead>
+      <tbody>
+        <tr><td>1 Executive summary</td><td>loại tấn công ℓ*, mức nghiêm trọng</td><td>"không có tiền lệ gần", gần nhất là ℓ*</td><td class="cite">[E] [K]</td></tr>
+        <tr><td>2 Attack assessment</td><td>predicted class = ℓ*; top indicators chép từ ảnh SHAP</td><td>không gán lớp; top indicators như nhánh tắt</td><td class="cite">[E]</td></tr>
+        <tr><td>3 Forensic reasoning</td><td>giải thích feature, cổng, cờ bằng định nghĩa</td><td>như nhánh tắt + khác biệt so với tiền lệ</td><td class="cite">[E] [K:H1/H2/H3] [C]</td></tr>
+        <tr><td>4 MITRE mapping</td><td>technique chép từ M, đối chiếu cơ chế B</td><td>không T-ID; đánh giá variant / different / undetermined dựa trên bảng C</td><td class="cite">[K:M] [K:B] · [C] [K:REF-MECH]</td></tr>
+        <tr><td>5 Mitigations</td><td>chọn trong ứng viên G, nêu lý do theo bằng chứng flow</td><td>N/A: chưa gán technique</td><td class="cite">[K:G]</td></tr>
+        <tr><td>6 Analyst notes</td><td>giới hạn bằng chứng (H3, cổng ≠ dịch vụ)</td><td>như nhánh tắt + độ tin cậy của cờ</td><td class="cite">[K:H3] [K:H2-PORT-NOTE]</td></tr>
+      </tbody></table></div></div></div>
+
+  <div class="jstep"><div class="jn">6</div><div class="jbody">
+    <h3>Chấm điểm <span class="tag plan">thiết kế · chưa code</span><span class="tag st">metrics.py</span></h3>
+    <div class="split">
+      <div class="nb"><b>Groundedness</b><span>mọi [E]/[C]/[K:x] phải có trong prompt của alert đó; mục 5 chỉ chọn trong ứng viên G; nhánh bật không có T-ID nào</span></div>
+      <div class="nb"><b>Faithfulness</b><span>câu có trích [K:x] phải đúng với nội dung đoạn x; lý do chọn mitigation phải khớp bằng chứng flow</span></div>
+    </div></div></div>
+
+  </div></div>
+</section>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script id="kbdata" type="application/json">{"sources": [{"id": "unb-ids2018", "tier": "dataset", "title": "CSE-CIC-IDS2018 on AWS (Canadian Institute for Cybersecurity, University of New Brunswick)", "version": "page retrieved on the date in sources.lock.json", "files": [{"name": "page.html", "url": "https://www.unb.ca/cic/datasets/ids-2018.html", "manual": false, "bytes": 96799}], "use": {"H1": 2}, "retrieved": "2026-11-13", "archive": "http://web.archive.org/web/20261107103837/https://www.unb.ca/cic/datasets/ids-2018.html"}, {"id": "cicflowmeter-readme", "tier": "tool", "title": "CICFlowMeter ReadMe (feature list and descriptions) and feature names at the same commit", "version": "git 98a5ebad0df579cc8b43eedd3421b3ae87699901 (master, 2022-01-05)", "files": [{"name": "ReadMe.txt", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/98a5ebad0df579cc8b43eedd3421b3ae87699901/ReadMe.txt", "manual": false, "bytes": 7108}, {"name": "FlowFeature.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/98a5ebad0df579cc8b43eedd3421b3ae87699901/src/main/java/cic/cs/unb/ca/jnetpcap/FlowFeature.java", "manual": false, "bytes": 7433}, {"name": "LICENSE.txt", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/98a5ebad0df579cc8b43eedd3421b3ae87699901/LICENSE.txt", "manual": false, "bytes": 1968}], "use": {"H1": 56, "H3": 1}, "retrieved": "2026-11-13", "archive": null}, {"id": "cicflowmeter-src-2018", "tier": "tool", "title": "CICFlowMeter-V3 Java source at 50d668db (2018-03-07); the published CSV files match this code (BasicFlow.java is identical at eaa853dd, 2018-02-13)", "version": "git 50d668db9bdb0a5fae457916dae4538ba8b41876 (2018-03-07)", "files": [{"name": "FlowFeature.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/FlowFeature.java", "manual": false, "bytes": 7421}, {"name": "BasicFlow.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/BasicFlow.java", "manual": false, "bytes": 35831}, {"name": "BasicPacketInfo.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/BasicPacketInfo.java", "manual": false, "bytes": 4806}, {"name": "PacketReader.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/PacketReader.java", "manual": false, "bytes": 15135}, {"name": "FlowGenerator.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/FlowGenerator.java", "manual": false, "bytes": 7656}, {"name": "CICFlowMeter.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/ifm/CICFlowMeter.java", "manual": false, "bytes": 3376}, {"name": "DateFormatter.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/DateFormatter.java", "manual": false, "bytes": 521}, {"name": "FlowOfflinePane.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/flow/ui/FlowOfflinePane.java", "manual": false, "bytes": 13069}, {"name": "ReadPcapFileWorker.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/worker/ReadPcapFileWorker.java", "manual": false, "bytes": 6299}, {"name": "TrafficFlowWorker.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/src/main/java/cic/cs/unb/ca/jnetpcap/worker/TrafficFlowWorker.java", "manual": false, "bytes": 3291}, {"name": "build.gradle", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/50d668db9bdb0a5fae457916dae4538ba8b41876/build.gradle", "manual": false, "bytes": 4254}], "use": {"H1": 78, "H2": 2, "H3": 6}, "retrieved": "2026-11-13", "archive": null}, {"id": "cicflowmeter-src-2018-06", "tier": "tool", "title": "CICFlowMeter BasicFlow.java at 6833ccd4 (2018-06-04): CSV flag output changed to an explicit order", "version": "git 6833ccd4ff2953fdd2ab703060d43e349494151e (2018-06-04)", "files": [{"name": "BasicFlow.java", "url": "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/6833ccd4ff2953fdd2ab703060d43e349494151e/src/main/java/cic/cs/unb/ca/jnetpcap/BasicFlow.java", "manual": false, "bytes": 36966}], "use": {"H1": 7}, "retrieved": "2026-11-13", "archive": null}, {"id": "openjdk8-src", "tier": "platform", "title": "OpenJDK 8 source (jdk8u, tag jdk8-b132): java.util.HashMap and java.lang.String", "version": "jdk8-b132", "files": [{"name": "HashMap.java", "url": "https://raw.githubusercontent.com/openjdk/jdk8u/jdk8-b132/jdk/src/share/classes/java/util/HashMap.java", "manual": false, "bytes": 91985}, {"name": "String.java", "url": "https://raw.githubusercontent.com/openjdk/jdk8u/jdk8-b132/jdk/src/share/classes/java/lang/String.java", "manual": false, "bytes": 124853}], "use": {"H1": 7}, "retrieved": "2026-11-13", "archive": null}, {"id": "attack-20.1", "tier": "knowledge", "title": "MITRE ATT&CK Enterprise v20.1 (STIX 2.1 bundle)", "version": "20.1", "files": [{"name": "enterprise-attack-20.1.json", "url": "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack-20.1.json", "manual": false, "bytes": 55277605}], "use": {"B": 12, "G": 25}, "retrieved": "2026-11-13", "archive": null}, {"id": "capec-3.9", "tier": "knowledge", "title": "MITRE CAPEC v3.9 (XML)", "version": "3.9", "files": [{"name": "capec_v3.9.xml", "url": "https://capec.mitre.org/data/xml/capec_v3.9.xml", "manual": false, "bytes": 3849998}], "use": {"B": 8, "G": 15}, "retrieved": "2026-11-13", "archive": null}, {"id": "iana-ports", "tier": "standard", "title": "IANA Service Name and Transport Protocol Port Number Registry", "version": "registry retrieved on the date in sources.lock.json", "files": [{"name": "service-names-port-numbers.csv", "url": "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "manual": false, "bytes": 1158925}], "use": {"H2": 6065}, "retrieved": "2026-11-13", "archive": "http://web.archive.org/web/20261109064527/https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv"}, {"id": "iana-protocols", "tier": "standard", "title": "IANA Assigned Internet Protocol Numbers", "version": "registry retrieved on the date in sources.lock.json", "files": [{"name": "protocol-numbers-1.csv", "url": "https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv", "manual": false, "bytes": 9347}], "use": {"H2": 2, "H3": 1}, "retrieved": "2026-11-13", "archive": "http://web.archive.org/web/20261001163806/https://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv"}, {"id": "rfc9293", "tier": "standard", "title": "RFC 9293: Transmission Control Protocol (TCP)", "version": "RFC 9293 (2022)", "files": [{"name": "rfc9293.txt", "url": "https://www.rfc-editor.org/rfc/rfc9293.txt", "manual": false, "bytes": 263696}], "use": {"H1": 2, "H2": 8, "H3": 2}, "retrieved": "2026-11-13", "archive": null}, {"id": "rfc768", "tier": "standard", "title": "RFC 768: User Datagram Protocol", "version": "RFC 768 (1980)", "files": [{"name": "rfc768.txt", "url": "https://www.rfc-editor.org/rfc/rfc768.txt", "manual": false, "bytes": 5896}], "use": {}, "retrieved": "2026-11-13", "archive": null}, {"id": "rfc3168", "tier": "standard", "title": "RFC 3168: The Addition of Explicit Congestion Notification (ECN) to IP", "version": "RFC 3168 (2001)", "files": [{"name": "rfc3168.txt", "url": "https://www.rfc-editor.org/rfc/rfc3168.txt", "manual": false, "bytes": 170966}], "use": {"H2": 1}, "retrieved": "2026-11-13", "archive": null}, {"id": "rfc7323", "tier": "standard", "title": "RFC 7323: TCP Extensions for High Performance (window scale option)", "version": "RFC 7323 (2014)", "files": [{"name": "rfc7323.txt", "url": "https://www.rfc-editor.org/rfc/rfc7323.txt", "manual": false, "bytes": 106013}], "use": {"H1": 2, "H3": 1}, "retrieved": "2026-11-13", "archive": null}, {"id": "rfc6335", "tier": "standard", "title": "RFC 6335: IANA Procedures for the Management of the Service Name and Transport Protocol Port Number Registry", "version": "RFC 6335 (2011)", "files": [{"name": "rfc6335.txt", "url": "https://www.rfc-editor.org/rfc/rfc6335.txt", "manual": false, "bytes": 79088}], "use": {"H2": 1}, "retrieved": "2026-11-13", "archive": null}, {"id": "distrinet-2018", "tier": "audit", "title": "DistriNet: CSE-CIC-IDS2018 day-by-day analysis (companion page of Liu et al., IEEE CNS 2022)", "version": "page retrieved on the date in sources.lock.json", "files": [{"name": "CSECICIDS2018.html", "url": "https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html", "manual": false, "bytes": 70001}], "use": {"H1": 1, "H3": 1}, "retrieved": "2026-11-13", "archive": "http://web.archive.org/web/20260206025216/https://intrusion-detection.distrinet-research.be/CNS2022/CSECICIDS2018.html"}, {"id": "java8-hashmap", "tier": "platform", "title": "Java SE 8 API: java.util.HashMap", "version": "Java SE 8", "files": [{"name": "HashMap.html", "url": "https://docs.oracle.com/javase/8/docs/api/java/util/HashMap.html", "manual": false, "bytes": 86709}], "use": {"H1": 7}, "retrieved": "2026-11-13", "archive": null}, {"id": "java8-jls", "tier": "platform", "title": "The Java Language Specification, Java SE 8 Edition, Chapter 4 (default values of variables)", "version": "Java SE 8", "files": [{"name": "jls-4.html", "url": "https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html", "manual": false, "bytes": 351514}], "use": {"H1": 1, "H3": 1}, "retrieved": "2026-11-13", "archive": null}, {"id": "layer1-code", "tier": "system", "title": "Layer 1 training code of this repository (autoencoder features)", "version": "git: commit of each file recorded in sources.lock.json", "files": [{"name": "autoencoder.py", "url": null, "local": "LAYER1/03_training/models/autoencoder.py", "bytes": null}, {"name": "train_protocol_b.py", "url": null, "local": "LAYER1/03_training/train_protocol_b.py", "bytes": null}], "use": {"H1": 2}, "retrieved": "2026-11-14", "archive": null}, {"id": "borisenko-2022", "tier": "mapping", "title": "B. B. Borisenko, S. D. Erokhin, I. D. Martishin, A. S. Fadeev, How the CSE-CIC-IDS2018 Dataset is Related to the MITRE Matrix, 2022 SYNCHROINFO, IEEE, DOI 10.1109/SYNCHROINFO55067.2022.9840920", "version": "published version (IEEE Xplore)", "files": [{"name": "borisenko2022.pdf", "url": null, "manual": true, "bytes": 882812}], "use": {"M": 14}, "retrieved": "2026-11-14", "archive": null}, {"id": "engelen-2021-doc", "tier": "audit", "title": "G. Engelen, V. Rimmer, W. Joosen, Troubleshooting an Intrusion Detection Dataset: the CICIDS2017 Case Study (IEEE SPW/WTMC 2021), extended documentation", "version": "page retrieved on the date in sources.lock.json", "files": [{"name": "extended_doc.html", "url": "https://downloads.distrinet-research.be/WTMC2021/extended_doc.html", "manual": false, "bytes": 21487}], "use": {"H1": 12}, "retrieved": "2026-11-14", "archive": null}], "counts": {"M": {"n": 14, "verbatim": 0, "rendered": 14, "defined": 0}, "B": {"n": 20, "verbatim": 16, "rendered": 4, "defined": 0}, "H1": {"n": 81, "verbatim": 1, "rendered": 54, "defined": 26}, "H2": {"n": 6077, "verbatim": 10, "rendered": 6067, "defined": 0}, "H3": {"n": 6, "verbatim": 0, "rendered": 0, "defined": 6}, "G": {"n": 40, "verbatim": 15, "rendered": 25, "defined": 0}}, "labels": [{"label": "FTP_BruteForce", "tech": ["T1110.001"], "M": 1, "BT": 1, "DET": 0, "CAPEC": 1, "G": 7}, {"label": "SSH_Bruteforce", "tech": ["T1110.001"], "M": 1, "BT": 1, "DET": 0, "CAPEC": 1, "G": 7}, {"label": "DoS_attacks_GoldenEye", "tech": ["T1499.002"], "M": 1, "BT": 1, "DET": 1, "CAPEC": 5, "G": 11}, {"label": "DoS_attacks_Slowloris", "tech": ["T1499.002"], "M": 1, "BT": 1, "DET": 1, "CAPEC": 5, "G": 11}, {"label": "DoS_attacks_SlowHTTPTest", "tech": ["T1499.002"], "M": 1, "BT": 1, "DET": 1, "CAPEC": 5, "G": 11}, {"label": "DoS_attacks_Hulk", "tech": ["T1499.002"], "M": 1, "BT": 1, "DET": 1, "CAPEC": 5, "G": 11}, {"label": "DDoS_attacks_LOIC_HTTP", "tech": ["T1499.002"], "M": 1, "BT": 1, "DET": 1, "CAPEC": 5, "G": 11}, {"label": "DDOS_attack_LOIC_UDP", "tech": ["T1499.002"], "M": 1, "BT": 1, "DET": 1, "CAPEC": 5, "G": 11}, {"label": "DDOS_attack_HOIC", "tech": ["T1499.002"], "M": 1, "BT": 1, "DET": 1, "CAPEC": 5, "G": 11}, {"label": "Brute_Force_Web", "tech": ["T1110.001"], "M": 1, "BT": 1, "DET": 0, "CAPEC": 1, "G": 7}, {"label": "Brute_Force_XSS", "tech": ["T1189"], "M": 1, "BT": 1, "DET": 1, "CAPEC": 0, "G": 5}, {"label": "SQL_Injection", "tech": ["T1190"], "M": 1, "BT": 1, "DET": 1, "CAPEC": 0, "G": 8}, {"label": "Infiltration", "tech": ["T1204.002", "T1046"], "M": 1, "BT": 2, "DET": 1, "CAPEC": 1, "G": 6}, {"label": "Bot", "tech": ["T1583.005", "T1113"], "M": 1, "BT": 2, "DET": 0, "CAPEC": 1, "G": 3}], "ex": {"M-SQL_Injection": {"pid": "M-SQL_Injection", "kind": "rendered", "text": "Reference label SQL_Injection is mapped by Borisenko et al. (2022), Table II, to tactic Initial Access (TA0001), technique Exploit Public-Facing Application (T1190)."}, "B-T1190": {"pid": "B-T1190", "kind": "verbatim", "text": "Adversaries may attempt to exploit a weakness in an Internet-facing host or system to initially access a network. The weakness in the system can be a software bug, a temporary glitch, or a misconfiguration. Exploited applications are often websites/web servers, but can also include databases (like SQL), standard services (like SMB or SSH), network device administration and management protocols (like SNMP and Smart Install), and any other system with Internet-accessible open sockets. On ESXi infrastructure, adversaries may exploit exposed OpenSLP services; they may alternatively exploit exposed VMware vCenter servers. Depending on the flaw being exploited, this may also involve Exploitation for Stealth or Exploitation for Client Execution. If an application is hosted on cloud-based infrastructure and/or is containerized, then exploiting it may lead to compromise of the underlying instance or container. This can allow an adversary a path to access the cloud or container APIs (e.g., via the Cloud Instance Metadata API), exploit container host access via Escape to Host, or take advantage of weak identity and access management policies. Adversaries may also exploit edge network infrastructure and related appliances, specifically targeting devices that do not support robust host-based defenses. For websites and databases, the OWASP top 10 and CWE top 25 highlight the most common web-based vulnerabilities."}, "B-DET-T1499.002": {"pid": "B-DET-T1499.002", "kind": "rendered", "text": "ATT&CK detection analytics of this technique that use network data sources: AN0489 (Application Log Content, Host Status, Network Connection Creation): High-frequency, repetitive service requests (e.g., HTTP, TLS renegotiation) originating from a single or small set of source IPs targeting endpoint web services or application ports, leading to exhaustion of CPU or memory on targeted Windows services. AN0490 (Application Log Content, Network Traffic Flow, Process Access): Excessive inbound HTTP or TLS connections to services such as Apache or Nginx, causing worker thread exhaustion or segmentation faults. AN0491 (Host Status, Network Traffic Content): Flood of incoming TLS or HTTP(S) connections to macOS-hosted services (e.g., MAMP, Apache), causing high CPU usage and system unresponsiveness. AN0492 (Firewall Rule Modification, Host Status, Network Traffic Flow): Automated or scripted HTTP/TLS flooding from one VM or cloud instance against another service, exploiting compute-based billing or exhaustion of service infrastructure."}, "B-CAPEC-488": {"pid": "B-CAPEC-488", "kind": "verbatim", "text": "An adversary may execute a flooding attack using the HTTP protocol with the intent to deny legitimate users access to a service by consuming resources at the application layer such as web services and their infrastructure. These attacks use legitimate session-based HTTP GET requests designed to consume large amounts of a server's resources. Since these are legitimate sessions this attack is very difficult to detect."}, "H1-SYN_Flag_Cnt": {"pid": "H1-SYN_Flag_Cnt", "kind": "defined", "text": "SYN Flag Cnt: In CSE-CIC-IDS2018 this column is 1 if the first packet of the flow has the PSH flag set and 0 otherwise. It describes that packet only and is not a count of packets: the extractor reads flags only from the first packet of a flow. The column name does not match its content: the extractor writes the eight flag values in the iteration order of a Java HashMap, which does not follow the order of the column names, so this column holds the PSH flag and not the SYN flag."}, "H1-Flow_Duration": {"pid": "H1-Flow_Duration", "kind": "rendered", "text": "Flow Duration: Duration of the flow in Microsecond."}, "H2-PORT-80": {"pid": "H2-PORT-80", "kind": "rendered", "text": "Port 80 is registered by IANA as 'http' (tcp, udp): World Wide Web HTTP; 'www' (tcp, udp): World Wide Web HTTP; 'www-http' (tcp, udp): World Wide Web HTTP."}, "H2-FLAG-PSH": {"pid": "H2-FLAG-PSH", "kind": "verbatim", "text": "PSH: 1 bit Push function (see the Send Call description in Section 3.9.1)."}, "H3-NOPAYLOAD": {"pid": "H3-NOPAYLOAD", "kind": "defined", "text": "This flow carries no transport-layer payload in either direction, so application content (for example an HTTP request or an SQL statement) cannot be observed in it. The extractor ends a TCP flow at the first FIN packet, and a packet that arrives when no flow is open starts a new flow, so the last packets of a connection can form a flow of their own."}, "G-T1190-M1050": {"pid": "G-T1190-M1050", "kind": "rendered", "text": "M1050 Exploit Protection: Web Application Firewalls may be used to limit exposure of applications to prevent exploit traffic from reaching the application."}, "G-T1499.002-CAPEC-469-1": {"pid": "G-T1499.002-CAPEC-469-1", "kind": "verbatim", "text": "Configuration: Configure web server software to limit the waiting period on opened HTTP sessions"}}, "total": 6238, "sha": "5928571baf7822b0394ad251276cce42f409d0d01173d22afd3378590d687b65"}</script>
+<script>
+(function(){
+const D = JSON.parse(document.getElementById('kbdata').textContent);
+const $ = s => document.querySelector(s);
+const el = (t,a={},k=[]) => { const e=document.createElement(t); for(const [x,v] of Object.entries(a)){ if(x==='text') e.textContent=v; else e.setAttribute(x,v);} for(const c of [].concat(k)) if(c!=null) e.append(c.nodeType?c:document.createTextNode(String(c))); return e; };
+const NS='http://www.w3.org/2000/svg';
+const sv = (t,a={}) => { const e=document.createElementNS(NS,t); for(const [x,v] of Object.entries(a)) e.setAttribute(x,v); return e; };
+const fmt = n => Number(n).toLocaleString('vi-VN');
+const GROUPS = ['M','B','H1','H2','H3','G'];
+const GNAME = {M:'Khóa nhãn → technique',B:'Tri thức technique',H1:'Định nghĩa feature',H2:'Giao thức · cổng · cờ',H3:'Artefact có điều kiện',G:'Mitigation',C:'Bảng đối chiếu'};
+const chip = (g,extra) => { const c=el('span',{class:'g '+g,'data-tip':GNAME[g]},[g]); if(extra!=null) c.append(el('small',{text:extra})); return c; };
+const clip=(s,n)=>s.length>n?s.slice(0,n).replace(/\s+\S*$/,'')+' …':s;
+
+const tip=$('#tip');
+document.addEventListener('pointermove',e=>{ const t=e.target.closest && e.target.closest('[data-tip]'); if(!t){tip.style.opacity=0;return;}
+  tip.textContent=t.getAttribute('data-tip'); const w=tip.offsetWidth;
+  tip.style.left=Math.max(8,Math.min(e.clientX+12, innerWidth-w-8))+'px'; tip.style.top=(e.clientY+14)+'px'; tip.style.opacity=1; });
+
+const bc=$('#barChips'); GROUPS.forEach(g=>bc.append(chip(g)));
+const nFiles = D.sources.reduce((a,s)=>a+s.files.length,0);
+[[String(D.sources.length),'nguồn'],[String(nFiles),'file'],[fmt(D.total),'đoạn'],['6','nhóm'],[D.sha.slice(0,8),'sha256 KB']].forEach(([b,s])=>$('#stats').append(el('div',{},[el('b',{text:b}),el('span',{text:s})])));
+$('#flowTotal').textContent = fmt(D.total)+' đoạn';
+
+const URL_OF={}; D.sources.forEach(s=>s.files.forEach(f=>{ URL_OF[s.id+'/'+f.name]= f.url || (f.manual?'https://doi.org/10.1109/SYNCHROINFO55067.2022.9840920':null); }));
+
+const TIER_ORDER=['mapping','knowledge','tool','standard','platform','audit','dataset','system'];
+const TIER_VN={mapping:'khóa mapping',knowledge:'tri thức MITRE',tool:'CICFlowMeter',standard:'chuẩn IANA / IETF',platform:'Java / OpenJDK',audit:'audit độc lập',dataset:'trang dataset',system:'mã của hệ thống'};
+const srcs=[...D.sources].sort((a,b)=>TIER_ORDER.indexOf(a.tier)-TIER_ORDER.indexOf(b.tier));
+const lvl = n => !n?0: n<2?1: n<10?2: n<100?3: n<1000?4:5;
+const heat=$('#heat'); const hr=el('tr',{},[el('th',{})]); GROUPS.forEach(g=>hr.append(el('th',{},[chip(g)]))); heat.append(el('thead',{},[hr]));
+const hb=el('tbody'); heat.append(hb);
+for(const s of srcs){ const tr=el('tr',{},[el('th',{class:'rowh',scope:'row'},[s.id])]);
+  GROUPS.forEach(g=>{ const n=s.use[g]||0; tr.append(el('td',{class:'c c'+lvl(n),'data-tip':n?`${s.id} → ${g}: ${fmt(n)} đoạn trích nguồn này`:`${s.id} không dùng cho ${g}`},[n?fmt(n):'·'])); });
+  hb.append(tr); }
+const sc=$('#heatScale'); sc.append('số đoạn: ');
+[['c1','1'],['c2','2–9'],['c3','10–99'],['c4','100–999'],['c5','≥ 1.000']].forEach(([c,t])=>{ sc.append(el('i',{class:c}),t+'  '); });
+const size = b => b==null?'':b>1e6?(b/1e6).toFixed(1)+' MB':b>1e3?Math.round(b/1e3)+' KB':b+' B';
+const tb=$('#srcTbl tbody'); let lastTier=null;
+for(const s of srcs){
+  if(s.tier!==lastTier){ tb.append(el('tr',{class:'tierhead'},[el('td',{colspan:'4',text:TIER_VN[s.tier]||s.tier})])); lastTier=s.tier; }
+  const files=el('div',{class:'files'});
+  for(const f of s.files){
+    if(f.url) files.append(el('div',{},[el('a',{href:f.url,target:'_blank',rel:'noopener',text:f.name}),el('span',{class:'meta',text:size(f.bytes)})]));
+    else if(f.manual) files.append(el('div',{},[el('span',{class:'f',text:f.name}),el('span',{class:'meta',text:'đặt tay · '}),el('a',{href:'https://doi.org/10.1109/SYNCHROINFO55067.2022.9840920',target:'_blank',rel:'noopener',text:'DOI'})]));
+    else files.append(el('div',{},[el('span',{class:'f',text:f.name}),el('span',{class:'meta',text:'repo: '+f.local})]));
+  }
+  if(s.archive) files.append(el('div',{},[el('a',{href:s.archive,target:'_blank',rel:'noopener',class:'meta',style:'margin:0',text:'↳ bản lưu Wayback'})]));
+  const use=el('div',{class:'use'}); const keys=GROUPS.filter(g=>s.use[g]);
+  if(!keys.length) use.append(el('span',{class:'unused',text:'⚠ không đoạn nào dùng'}));
+  keys.forEach(g=>use.append(chip(g,fmt(s.use[g]))));
+  tb.append(el('tr',{},[el('td',{},[el('div',{class:'mono',style:'font-weight:600',text:s.id}),el('div',{style:'font-size:13px;color:var(--ink2);max-width:300px',text:s.title})]),
+    el('td',{},[files]),el('td',{class:'mono',text:s.retrieved||'—'}),el('td',{},[use])]));
+}
+
+const ex = pid => (D.ex[pid]||{}).text||'';
+const GT=[
+ ['M','Nhãn ℓ* → tactic / technique','nhãn ℓ*','Borisenko 2022 Table II + tên ID từ ATT&CK','có · bỏ khi cờ bật','M-SQL_Injection'],
+ ['B','Mô tả, analytic mạng, CAPEC của technique','technique ID','ATT&CK v20.1 · CAPEC v3.9','có · cờ bật: ẩn ID','B-T1190'],
+ ['H1','Nghĩa của từng cột theo CICFlowMeter 2018','tên feature (top-5 |φ|)','ReadMe + mã nguồn 2018 · OpenJDK · Engelen · DistriNet · mã Layer 1','có','H1-SYN_Flag_Cnt'],
+ ['H2','Dòng IANA, câu RFC về cổng và cờ','Protocol · Dst Port · cột cờ','IANA · RFC 6335 / 9293 / 3168','có','H2-PORT-80'],
+ ['H3','Giới hạn bằng chứng do cách trích xuất','điều kiện when trên x thô','mã nguồn CICFlowMeter · RFC · JLS · IANA','có','H3-NOPAYLOAD'],
+ ['G','Ứng viên biện pháp giảm thiểu; VLM chọn mục hợp bằng chứng','technique ID','ATT&CK quan hệ mitigates · CAPEC Mitigations','có · bỏ khi cờ bật','G-T1499.002-CAPEC-469-1'],
+ ['C','Alert so với tiền lệ cùng nhãn (φ, x)','lần tra 5-NN','code tính lúc chạy, không thuộc KB','có · chỉ khi cờ bật',null]];
+const gtb=$('#grpTbl tbody');
+for(const [g,what,key,from,vlm,pid] of GT){
+  const n = g==='C' ? '—' : fmt(D.counts[g].n);
+  gtb.append(el('tr',{class:g==='C'?'notkb':''},[el('td',{},[chip(g)]),el('td',{},[el('b',{text:GNAME[g]}),el('div',{style:'font-size:13.5px;color:var(--ink2)',text:what})]),
+    el('td',{style:'font-size:13.5px',text:key}),el('td',{style:'font-size:13px;color:var(--ink2);max-width:230px',text:from}),
+    el('td',{class:'num mono',text:n}),el('td',{class:vlm.startsWith('có')?'vlm-y':'vlm-n',style:'font-size:13px',text:vlm}),
+    el('td',{},[pid?el('span',{class:'ex','data-tip':ex(pid)},[el('b',{text:'['+pid+'] '}),clip(ex(pid),110)]):el('span',{class:'ex',text:'| C1 | Flow Duration | φ alert | φ tiền lệ | Δφ | x alert | x tiền lệ |'})])]));
+}
+
+(function(){
+  const W=560,rowH=36,top=8,left=44,right=72,H=top+GROUPS.length*rowH+30; const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',role:'img','aria-label':'Số đoạn mỗi nhóm, thang log'});
+  const x=v=>left+(Math.log10(Math.max(v,1))/4)*(W-left-right);
+  [1,10,100,1000,10000].forEach(t=>{ svg.append(sv('line',{x1:x(t),x2:x(t),y1:top,y2:H-26,class:'gl'})); const tx=sv('text',{x:x(t),y:H-8,'text-anchor':'middle'}); tx.textContent=fmt(t); svg.append(tx); });
+  GROUPS.forEach((g,i)=>{ const n=D.counts[g].n, y=top+i*rowH+8, w=Math.max(x(n)-left,3);
+    const lab=sv('text',{x:left-8,y:y+13,'text-anchor':'end',class:'lab'}); lab.textContent=g; svg.append(lab);
+    svg.append(sv('rect',{x:left,y:y,width:w,height:18,rx:4,fill:`var(--g${g})`,'data-tip':`${g} · ${GNAME[g]}: ${fmt(n)} đoạn`}));
+    const v=sv('text',{x:left+w+6,y:y+13}); v.textContent=fmt(n); svg.append(v); });
+  svg.append(sv('line',{x1:left,x2:left,y1:top,y2:H-26,class:'ax'}));
+  $('#chCount').append(svg);
+})();
+(function(){
+  const W=560,rowH=36,top=8,left=44,right=10,H=top+GROUPS.length*rowH+4; const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%',role:'img','aria-label':'Tỉ lệ loại đoạn mỗi nhóm'});
+  const span=W-left-right; const KN=[['verbatim','kV'],['rendered','kR'],['defined','kD']];
+  GROUPS.forEach((g,i)=>{ const c=D.counts[g], y=top+i*rowH+8; let x0=left;
+    const lab=sv('text',{x:left-8,y:y+13,'text-anchor':'end',class:'lab'}); lab.textContent=g; svg.append(lab);
+    KN.forEach(([k,col])=>{ const v=c[k]; if(!v) return; const w=span*v/c.n;
+      svg.append(sv('rect',{x:x0+1,y:y,width:Math.max(w-2,1),height:18,rx:3,fill:`var(--${col})`,'data-tip':`${g}: ${fmt(v)} ${k} (${Math.round(100*v/c.n)}%)`}));
+      if(w>46){ const t=sv('text',{x:x0+w/2,y:y+13,'text-anchor':'middle',style:`fill:${col==='kD'?'var(--ink)':'var(--panel)'};font-weight:600`}); t.textContent=fmt(v); svg.append(t); }
+      x0+=w; }); });
+  $('#chKind').append(svg);
+})();
+
+const F=(label,src,file)=>({label,src,file});
+const LANES = {
+ M:[[[F('borisenko2022.pdf','borisenko-2022','borisenko2022.pdf')],'pypdf chép dòng Table II · validate kiểm nguyên văn',['borisenko2022_table2.yaml','14 nhãn → ID','mid']],
+    [[F('borisenko2022_table2.yaml'),F('enterprise-attack-20.1.json','attack-20.1','enterprise-attack-20.1.json')],'ghép câu; lấy tên tactic / technique theo ID',['M-‹nhãn›','×14 · rendered','M']]],
+ B:[[[F('enterprise-attack-20.1.json','attack-20.1','enterprise-attack-20.1.json')],'description của technique T',['B-‹T›','×8 · verbatim','B']],
+    [[F('enterprise-attack-20.1.json','attack-20.1','enterprise-attack-20.1.json')],'detection strategy → analytic có log source "Network…"',['B-DET-‹T›','×4 · rendered','B']],
+    [[F('capec_v3.9.xml','capec-3.9','capec_v3.9.xml')],'mục có Taxonomy_Mapping ATTACK = T · cắt ≤ 120 từ',['B-CAPEC-n','×8 · verbatim','B']]],
+ H1:[[[F('FlowFeature.java (2018)','cicflowmeter-src-2018','FlowFeature.java'),F('ReadMe.txt','cicflowmeter-readme','ReadMe.txt')],'draft_features.py ghép tên cột ↔ định nghĩa',['feature_names.yaml','78 cột','mid']],
+    [[F('BasicFlow.java','cicflowmeter-src-2018','BasicFlow.java'),F('PacketReader.java','cicflowmeter-src-2018','PacketReader.java'),F('extended_doc.html','engelen-2021-doc','extended_doc.html'),F('CSECICIDS2018.html','distrinet-2018','CSECICIDS2018.html')],'trích dẫn cách bản 2018 tính cột',['feature_notes.yaml','14 ghi chú replaces / adds','mid']],
+    [[F('HashMap.java','openjdk8-src','HashMap.java'),F('String.java','openjdk8-src','String.java')],'flag_order.py tính lại thứ tự HashMap',['cột cờ → cờ thực chứa','vd SYN Flag Cnt = PSH','mid']],
+    [[F('page.html (UNB)','unb-ids2018','page.html'),F('autoencoder.py'),F('train_protocol_b.py')],'định nghĩa Dst Port, Protocol, feature AE',['model_features.yaml','4 mục','mid']],
+    [[F('4 kết quả trên')],'part_feature.py',['H1-‹cột›','×81','H1']]],
+ H2:[[[F('protocol-numbers-1.csv','iana-protocols','protocol-numbers-1.csv')],'lấy dòng 6 và 17',['H2-PROTO-6 / 17','×2 · rendered','H2']],
+    [[F('service-names-port-numbers.csv','iana-ports','service-names-port-numbers.csv')],'gộp mọi dòng tcp/udp theo số cổng',['H2-PORT-‹p›','×6.065 · rendered','H2']],
+    [[F('rfc6335.txt','rfc6335','rfc6335.txt')],'câu nguyên văn §9',['H2-PORT-NOTE','×1 · verbatim','H2']],
+    [[F('rfc9293.txt','rfc9293','rfc9293.txt'),F('rfc3168.txt','rfc3168','rfc3168.txt')],'định nghĩa 8 cờ + ECN-setup',['H2-FLAG-‹cờ›','×9 · verbatim','H2']]],
+ H3:[[[F('BasicFlow.java','cicflowmeter-src-2018','BasicFlow.java'),F('rfc7323.txt','rfc7323','rfc7323.txt'),F('jls-4.html','java8-jls','jls-4.html')],'trích dẫn cơ chế của từng giá trị',['artefacts.yaml','điều kiện when + câu','mid']],
+    [[F('artefacts.yaml')],'part_artefact.py kiểm cột của when',['H3-…','×6 · defined','H3']]],
+ G:[[[F('enterprise-attack-20.1.json','attack-20.1','enterprise-attack-20.1.json')],'quan hệ "M mitigates T" · cắt ≤ 80 từ',['G-‹T›-‹M›','×25 · rendered','G']],
+    [[F('capec_v3.9.xml','capec-3.9','capec_v3.9.xml')],'trường Mitigations của các mục CAPEC liên kết tới T · cắt ≤ 80 từ',['G-‹T›-CAPEC-n-k','×15 · verbatim','G']],
+    [[F('G ứng viên')],'VLM chọn mục hợp bằng chứng, trích [K:G-…]',['mục Mitigations','của báo cáo','mid']]]};
+const SCRIPT={M:'part_technique.py',B:'part_technique.py',H1:'part_feature.py',H2:'part_protocol.py',H3:'part_artefact.py',G:'part_mitigation.py'};
+const EX={M:'M-SQL_Injection',B:'B-CAPEC-488',H1:'H1-SYN_Flag_Cnt',H2:'H2-PORT-80',H3:'H3-NOPAYLOAD',G:'G-T1499.002-CAPEC-469-1'};
+const bw=$('#builds');
+for(const g of GROUPS){
+  const lanes=el('div',{class:'lanes'});
+  for(const [files,step,[o,osub,oc]] of LANES[g]){
+    const src=el('div',{class:'src'});
+    files.forEach(f=>{ const u=f.src?URL_OF[f.src+'/'+f.file]:null;
+      src.append(u?el('a',{class:'file',href:u,target:'_blank',rel:'noopener','data-tip':u},[f.label]):el('span',{class:'file'},[f.label])); });
+    const out=el('div',{class:'out'+(oc==='mid'?' mid':''),style:oc==='mid'?'':`background:var(--g${oc});color:var(--on${oc})`},[o,el('span',{text:osub})]);
+    lanes.append(el('div',{class:'lane'},[src,el('div',{class:'step',text:step}),out]));
+  }
+  const e=D.ex[EX[g]];
+  bw.append(el('div',{class:'card'},[
+    el('div',{class:'bhead'},[chip(g),el('span',{class:'nm',text:GNAME[g]}),el('span',{class:'big',text:fmt(D.counts[g].n)+' đoạn'}),el('span',{class:'scr',text:SCRIPT[g]})]),
+    lanes, e?el('div',{class:'exbox'},[el('b',{text:`Ví dụ [${e.pid}] · ${e.kind}  `}),clip(e.text,240)]):null]));
+}
+
+const COV=[['M','M','mapping'],['BT','B','mô tả'],['DET','B','B-DET'],['CAPEC','B','CAPEC'],['G','G','mitigation']];
+const ct=$('#covTbl'); const h=el('tr',{},[el('th',{text:'Nhãn'}),el('th',{text:'Technique (Borisenko)'})]);
+COV.forEach(([k,g,n])=>h.append(el('th',{class:'num'},[chip(g,n)]))); ct.append(el('thead',{},[h]));
+const cb=el('tbody'); ct.append(cb);
+for(const r of D.labels){ const tr=el('tr',{},[el('td',{class:'mono',style:'font-weight:600',text:r.label}),el('td',{class:'mono',text:r.tech.join(' + ')})]);
+  COV.forEach(([k,g])=>{ const v=r[k]; tr.append(el('td',{class:'cc'+(v?'':' z'),style:v?`background:color-mix(in srgb, var(--g${g}) ${Math.min(14+v*5,40)}%, var(--panel))`:'',
+     'data-tip':v?`${r.label}: ${v} đoạn ${k}`:`${r.label}: nguồn MITRE không có ${k}`},[v?String(v):'—'])); });
+  cb.append(tr); }
+})();
+</script>
+</body>
+</html>
