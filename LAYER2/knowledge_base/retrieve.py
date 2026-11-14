@@ -12,7 +12,7 @@ Luat chon:
             M-<nhan>             cau mapping nhan -> tactic / technique / sub-technique
             moi technique t:     B-<t> (mo ta ATT&CK), B-DET-<t> (analytic mang, neu co), B-<CAPEC> lien ket
           Khong co co: role "attack_type_background" (mo ta LOAI tan cong cua nhan tien le, khong mo ta flow nay).
-          Co co (zero-day): role "comparison_only"; bo M (doan mapping chi ra technique); B giu noi dung nhung an
+          Co co (zero-day): role "nearest_background"; bo M (doan mapping chi ra technique); B giu noi dung nhung an
           tieu de va ma trich dan (cite = REF-MECH-n), vi report khong duoc gan technique khi bat co.
           Protocol A: nhan trong exclude_labels khong bao gio duoc chon.
   Moi doan tra them `cite`: ma de VLM trich dan (= pid, tru B khi co co).
@@ -129,7 +129,7 @@ class KnowledgeBase:
         if info is None and label is not None:
             sel.missing.append({"pid": f"M-{label}", "reason": "label not in Borisenko Table II"})
         use_label = info is not None and label not in set(exclude_labels)
-        role = "comparison_only" if flagged else "attack_type_background"
+        role = "nearest_background" if flagged else "attack_type_background"
 
         # M, B theo nhan -> technique (Borisenko 2022, Table II)
         if use_label:

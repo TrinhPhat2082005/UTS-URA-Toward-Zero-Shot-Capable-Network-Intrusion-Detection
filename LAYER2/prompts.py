@@ -632,6 +632,15 @@ In section 4:
 Do not name another attack type, technique or tactic.\
 """
 
+# Dau khoi KNOWLEDGE cua nhanh bat co: cac doan B (role "nearest_background" trong knowledge_base/retrieve.py) da an
+# ID / tieu de technique (cite REF-MECH-n); cau nay noi ro chung la boi canh cua tien le gan nhat, khong cua alert.
+NEAREST_BACKGROUND_HEADER = """\
+#### nearest_background
+Nearest-precedent background (for comparison only). These passages describe the attack type of the closest
+known precedent, not this alert. Use them to judge where this alert resembles or departs from that known
+behaviour; do not attribute their technique, tactic or name to this alert.\
+"""
+
 ASSESSMENTS = ("variant", "different", "undetermined")
 _ASSESS_RE = re.compile(r"(variant of|different behaviou?r|undetermined)", re.IGNORECASE)
 

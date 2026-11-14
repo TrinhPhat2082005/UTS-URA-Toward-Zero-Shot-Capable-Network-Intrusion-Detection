@@ -91,7 +91,7 @@ PDF Borisenko 2022 không tải tự động: đặt tay vào `$UTS_DATA/kb_sour
 from knowledge_base.retrieve import KnowledgeBase
 sel = KnowledgeBase().select(label, flagged, top_features, x_raw, contrast_features=..., exclude_labels=...)
 sel.passages      # đoạn đưa VLM, theo thứ tự; mỗi đoạn có cite (mã để VLM trích) và role
-                  #   (attack_type_background | comparison_only | definition | caveat)
+                  #   (attack_type_background | nearest_background | definition | caveat | mitigation_option)
 sel.techniques    # technique của nhãn theo Borisenko (rỗng khi bật cờ)
 sel.mitigations   # danh sách ứng viên G (cũng nằm trong sel.passages) để chấm mục VLM chọn
 sel.missing       # [{pid, reason}] đoạn lẽ ra được chọn nhưng KB không có

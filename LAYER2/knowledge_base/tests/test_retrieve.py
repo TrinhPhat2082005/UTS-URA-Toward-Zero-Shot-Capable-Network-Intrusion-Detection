@@ -80,7 +80,7 @@ def test_two_technique_label_gets_both():
 def test_flagged_alert_hides_technique():
     s = KB.select("DoS_attacks_Hulk", True, ["Fwd Seg Size Min"], TCP_WEB, contrast_features=["Flow Duration"])
     assert "M-DoS_attacks_Hulk" not in s.pids() and s.techniques == []
-    assert all(p["role"] == "comparison_only" for p in s.passages if p["part"] == "B")
+    assert all(p["role"] == "nearest_background" for p in s.passages if p["part"] == "B")
     assert "H1-Flow_Duration" in s.pids()
     assert s.mitigations == []
     shown = " ".join(f"{p['cite']} {p['title']} {p['text']}" for p in s.passages if p["part"] == "B")
