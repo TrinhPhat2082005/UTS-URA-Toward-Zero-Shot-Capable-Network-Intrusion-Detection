@@ -2,7 +2,7 @@
 CSV cua CICFlowMeter (ban Python, ten cot snake_case) -> DataFrame co ten cot giong
 CSE-CIC-IDS2018 (Title Case) ma Layer 1 cua LAYER2 da hoc.
 
-Chi doi ten va bo sung cot thieu; scale/clip/augment do pipeline.Layer1Engine lam.
+Chi doi ten va bo sung cot thieu; scale/clip/augment do gate.engine.Layer1Engine (LAYER2) lam.
 NaN/Inf de nguyen: Layer1Engine.preprocess() thay bang 0 truoc khi scale.
 """
 import os

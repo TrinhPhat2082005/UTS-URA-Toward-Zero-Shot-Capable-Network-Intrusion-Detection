@@ -43,8 +43,8 @@ Toàn bộ chuỗi cho **một sample** nằm ở `pipeline.run_sample`; noteboo
 | `utils/timing.py`, `utils/io.py` | | `StageTimer` (perf_counter từng chặng), `append_jsonl`, commit của code |
 | `tests/` | | Test của `retrieval/store.py` và `evidence/contrast.py` |
 
-`METRIC.md` là ghi chép quyết định đánh giá của đợt pilot cũ (bỏ hướng "VLM phủ định Layer 1"); chỉ số hiện tại
-nằm ở `metrics.py` và RAGAS trên `ragas.jsonl`.
+`METRIC.md`: thiết kế đánh giá (mẫu 140 TP, faithfulness bằng RAGAS + groundedness bằng trích dẫn, chỉ số phụ,
+latency); code tính ở `metrics.py`.
 
 ## Artifact (`UTS_DATA/artifacts/`)
 
@@ -65,4 +65,6 @@ File nguồn của KB nằm ở `UTS_DATA/kb_sources/raw/<id>/` (xem `knowledge_
    (samples.csv: 10 alert TP / nhãn + checkpoint + tập R); upload thành Kaggle dataset
 5. `python LAYER2/make_vlm_notebook.py` → `vlm_run.ipynb`; chạy trên Kaggle (GPU) theo hướng dẫn trong notebook
 
-Demo live (`project_root/main.py`) vẫn dùng retriever cũ và chưa được chuyển sang chuỗi mới.
+Demo live (`project_root/main.py`) dùng cùng chuỗi: mode 2 = Layer 1 + tra cứu + KB (không ảnh, không VLM),
+mode 3 = `pipeline.run_sample` cho từng alert, ghi vào `<UTS_OUT>/live/<thời điểm>/`. Flow live do CICFlowMeter bản
+Python trích xuất nên định nghĩa feature của KB (theo bản Java 2018) có thể không khớp.

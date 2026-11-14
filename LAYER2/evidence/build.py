@@ -58,7 +58,8 @@ class EvidenceBuilder:
             raise ValueError("Tap R chua co gia tri tho (x__): chay retrieval/reference_set.py --add-raw")
 
     # ------------------------------------------------------------------------------------------
-    def build(self, row, out_dir, timer=None):
+    def build(self, row, out_dir, timer=None, with_images=True):
+        """with_images=False: bo chang ve 5 anh (demo live mode 2 chi can tra cuu + KB)."""
         t = timer or StageTimer()
         x_raw = {c: _num(row[c]) for c in self.base}
         X = np.array([[np.nan if x_raw[c] is None else x_raw[c] for c in self.base]], dtype="float64")
@@ -86,8 +87,10 @@ class EvidenceBuilder:
             sel = self.kb.select(look.label, look.flagged, [f["name"] for f in top], x_raw,
                                  contrast_features=[r["feature_key"] for r in contrast["rows"]] if contrast else (),
                                  exclude_labels=self.exclude)
-        with t("images"):
-            images = self._images(row, phi, A[0], p, out_dir)
+        images = []
+        if with_images:
+            with t("images"):
+                images = self._images(row, phi, A[0], p, out_dir)
 
         rec.update({
             "top_features": top,
