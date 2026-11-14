@@ -38,7 +38,8 @@ Chay tu tren xuong. Mat ket noi giua chung: chay lai cell **Chay ca lo**, sample
 
 md("""## 0. Setup Kaggle (bo qua khi chay local)
 
-1. Add-ons → Secrets: `GITHUB_TOKEN` (token GitHub co quyen doc repo), tick **Attached**.
+1. Add-ons → Secrets: secret ten `VLM_NIDS` (bien `SECRET` o cell 1) = GitHub token fine-grained, chi repo nay,
+   quyen *Contents: Read-only*; tick **Attached**. Khong in token ra output.
 2. Add Input: dataset tao tu `kaggle_upload/layer2-vlm-run` (samples.csv + checkpoint Layer 1 + tap R).
 3. Accelerator: GPU T4 x2 (hoac P100). Chay cell cai thu vien, **restart kernel**, roi chay tu cell 1.""")
 
@@ -51,15 +52,22 @@ code('''import os, sys, subprocess, glob
 
 BRANCH = "feat/knowledge-base"
 REPO = "github.com/TrinhPhat2082005/UTS-URA-Toward-Zero-Shot-Capable-Network-Intrusion-Detection.git"
+SECRET = "VLM_NIDS"                  # ten Kaggle secret chua GitHub token (fine-grained, Contents: Read-only)
 ON_KAGGLE = os.path.isdir("/kaggle/working")
 
 if ON_KAGGLE:
     CODE = "/kaggle/working/UTS-URA"
     if not os.path.isdir(CODE):
         from kaggle_secrets import UserSecretsClient
-        token = UserSecretsClient().get_secret("GITHUB_TOKEN")
-        subprocess.run(["git", "clone", "--depth", "1", "--branch", BRANCH, f"https://{token}@{REPO}", CODE],
-                       check=True)
+        token = UserSecretsClient().get_secret(SECRET)
+        # token o vi tri MAT KHAU (x-access-token:<token>); loi thi che token truoc khi in
+        r = subprocess.run(["git", "clone", "--depth", "1", "--branch", BRANCH,
+                            f"https://x-access-token:{token}@{REPO}", CODE], capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError("git clone loi:\\n" + (r.stderr or r.stdout).replace(token, "***"))
+        # khong de token trong .git/config (/kaggle/working duoc luu cung output khi Save Version)
+        subprocess.run(["git", "-C", CODE, "remote", "set-url", "origin", f"https://{REPO}"], check=True)
+        del token, r
     hits = glob.glob("/kaggle/input/**/samples.csv", recursive=True)
     assert hits, "Khong thay samples.csv trong /kaggle/input: da Add Input dataset chua?"
     os.environ["UTS_DATA"] = os.path.dirname(hits[0])
