@@ -55,8 +55,8 @@ Knowledge passages describe attack types, features and protocols in general; the
 alert. Use them to interpret the evidence, not as evidence that something happened.
 
 Where the alert evidence and a knowledge passage disagree, say so and cite both, rather than making them
-agree. The reference label of an alert is the label of its nearest known precedents, and the published
-labels of this dataset contain errors, so the background of that label may not fit this flow.
+agree. The reference label of an alert is the label of its nearest known precedents, so the background
+of that label may not fit this flow.
 
 Use the exact section headings given in the task. Do not add, omit or reorder sections.\
 """

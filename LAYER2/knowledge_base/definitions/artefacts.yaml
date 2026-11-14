@@ -3,23 +3,6 @@
 # Cau `text` (tieng Anh) noi CO CHE (gia tri nay sinh ra the nao), khong phan xet flow co phai tan cong hay khong.
 # Support chi la trich dan nguyen van (ma nguon 2018, RFC, JLS, IANA, audit doc lap). KHONG co so lieu tu tinh.
 
-# Nhan cua dataset co the sai: tien le gan nhat mang nhan sai thi phan boi canh (M, B) cung lech theo. Doan nay
-# cho VLM co co so de noi ro mau thuan giua bang chung cua flow va boi canh, thay vi ep hai thu khop nhau.
-- pid: H3-LABELNOISE
-  when: null
-  text: "The reference label of this alert comes from the labels published with CSE-CIC-IDS2018, and an independent re-analysis of the original packet captures found labelling errors in that release: on one day a large share of the flows labelled as web brute force are mislabelled, including a block of UDP flows to port 500 rather than web traffic; every DDoS-LOIC-UDP flow of that day carries the label DDoS-LOIC-HTTP; and the Infiltration flows between the two hosts named on the dataset page are labelled Benign. Where the flow evidence contradicts the background of the reference label, report the contradiction instead of resolving it in favour of either side."
-  support:
-    - {src: distrinet-2018, locator: "CSECICIDS2018.html, 23-02-2018 (Brute Force -Web)",
-       quote: 'On this day, the attack has significant label contamination.'}
-    - {src: distrinet-2018, locator: "CSECICIDS2018.html, 23-02-2018 (Brute Force -Web)",
-       quote: 'Besides these, there are 151 additional flows that are also mislabelled wrong (i.e 41.7% mislabeled).'}
-    - {src: distrinet-2018, locator: "CSECICIDS2018.html, 23-02-2018 (Brute Force -Web)",
-       quote: 'Of these, 128 flows have protocol = 17 (i.e. not tcp) with port = 500.'}
-    - {src: distrinet-2018, locator: "CSECICIDS2018.html, DDoS LOIC UDP",
-       quote: 'all DDoS-LOIC-UDP attacks are incorrectly labelled as DDoS-LOIC-HTTP'}
-    - {src: distrinet-2018, locator: "CSECICIDS2018.html, Infiltration",
-       quote: "in the originally released dataset, all flows going between the 2 IP's described above are labelled as Benign"}
-
 - pid: H3-NOPAYLOAD
   when: {all: [["TotLen Fwd Pkts", "==", 0], ["TotLen Bwd Pkts", "==", 0]]}
   text: "This flow carries no transport-layer payload in either direction, so application content (for example an HTTP request or an SQL statement) cannot be observed in it. The extractor ends a TCP flow at the first FIN packet, and a packet that arrives when no flow is open starts a new flow, so the last packets of a connection can form a flow of their own."

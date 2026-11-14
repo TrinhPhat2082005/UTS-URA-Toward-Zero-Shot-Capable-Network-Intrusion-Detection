@@ -3,8 +3,8 @@ H3 — Artefact co dieu kien: gia tri la do cong cu trich xuat sinh ra.
 
 Y tuong: phan canh bao cua report phai noi khi bang chung cua alert bi gioi han boi cach trich xuat
 (vd flow khong co payload thi khong the thay cau lenh SQL). Doan chi duoc chon khi dieu kien `when` dung
-voi gia tri tho cua alert (knowledge_base/conditions.py); `when: null` -> luon chon (vd H3-LABELNOISE: nhan
-cua dataset co the sai). Noi dung lay tu definitions/artefacts.yaml (minh bach: dieu kien va co che ghi ro).
+voi gia tri tho cua alert (knowledge_base/conditions.py); `when: null` -> luon chon. Noi dung lay tu
+definitions/artefacts.yaml (minh bach: dieu kien va co che ghi ro).
 
     pid H3-...   khoa {"artefact": pid}   when = dieu kien co cau truc hoac None
 """

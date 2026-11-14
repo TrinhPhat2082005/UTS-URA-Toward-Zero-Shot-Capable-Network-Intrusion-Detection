@@ -1,6 +1,6 @@
 # Knowledge base build report
 
-Built 2026-11-14 | passages.jsonl sha256 `1e846acf4aaea9b9d0d74d855eaf59cb90d07c9907e729dc943204c8d38d67d6`
+Built 2026-11-14 | passages.jsonl sha256 `da535436d2d7cfd54c3a7b12b9416016699eecae4561b2a35977b2dab5c24a39`
 
 Validation: **passed** (every quote verbatim in its locked source, Borisenko key matches, coverage complete)
 
@@ -38,7 +38,7 @@ Validation: **passed** (every quote verbatim in its locked source, Borisenko key
 | B  technique knowledge (ATT&CK v20.1, CAPEC v3.9) | 19 | 16 | 3 | 0 | yes |
 | H1 feature definitions (CICFlowMeter-V3 2018) | 81 | 1 | 54 | 26 | yes |
 | H2 protocol / port / TCP flag (IANA, IETF) | 6077 | 10 | 6067 | 0 | yes |
-| H3 conditional extractor artefacts | 7 | 0 | 0 | 7 | yes |
+| H3 conditional extractor artefacts | 6 | 0 | 0 | 6 | yes |
 | G  mitigation candidates (ATT&CK mitigates + CAPEC Mitigations), chosen by the VLM | 40 | 15 | 25 | 0 | yes |
 
 ## 3. Label -> technique key (Borisenko et al. 2022, Table II)
@@ -375,16 +375,6 @@ Code checks that each quote exists verbatim; a reviewer checks that the sentence
 - [layer1-code | autoencoder.py, module docstring] "Encoder: input_dim -> 64 -> 32 -> bottleneck_dim"
 - [layer1-code | train_protocol_b.py, configuration] "AE_BOTTLENECK = 16"
 - [layer1-code | train_protocol_b.py, AE features] "names = feats + [f"ae_latent_{i}" for i in range(AE_BOTTLENECK)] + ["ae_recon_error"]"
-
-### H3-LABELNOISE
-
-> The reference label of this alert comes from the labels published with CSE-CIC-IDS2018, and an independent re-analysis of the original packet captures found labelling errors in that release: on one day a large share of the flows labelled as web brute force are mislabelled, including a block of UDP flows to port 500 rather than web traffic; every DDoS-LOIC-UDP flow of that day carries the label DDoS-LOIC-HTTP; and the Infiltration flows between the two hosts named on the dataset page are labelled Benign. Where the flow evidence contradicts the background of the reference label, report the contradiction instead of resolving it in favour of either side.
-
-- [distrinet-2018 | CSECICIDS2018.html, 23-02-2018 (Brute Force -Web)] "On this day, the attack has significant label contamination."
-- [distrinet-2018 | CSECICIDS2018.html, 23-02-2018 (Brute Force -Web)] "Besides these, there are 151 additional flows that are also mislabelled wrong (i.e 41.7% mislabeled)."
-- [distrinet-2018 | CSECICIDS2018.html, 23-02-2018 (Brute Force -Web)] "Of these, 128 flows have protocol = 17 (i.e. not tcp) with port = 500."
-- [distrinet-2018 | CSECICIDS2018.html, DDoS LOIC UDP] "all DDoS-LOIC-UDP attacks are incorrectly labelled as DDoS-LOIC-HTTP"
-- [distrinet-2018 | CSECICIDS2018.html, Infiltration] "in the originally released dataset, all flows going between the 2 IP's described above are labelled as Benign"
 
 ### H3-NOPAYLOAD
 
