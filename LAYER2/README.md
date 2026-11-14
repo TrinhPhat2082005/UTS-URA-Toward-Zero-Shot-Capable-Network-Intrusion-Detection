@@ -35,7 +35,7 @@ Toàn bộ chuỗi cho **một sample** nằm ở `pipeline.run_sample`; noteboo
 | `evidence/contrast.py` | 3.6 | Bảng đối chiếu C (alert bị bật cờ so với trung bình tiền lệ cùng nhãn, φ và x) |
 | `knowledge_base/` | 3.6 | KB có nguồn (khóa nhãn → technique theo Borisenko 2022 Table II): xem `knowledge_base/README.md`, bản đồ `knowledge_base/kb_map.html` |
 | `prompts.py` | 3.7, Fig. `vlmio` | Prompt hai nhánh (cờ tắt / bật, khối `nearest_background`), schema 6 mục, parser + trích dẫn |
-| `vlm/runner.py` | 3.7 | `VLMRunner` (Qwen2.5-VL 7B, 4-bit, confidence từ logprob của `Predicted class`) |
+| `vlm/runner.py` | 3.7 | `VLMRunner` (Qwen2.5-VL 7B, 4-bit, confidence từ logprob của trường `Attack type`) |
 | `pipeline.py` | | `run_sample` (toàn bộ chuỗi cho một dòng + ghi kết quả), `warmup`, `write_run_meta`, `done_ids` |
 | `metrics.py` | 4.5 | Tổng hợp một lần chạy: đúng lớp / technique, độ chính xác trích dẫn, mitigation hợp lệ, latency từng chặng |
 | `make_vlm_notebook.py` → `vlm_run.ipynb` | 4.5 | Notebook duy nhất chạy VLM (Kaggle hoặc local) |

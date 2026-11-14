@@ -8,7 +8,7 @@ Tong hop mot lan chay VLM (thu muc RUN_DIR cua pipeline.py): ket qua tung sample
 
 Danh gia ngu nghia (faithfulness, answer relevancy...) chay bang RAGAS tren ragas.jsonl (user_input,
 retrieved_contexts, response); file nay chi tinh cac chi so co the kiem bang code:
-    class_correct       co tat: Predicted class = nhan that; co bat: Predicted class = UNKNOWN
+    class_correct       co tat: "Attack type" = nhan that; co bat: "Attack type" = UNKNOWN
     technique_ok        co tat: technique o muc 4 thuoc technique cua nhan (Borisenko); co bat: khong co T-ID
     citation_precision  ty le trich dan [I/E/C/K:..] co that trong prompt (groundedness o muc id)
     mitigations_valid   muc 5 chi chon trong ung vien G cua alert

@@ -160,7 +160,7 @@ for sid in pick:
     rec = pipeline.run_sample(row_of[sid], eb, vlm, TEST_DIR, KB_MODE, KB_PARTS)
     raw = open(os.path.join(TEST_DIR, sid, "output", "report.md"), encoding="utf-8").read() if rec.get("alert") else ""
     n_out = len(tok(raw).input_ids)
-    print(f"\\n{sid}: flag={rec.get('flagged')} pred={rec.get('predicted_class')} sections={rec.get('n_sections')} "
+    print(f"\\n{sid}: flag={rec.get('flagged')} type={rec.get('attack_type')} sections={rec.get('n_sections')} "
           f"cites={rec.get('n_citations')} unknown={rec.get('n_unknown_citations')} "
           f"mitig_ok={rec.get('mitigations_valid')} out_tokens={n_out}/{config.VLM_MAX_NEW_TOKENS}"
           + ("  <-- CO THE BI CAT" if n_out >= config.VLM_MAX_NEW_TOKENS - 10 else "")
@@ -178,7 +178,7 @@ todo = samples[~samples["sample_id"].isin(done)]
 print(f"{len(done)} da xong, con {len(todo)}")
 for i, (_, row) in enumerate(todo.iterrows(), 1):
     rec = pipeline.run_sample(row, eb, vlm, RUN_DIR, KB_MODE, KB_PARTS)
-    print(f"[{i}/{len(todo)}] {rec['sample_id']:<34} pred={rec.get('predicted_class')} flag={rec.get('flagged')} "
+    print(f"[{i}/{len(todo)}] {rec['sample_id']:<34} type={rec.get('attack_type')} flag={rec.get('flagged')} "
           f"total={rec['latency_total']:.1f}s err={rec['run_error']}")''')
 
 md("## 8. Tong hop")

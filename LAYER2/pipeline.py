@@ -136,8 +136,8 @@ def run_sample(row, eb, vlm, out_root, kb_mode=None, kb_parts=None):
                     "n_unknown_citations": len(bad),
                     "citation_precision": (sum(c not in bad for c in cites) / len(cites)) if cites else None,
                     "citation_coverage": (parsed["n_cited_units"] / parsed["n_units"]) if parsed["n_units"] else None,
-                    "class_correct": parsed["predicted_class"] == (prompts.UNKNOWN if look["flagged"]
-                                                                   else rec["label_true"]),
+                    "class_correct": parsed["attack_type"] == (prompts.UNKNOWN if look["flagged"]
+                                                               else rec["label_true"]),
                     "technique_ok": (not parsed["mitre_ids"]) if look["flagged"]
                     else (bool(parsed["mitre_ids"]) and set(parsed["mitre_ids"]) <= tech_ok),
                     "mitigations_valid": all(c in pr["allowed_ids"] for c in parsed["mitigations_chosen"]),
@@ -145,7 +145,7 @@ def run_sample(row, eb, vlm, out_root, kb_mode=None, kb_parts=None):
                 _write(os.path.join(d, "output", "report.md"), raw)
                 _write(os.path.join(d, "output", "report.json"),
                        {**parsed, "score": score, "confidence_logprob": conf})
-                rec.update({"predicted_class": parsed["predicted_class"], "mitre_id": parsed["mitre_id"],
+                rec.update({"attack_type": parsed["attack_type"], "mitre_id": parsed["mitre_id"],
                             "assessment": parsed["assessment"], "n_sections": parsed["n_sections"],
                             "parse_error": parsed["parse_error"], "confidence_logprob": conf,
                             "vlm_generate_s": t_gen, **score})

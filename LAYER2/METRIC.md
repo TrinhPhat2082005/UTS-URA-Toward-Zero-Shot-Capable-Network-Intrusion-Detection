@@ -64,7 +64,7 @@ của ảnh SHAP đã có dạng text trong khối bằng chứng (`[E1]–[E5]`
 | Chỉ số | Định nghĩa | Trường |
 |---|---|---|
 | Lookup accuracy | nhãn vote 5-NN = nhãn thật | `pred_label`, `label_true` |
-| Class | cờ tắt: `Predicted class` = nhãn thật; cờ bật: `UNKNOWN` | `class_correct` |
+| Attack type | cờ tắt: `Attack type` = nhãn thật; cờ bật: `UNKNOWN` | `class_correct` |
 | Technique | cờ tắt: technique ở mục 4 thuộc technique của nhãn theo Borisenko 2022 | `technique_ok` |
 | Đánh giá nhánh bật | variant / different / undetermined | `assessment` |
 

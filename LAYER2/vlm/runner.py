@@ -98,10 +98,10 @@ class VLMRunner:
 
         conf = None
         if config.VLM_RETURN_LOGPROBS and getattr(out, "scores", None):
-            # Parse ten lop TRUOC roi moi do confidence: phai biet model da
-            # chon lop gi thi moi xac nhan duoc token do dung la token do.
+            # Parse ten loai tan cong TRUOC roi moi do confidence: phai biet model da
+            # chon gi thi moi xac nhan duoc token do dung la token do.
             import prompts
-            cls = prompts.parse_report(raw).get("predicted_class")
+            cls = prompts.parse_report(raw).get("attack_type")
             conf = self._class_logprob(seq, out.scores, cls)
 
         # Giai phong ngay: chay 140 mau lien tiep thi bo nho scores/inputs tich
@@ -115,13 +115,13 @@ class VLMRunner:
     # ky tu dem nhu " ", "**", "\n"; qua nguong nay thi chac chan da lech.
     _CONF_MAX_SKIP = 5
 
-    def _class_logprob(self, seq, scores, predicted_class):
-        """Xac suat model gan cho token DAU TIEN cua ten lop.
+    def _class_logprob(self, seq, scores, attack_type):
+        """Xac suat model gan cho token DAU TIEN cua ten loai tan cong (truong "Attack type" o muc 2).
 
         Tra {"p": float, "token": str} hoac None.
 
-        VI SAO CAN predicted_class
-        --------------------------
+        VI SAO CAN attack_type
+        ----------------------
         Chi dinh vi bang phep cong don do dai token la khong du: lech mot token
         thi p van la mot so hop le (xac suat cua dau ':' chang han) ma khong co
         gi bao loi - sai am tham. Nen sau khi dinh vi, doi chieu token voi ten
@@ -136,7 +136,7 @@ class VLMRunner:
         argmax; gia tri nam trong [1/V, 1.0]. Ten lop dai bi cat nhieu token
         nen chi do duoc token dau (vd "Do" cua "DoS_attacks_Hulk").
         """
-        cls = (predicted_class or "").strip().strip("*`").lower()
+        cls = (attack_type or "").strip().strip("*`").lower()
         if not cls:
             return None
 
@@ -146,12 +146,13 @@ class VLMRunner:
             ids = seq.tolist()
             text = tok.decode(ids, skip_special_tokens=False)
 
-            # Muc 2 moi la cho model chon lop; chu "predicted" cung xuat hien o
+            # Muc 2 moi la cho model goi ten loai tan cong; cum tu nay cung co the xuat hien o
             # muc 1 (Executive summary) nen phai neo theo tieu de muc 2 truoc.
             m2 = re.search(r"#{1,4}\s*2\.", text)
             start = m2.end() if m2 else 0
 
-            m = re.compile(r"predicted\s*class\s*\**\s*:", re.I).search(text, start)
+            # "Attack type:" la ten truong hien tai; "Predicted class:" la ten cu (ket qua da chay)
+            m = re.compile(r"(?:attack\s*type|predicted\s*class)\s*\**\s*:", re.I).search(text, start)
             if m is None:
                 return None
             target = m.end()          # ngay sau dau ':'

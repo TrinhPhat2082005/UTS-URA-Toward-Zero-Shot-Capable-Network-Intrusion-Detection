@@ -109,7 +109,7 @@ Produce the report in exactly this form.
 Two to four sentences: what was detected, the reference label, and whether the evidence supports it.
 
 ## 2. ATTACK ASSESSMENT
-Predicted class: <the reference label {label}, copied exactly; write UNKNOWN only if the evidence clearly contradicts it>
+Attack type: <the reference label {label}, copied exactly; write UNKNOWN only if the evidence clearly contradicts it>
 Severity: <Low, Medium, High or Critical>
 Top indicators: <three feature names copied from image [I1]>
 
@@ -135,7 +135,7 @@ Two to four sentences: what was detected, that the reference set holds no close 
 evidence shows.
 
 ## 2. ATTACK ASSESSMENT
-Predicted class: UNKNOWN
+Attack type: UNKNOWN
 Severity: <Low, Medium, High or Critical>
 Top indicators: <three feature names copied from image [I1]>
 
@@ -270,7 +270,7 @@ def build_report_prompt(ev, kb_mode="on", kb_parts=KB_ALL_PARTS):
     else:
         mitre = ("Tactic and technique copied from [K:M-" + label + "], then one sentence on how the observed "
                  "traffic fits the technique, with citations.") if "K:M" in has else \
-                ("Tactic and technique ID for the predicted class, then one sentence on how the observed traffic "
+                ("Tactic and technique ID for the attack type named above, then one sentence on how the observed traffic "
                  "fits it.")
         mitig = ("Choose two to four of the mitigation options [K:G-..] that fit what this alert shows. For each "
                  "give its identifier, then one sentence on why it fits this alert, citing the evidence.") \
@@ -290,7 +290,8 @@ def build_report_prompt(ev, kb_mode="on", kb_parts=KB_ALL_PARTS):
 # --------------------------------------------------------------------------------------------------
 # Parser
 # --------------------------------------------------------------------------------------------------
-_CLASS_RE = re.compile(r"predicted\s*class\s*[::]\s*\**\s*([^\n*]+)", re.IGNORECASE)
+# "Attack type:" la ten truong hien tai; "Predicted class:" la ten cu, giu de doc duoc ket qua da chay
+_CLASS_RE = re.compile(r"(?:attack\s*type|predicted\s*class)\s*[::]\s*\**\s*([^\n*]+)", re.IGNORECASE)
 _SEV_RE = re.compile(r"severity\s*[::]\s*\**\s*(low|medium|high|critical)", re.IGNORECASE)
 _TOPIND_RE = re.compile(r"top\s*indicators?\s*[::]\s*\**\s*([^\n]+)", re.IGNORECASE)
 _MITRE_RE = re.compile(r"\b(T\d{4}(?:\.\d{3})?)\b")
@@ -320,13 +321,13 @@ def citations(text):
     return out
 
 
-_FIELD_RE = re.compile(r"^\s*[-*]?\s*\**\s*(predicted class|severity|top indicators|technique|tactic|assessment)\b",
-                       re.IGNORECASE)
+_FIELD_RE = re.compile(r"^\s*[-*]?\s*\**\s*(attack type|predicted class|severity|top indicators|technique|tactic"
+                       r"|assessment)\b", re.IGNORECASE)
 
 
 def cited_units(text):
     """Do phu trich dan cua mot muc: tach thanh cau (theo dong / gach dau dong, roi theo dau cham), bo dong truong
-    (Predicted class:, Technique:, ...) va cau qua ngan; tra (so cau, so cau co it nhat mot id)."""
+    (Attack type:, Technique:, ...) va cau qua ngan; tra (so cau, so cau co it nhat mot id)."""
     n = cited = 0
     for line in (text or "").splitlines():
         line = line.strip()
@@ -352,7 +353,7 @@ def parse_assessment(raw):
 
 def parse_report(raw, allowed_ids=None):
     """Tach cac truong may doc duoc tu bao cao. Khong doan khi thieu: truong khong tim thay -> None + parse_error."""
-    out = {"predicted_class": None, "severity": None, "top_indicators": None, "mitre_id": None, "mitre_ids": [],
+    out = {"attack_type": None, "severity": None, "top_indicators": None, "mitre_id": None, "mitre_ids": [],
            "mitre_tactic": None, "assessment": None, "sections": {}, "n_sections": 0, "n_units": 0, "n_cited_units": 0,
            "citations": [], "citations_by_section": {}, "mitigations_chosen": [], "unknown_citations": [],
            "parse_error": None}
@@ -362,9 +363,9 @@ def parse_report(raw, allowed_ids=None):
 
     m = _CLASS_RE.search(raw)
     if m:
-        out["predicted_class"] = m.group(1).strip().strip("*`").strip()
+        out["attack_type"] = m.group(1).strip().strip("*`").strip()
     else:
-        out["parse_error"] = "predicted_class_not_found"
+        out["parse_error"] = "attack_type_not_found"
     m = _SEV_RE.search(raw)
     if m:
         out["severity"] = m.group(1).capitalize()
