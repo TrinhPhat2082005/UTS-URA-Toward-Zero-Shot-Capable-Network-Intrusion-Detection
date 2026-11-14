@@ -129,7 +129,7 @@ KB_STRICT = True                                 # thieu doan M/B/H1/H3 -> dung 
 # --------------------------------------------------------------------------
 VLM_MODEL_ID = "Qwen/Qwen2.5-VL-7B-Instruct"
 VLM_LOAD_4BIT = True
-VLM_MAX_NEW_TOKENS = 768
+VLM_MAX_NEW_TOKENS = 1280         # bao cao 6 muc co trich dan o moi cau + muc Mitigations co ly do
 
 # Gioi han vision token moi anh (don vi: so patch 28x28).
 #

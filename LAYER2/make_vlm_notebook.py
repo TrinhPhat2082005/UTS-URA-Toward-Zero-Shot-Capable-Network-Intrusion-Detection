@@ -120,14 +120,49 @@ shutil.rmtree(tmp, ignore_errors=True)
 meta = pipeline.write_run_meta(RUN_DIR, eb, vlm, KB_MODE, KB_PARTS, extra={"load": LOAD, "n_samples": len(samples)})
 print("warm-up xong")''')
 
-md("## 6. Mot sample (xem ky truoc khi chay ca lo)")
-code('''row = samples.iloc[0]
-rec = pipeline.run_sample(row, eb, vlm, RUN_DIR, KB_MODE, KB_PARTS)
-print({k: rec.get(k) for k in ("sample_id", "alert", "pred_label", "flagged", "predicted_class", "mitre_id",
-                               "class_correct", "technique_ok", "citation_precision", "run_error")})
-print({k: round(v * 1000, 1) for k, v in rec["latency"].items()}, "ms")
-d = os.path.join(RUN_DIR, rec["sample_id"])
-print(open(os.path.join(d, "output", "report.md"), encoding="utf-8").read() if rec.get("alert") else "khong co alert")''')
+md("""## 6. Chay thu 5 sample → `output/test_5_sample` (**comment ca cell nay khi chay that**)
+
+Chon 2 sample bat co + 3 sample co tat (nhan khac nhau), chay toan bo pipeline, roi kiem: VLM co trich dan dung
+cach khong, bao cao co bi cat (cham gioi han token) khong, bo nho GPU dinh, phien ban thu vien.""")
+code('''# ===== CHAY THU 5 SAMPLE — comment ca cell nay khi chay that =====
+import torch, xgboost, sklearn, shap, transformers
+TEST_DIR = os.path.join(config.OUT_DIR, "output", "test_5_sample")
+os.makedirs(TEST_DIR, exist_ok=True)
+
+row_of = {r["sample_id"]: r for _, r in samples.iterrows()}
+flag_of = {}                                   # tra nhanh (khong anh, khong VLM) de biet sample nao bat co
+for sid, r in row_of.items():
+    ev = eb.build(r, out_dir=None, with_images=False)
+    flag_of[sid] = bool(ev["alert"] and ev["lookup"]["flagged"])
+pick = [s for s in row_of if flag_of[s]][:2]
+used = {row_of[s]["Label_Text"] for s in pick}
+for sid, r in row_of.items():
+    if len(pick) == 5:
+        break
+    if not flag_of[sid] and r["Label_Text"] not in used:
+        pick.append(sid); used.add(r["Label_Text"])
+print(f"{sum(flag_of.values())}/{len(flag_of)} sample bat co; chay thu: {pick}")
+
+pipeline.write_run_meta(TEST_DIR, eb, vlm, KB_MODE, KB_PARTS, extra={"test": True})
+gpu = torch.cuda.is_available()
+if gpu:
+    torch.cuda.reset_peak_memory_stats()
+tok = vlm.processor.tokenizer
+for sid in pick:
+    rec = pipeline.run_sample(row_of[sid], eb, vlm, TEST_DIR, KB_MODE, KB_PARTS)
+    raw = open(os.path.join(TEST_DIR, sid, "output", "report.md"), encoding="utf-8").read() if rec.get("alert") else ""
+    n_out = len(tok(raw).input_ids)
+    print(f"\\n{sid}: flag={rec.get('flagged')} pred={rec.get('predicted_class')} sections={rec.get('n_sections')} "
+          f"cites={rec.get('n_citations')} unknown={rec.get('n_unknown_citations')} "
+          f"mitig_ok={rec.get('mitigations_valid')} out_tokens={n_out}/{config.VLM_MAX_NEW_TOKENS}"
+          + ("  <-- CO THE BI CAT" if n_out >= config.VLM_MAX_NEW_TOKENS - 10 else "")
+          + f" err={rec['run_error']} total={rec['latency_total']:.1f}s")
+peak = f"{torch.cuda.max_memory_allocated() / 2**30:.2f} GiB" if gpu else "khong co GPU"
+print(f"\\nGPU peak: {peak} | xgboost {xgboost.__version__} | "
+      f"scikit-learn {sklearn.__version__} | shap {shap.__version__} | transformers {transformers.__version__}")
+res_t, lat_t = metrics.load_run(TEST_DIR)
+display(metrics.summary(res_t)); display(metrics.latency_table(lat_t))
+print(open(os.path.join(TEST_DIR, pick[0], "output", "report.md"), encoding="utf-8").read())''')
 
 md("## 7. Chay ca lo")
 code('''done = pipeline.done_ids(RUN_DIR)
