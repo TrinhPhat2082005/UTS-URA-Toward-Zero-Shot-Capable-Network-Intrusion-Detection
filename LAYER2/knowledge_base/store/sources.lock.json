@@ -196,7 +196,7 @@
     "commit": "db4dd4239b9a9b95ca6715e3210eeeeb549910d4"
    }
   },
-  "retrieved": "2026-11-13"
+  "retrieved": "2026-11-14"
  },
  "java8-jls": {
   "version": "Java SE 8",
@@ -268,5 +268,27 @@
    }
   },
   "retrieved": "2026-11-13"
+ },
+ "borisenko-2022": {
+  "version": "published version (IEEE Xplore)",
+  "files": {
+   "borisenko2022.pdf": {
+    "manual": true,
+    "sha256": "d99c624b042f5aabf286c1700711a6686b15d12e74386253b0a29d1282162430",
+    "bytes": 882812
+   }
+  },
+  "retrieved": "2026-11-14"
+ },
+ "engelen-2021-doc": {
+  "version": "page retrieved on the date in sources.lock.json",
+  "files": {
+   "extended_doc.html": {
+    "url": "https://downloads.distrinet-research.be/WTMC2021/extended_doc.html",
+    "sha256": "770d19e58d78a7122f4def02a0804b5e98555c1d9b0cdf09553d4cb9a87521a2",
+    "bytes": 21487
+   }
+  },
+  "retrieved": "2026-11-14"
  }
 }

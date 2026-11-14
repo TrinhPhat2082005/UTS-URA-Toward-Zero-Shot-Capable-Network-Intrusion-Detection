@@ -1,12 +1,12 @@
 """
-Sinh authored/feature_names.yaml BANG MAY cho 78 cot CSV (khong go tay ten hay dinh nghia nao).
+Sinh definitions/feature_names.yaml BANG MAY cho 78 cot CSV (khong go tay ten hay dinh nghia nao).
 
 Chuoi bang chung cho moi cot:
     header CSV  --(trung tung chu)-->  FlowFeature.java @2018 (cicflowmeter-src-2018)   vd tot_fw_pkt("Tot Fwd Pkts","TFwP")  //9
                 --(cung so thu tu //9)-->  FlowFeature.java @master (cicflowmeter-readme) vd tot_fw_pkt("Total Fwd Packet","TFwP")
                 --(trung ten, khong phan biet hoa/thuong)-->  dong trong ReadMe.txt   "total Fwd Packet  Total packets in the forward direction"
 
-    python LAYER2/knowledge_base/build/draft_features.py            # ghi authored/feature_names.yaml
+    python LAYER2/knowledge_base/build/draft_features.py            # ghi definitions/feature_names.yaml
     python LAYER2/knowledge_base/build/draft_features.py --check    # chi in, khong ghi
 
 `group` va `discrete` la phan loai cua tac gia (dung de gom nhom H1 va de bang doi chieu C biet cot nao
@@ -111,7 +111,7 @@ def main():
         return
     header = ("# SINH BANG MAY boi build/draft_features.py; sua tay chi o 'group'/'discrete' (phan loai cua tac gia).\n"
               "# Moi quote duoc validate.py so nguyen van voi file nguon da khoa sha256.\n")
-    path = C.AUTHORED_DIR / "feature_names.yaml"
+    path = C.DEFINITIONS_DIR / "feature_names.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(header + yaml.safe_dump(entries, sort_keys=False, allow_unicode=True, width=200),
                     encoding="utf-8")

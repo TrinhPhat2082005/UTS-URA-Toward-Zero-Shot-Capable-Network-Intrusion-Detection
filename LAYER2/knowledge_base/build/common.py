@@ -1,12 +1,12 @@
 """
 Ham dung chung cho viec build knowledge base (KB).
 
-Ba loai noi dung duoc phep trong KB (xem knowledge_base/README.md):
-    trich dan   {"src": <id nguon>, "locator": <vi tri>, "quote": <cau nguyen van>}
-    so lieu     {"data": <khoa trong store/data_facts.json>}
-    quyet dinh  {"decision": <gia tri>, "support": [<trich dan | so lieu>, ...], "rationale": <ly do>}
+KB chi co MOT loai bang chung (xem knowledge_base/README.md):
+    trich dan   {"src": <id nguon>, "locator": <vi tri>, "quote": <cau nguyen van>}   -> validate.py kiem nguyen van
+Khong co quyet dinh cua tac gia, khong co so lieu tu tinh tu dataset.
 
-File nay chi lo: duong dan, doc nguon da khoa sha256, chuan hoa van ban de so trich dan, doc data_facts.
+File nay chi lo: duong dan, doc nguon da khoa sha256 (thu muc raw/), chuan hoa van ban de so trich dan,
+dinh dang mot doan (passage).
 """
 from __future__ import annotations
 
@@ -24,19 +24,19 @@ import yaml
 KB_DIR = Path(__file__).resolve().parents[1]          # LAYER2/knowledge_base
 LAYER2_DIR = KB_DIR.parent
 REPO_DIR = LAYER2_DIR.parent                          # UTS_URA
-AUTHORED_DIR = KB_DIR / "authored"
+MAPPING_DIR = KB_DIR / "mapping"                      # khoa nhan -> technique (Borisenko 2022, Table II)
+DEFINITIONS_DIR = KB_DIR / "definitions"              # dinh nghia feature, co, feature AE, artefact H3
 STORE_DIR = KB_DIR / "store"
 SOURCES_YAML = Path(__file__).resolve().parent / "sources.yaml"
 LOCK_JSON = STORE_DIR / "sources.lock.json"
-FACTS_JSON = STORE_DIR / "data_facts.json"
 PASSAGES_JSONL = STORE_DIR / "passages.jsonl"
 
 if str(LAYER2_DIR) not in sys.path:
     sys.path.insert(0, str(LAYER2_DIR))
 import config  # noqa: E402
 
-# File nguon tai ve nam cung du lieu nang ($UTS_DATA), khong commit vao repo.
-SOURCES_DIR = Path(config.DATA_ROOT) / "kb_sources"
+# File nguon tai ve (hoac dat tay voi nguon `manual`) nam cung du lieu nang, khong commit vao repo.
+SOURCES_DIR = Path(config.DATA_ROOT) / "kb_sources" / "raw"
 
 
 # ----------------------------------------------------------------------------------------------
@@ -46,33 +46,14 @@ def load_yaml(path):
     return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
 
 
+@lru_cache(maxsize=None)
 def load_sources():
-    """{id: muc trong sources.yaml}."""
+    """{id: muc trong sources.yaml} (doc mot lan; khong sua dict tra ve)."""
     return {s["id"]: s for s in load_yaml(SOURCES_YAML)}
 
 
 def load_lock():
     return json.loads(LOCK_JSON.read_text(encoding="utf-8")) if LOCK_JSON.exists() else {}
-
-
-CLAIMS_JSON = STORE_DIR / "claims.json"
-
-
-def load_facts():
-    """data_facts.json (mo ta, chi train) + claims.json (co kiem tinh dung, build/claims.py) duoi khoa 'claims'.
-    Doan gui VLM chi duoc dung {data: claims.<id>} co holds_all = true (validate.py)."""
-    facts = json.loads(FACTS_JSON.read_text(encoding="utf-8"))
-    facts["claims"] = json.loads(CLAIMS_JSON.read_text(encoding="utf-8")) if CLAIMS_JSON.exists() else {}
-    return facts
-
-
-def claim_key(facts, a, b, kind="identical"):
-    """Khoa claim cua cap cot (a, b) bat ke thu tu: 'claims.identical__a__b' hoac '...__b__a'."""
-    for x, y in ((a, b), (b, a)):
-        cid = f"{kind}__{x}__{y}"
-        if cid in facts["claims"]:
-            return f"claims.{cid}"
-    raise KeyError(f"claims.json khong co claim {kind} cho cap ({a}, {b}): chay build/claims.py")
 
 
 def sha256_file(path):
@@ -84,8 +65,7 @@ def sha256_file(path):
 
 
 def sha256_lf(path):
-    """sha256 sau khi doi CRLF -> LF. Dung cho nguon `local` (file trong repo): git checkout tren Windows
-    ghi CRLF, tren Linux ghi LF; bam noi dung LF thi lock giong nhau tren moi may (checklist 4.5)."""
+    """sha256 sau khi doi CRLF -> LF, cho nguon `local` (file trong repo): lock giong nhau tren Windows va Linux."""
     return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
@@ -94,13 +74,13 @@ def is_local(src_id, name):
 
 
 def sha256_source(src_id, name):
-    """Hash dung trong lock: file tai ve -> sha256 nguyen byte; file trong repo -> sha256_lf."""
+    """Hash dung trong lock: file tai ve / dat tay -> sha256 nguyen byte; file trong repo -> sha256_lf."""
     p = source_path(src_id, name)
     return sha256_lf(p) if is_local(src_id, name) else sha256_file(p)
 
 
 def source_path(src_id, name):
-    """Duong dan file `name` cua nguon `src_id` (file tai ve, hoac file trong repo voi nguon local)."""
+    """Duong dan file `name` cua nguon `src_id` (raw/<id>/<name>, hoac file trong repo voi nguon local)."""
     spec = load_sources()[src_id]
     for item in spec.get("local", []):
         if item["name"] == name:
@@ -119,21 +99,19 @@ def source_files(src_id):
 _CITATION = re.compile(r"\(Citation:[^)]*\)")
 _MDLINK = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 _TAGS = re.compile(r"<[^>]+>")
+CELL_SEP = " ¦ "      # ranh gioi o bang HTML: trich dan khong duoc vuot qua dau nay
 
 
 def normalize(text):
     """Chuan hoa de so nguyen van (ap dung NHU NHAU cho trich dan va nguon):
-    NFKC; bo '(Citation: ...)' va link markdown '[x](url)' -> 'x' cua ATT&CK; gop khoang trang;
+    NFKC; bo '(Citation: ...)', link markdown '[x](url)' -> 'x' va the <code> cua ATT&CK; gop khoang trang;
     bo khoang trang truoc dau cau (sinh ra khi go the HTML)."""
     text = unicodedata.normalize("NFKC", text)
     text = _CITATION.sub("", text)
     text = _MDLINK.sub(r"\1", text)
-    text = re.sub(r"</?code>", "", text)          # the <code> trong mo ta ATT&CK (vd T1018), ap nhu nhau cho hai phia
+    text = re.sub(r"</?code>", "", text)
     text = re.sub(r"\s+", " ", text)
     return re.sub(r" ([,.;:)])", r"\1", text).strip()
-
-
-CELL_SEP = " ¦ "      # checklist 5.3: ranh gioi o bang HTML; trich dan khong duoc vuot qua dau nay
 
 
 def _html_text(raw):
@@ -143,7 +121,7 @@ def _html_text(raw):
 
 
 def _stix_text(path):
-    """Moi truong description + name cua bundle STIX, noi lai."""
+    """Moi truong name + description cua bundle STIX (technique, analytic, mitigation, quan he), noi lai."""
     bundle = json.loads(Path(path).read_text(encoding="utf-8"))
     return "\n".join(f"{o.get('name', '')}\n{o.get('description', '')}" for o in bundle["objects"])
 
@@ -153,15 +131,22 @@ def _xml_text(path):
     return " ".join(ET.parse(path).getroot().itertext())
 
 
+def _pdf_text(path):
+    from pypdf import PdfReader
+    return " ".join(page.extract_text() or "" for page in PdfReader(str(path)).pages)
+
+
 def _file_text(p):
     if not p.exists():
-        raise FileNotFoundError(f"thieu file nguon {p}; chay build/fetch_sources.py truoc")
+        raise FileNotFoundError(f"thieu file nguon {p}; chay build/fetch_sources.py (hoac dat tay file `manual`)")
     if p.suffix == ".json":
         return _stix_text(p)
     if p.suffix == ".xml":
         return _xml_text(p)
     if p.suffix == ".html":
         return _html_text(p.read_text(encoding="utf-8", errors="replace"))
+    if p.suffix == ".pdf":
+        return _pdf_text(p)
     return p.read_text(encoding="utf-8", errors="replace")
 
 
@@ -178,46 +163,30 @@ def file_text(src_id, name):
 
 
 def locator_file(src_id, locator):
-    """Ten file cua nguon ma locator chi toi ('BasicFlow.java, firstPacket()' -> 'BasicFlow.java'), hoac None.
-    Locator dang 'FlowFeature.java (master), ...' cung duoc nhan."""
+    """Ten file cua nguon ma locator chi toi ('BasicFlow.java, firstPacket()' -> 'BasicFlow.java'), hoac None."""
     if not locator:
         return None
     head = re.split(r"[,(]", locator, maxsplit=1)[0].strip()
-    names = [f["name"] for f in load_sources()[src_id].get("files", []) + load_sources()[src_id].get("local", [])]
+    spec = load_sources()[src_id]
+    names = [f["name"] for f in spec.get("files", []) + spec.get("local", [])]
     return head if head in names else None
 
 
 def quote_ok(src_id, quote, locator=None):
     """Trich dan co nam nguyen van trong nguon khong (sau khi chuan hoa).
-    Checklist 5.1 (ban nhe): neu locator bat dau bang ten mot file cua nguon, chi kiem trong file do."""
+    Neu locator bat dau bang ten mot file cua nguon, chi kiem trong file do."""
     name = locator_file(src_id, locator)
     hay = file_text(src_id, name) if name else source_text(src_id)
     return normalize(quote) in hay
 
 
 # ----------------------------------------------------------------------------------------------
-# So lieu (store/data_facts.json)
-# ----------------------------------------------------------------------------------------------
-def fact(facts, key):
-    """Lay gia tri theo khoa dang 'a.b.c'. Ten cot co the chua '/', khong chua '.'.
-    Khoa 'claims.<id>' tra ca muc claim {statement, values, holds_all, ...}."""
-    if key.startswith("claims."):
-        cid = key[len("claims."):]
-        if cid not in facts.get("claims", {}):
-            raise KeyError(f"claims.json khong co claim '{cid}'")
-        return facts["claims"][cid]
-    node = facts
-    for part in key.split("."):
-        if not isinstance(node, dict) or part not in node:
-            raise KeyError(f"data_facts khong co khoa '{key}' (dung o '{part}')")
-        node = node[part]
-    return node
-
-
-# ----------------------------------------------------------------------------------------------
 # Mot doan van (passage) cua KB
 # ----------------------------------------------------------------------------------------------
-PART_ORDER = ["A", "B", "H1", "H2", "H3", "G"]
+# M  khoa nhan -> technique (Borisenko 2022)      B  tri thuc theo technique (ATT&CK, CAPEC)
+# H1 dinh nghia feature (+ co cua cot co)         H2 giao thuc, cong (IANA), co TCP (RFC)
+# H3 artefact co dieu kien tren gia tri flow      G  mitigation ATT&CK (code dien, khong gui VLM)
+PART_ORDER = ["M", "B", "H1", "H2", "H3", "G"]
 
 
 def passage(pid, part, keys, kind, text, *, title=None, source=None, support=None, notes=None,
@@ -226,13 +195,12 @@ def passage(pid, part, keys, kind, text, *, title=None, source=None, support=Non
 
     kind:
       verbatim  `text` la chuoi con nguyen van cua nguon `source` ({src, locator}); validate.py kiem.
-      rendered  `text` do CODE ghep tu cac truong nguyen van trong `support` (vd ten cot + dinh nghia ReadMe,
-                dong dang ky IANA); khong co cau nao do nguoi viet.
-      authored  `text` do tac gia viet (nam trong authored/*.yaml), kem `support`.
-    notes: [{id, text, support}] ghi chu tac gia gan them (H1), moi ghi chu co bang chung rieng.
+      rendered  `text` do CODE ghep tu cac truong nguyen van trong `support` (vd dong IANA, dong Table II).
+      defined   `text` la dinh nghia viet trong definitions/*.yaml (feature, co, feature AE, artefact H3), kem `support`.
+    notes: [{id, text, support, relation}] ghi chu gan them (H1).
     for_vlm: False voi G' (code dien vao report, khong dua cho VLM).
     """
-    assert kind in ("verbatim", "rendered", "authored"), kind
+    assert kind in ("verbatim", "rendered", "defined"), kind
     assert part in PART_ORDER, part
     if kind == "verbatim":
         assert source and "src" in source, f"{pid}: doan verbatim can source"
@@ -250,4 +218,4 @@ def pid_safe(name):
 
 def write_json(path, obj):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    Path(path).write_text(json.dumps(obj, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")

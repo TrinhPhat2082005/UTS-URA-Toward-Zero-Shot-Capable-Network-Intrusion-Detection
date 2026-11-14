@@ -1,7 +1,8 @@
-# H1 viet tay (co bang chung) cho cac chieu KHONG co dong dinh nghia trong ReadMe CICFlowMeter:
-#   - Dst Port, Protocol: ReadMe khong liet ke; dinh nghia theo trang dataset + ma nguon 2018.
-#   - cac chieu Layer 1 (variant ae_xgboost) them vao 78 cot CSV: nguon la ma Layer 1 cua chinh repo
-#     nay (tier "system"), tuc dinh nghia cua he thong. 16 chieu latent gop thanh MOT doan.
+# H1 cho cac chieu KHONG co dong dinh nghia trong ReadMe CICFlowMeter:
+#   - Dst Port, Protocol: ReadMe khong liet ke; dinh nghia theo trang dataset UNB + ma nguon 2018.
+#   - cac chieu Layer 1 (variant ae_xgboost) them vao 78 cot CSV: dinh nghia chung cua autoencoder
+#     (latent = mot toa do cua tang an/bottleneck; recon error = sai so binh phuong trung binh), trich ma Layer 1
+#     cua repo (tier "system"). 16 chieu latent gop thanh MOT doan. Khong dien giai them.
 
 - pid: H1-Dst_Port
   applies_to: [Dst Port]
@@ -24,20 +25,16 @@
 
 - pid: H1-ae_recon_error
   applies_to: [ae_recon_error]
-  text: "Reconstruction error of an autoencoder trained on benign flows only: the mean squared difference between the flow's scaled features and the autoencoder's reconstruction of them. A higher value means the flow is less like the benign training traffic, and the gate's XGBoost model is constrained so that a higher value can only raise the attack score."
+  text: "Reconstruction error of the autoencoder: the mean squared error between the flow's scaled features and the autoencoder's reconstruction of them."
   support:
-    - {src: layer1-code, locator: "autoencoder.py, module docstring", quote: 'Train tren benign-only. Reconstruction error = anomaly score.'}
     - {src: layer1-code, locator: "autoencoder.py, reconstruction_error()", quote: 'return ((x - x_hat) ** 2).mean(dim=1)'}
-    - {src: layer1-code, locator: "train_protocol_b.py, scaling", quote: 'return np.clip(sc.transform(clean(X)), -CLIP_VAL, CLIP_VAL)'}
     - {src: layer1-code, locator: "train_protocol_b.py, AE features",
        quote: 'names = feats + [f"ae_latent_{i}" for i in range(AE_BOTTLENECK)] + ["ae_recon_error"]'}
-    - {src: layer1-code, locator: "train_protocol_b.py, monotone constraints",
-       quote: 'mono = build_monotone_constraints(n_base=len(feats), n_augmented_monotone=1, n_augmented_free=AE_BOTTLENECK)'}
 
 - pid: H1-ae_latent
   applies_to: [ae_latent_0, ae_latent_1, ae_latent_2, ae_latent_3, ae_latent_4, ae_latent_5, ae_latent_6, ae_latent_7,
                ae_latent_8, ae_latent_9, ae_latent_10, ae_latent_11, ae_latent_12, ae_latent_13, ae_latent_14, ae_latent_15]
-  text: "One of the 16 coordinates of the autoencoder's bottleneck (latent) representation of the flow's scaled features. The coordinates are learned from benign flows; individually they have no network meaning and are model inputs, not traffic measurements."
+  text: "One of the 16 coordinates of the autoencoder's latent (bottleneck) layer, the layer that encodes the flow's scaled features."
   support:
     - {src: layer1-code, locator: "autoencoder.py, module docstring", quote: 'Encoder: input_dim -> 64 -> 32 -> bottleneck_dim'}
     - {src: layer1-code, locator: "train_protocol_b.py, configuration", quote: 'AE_BOTTLENECK = 16'}

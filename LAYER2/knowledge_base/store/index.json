@@ -1,77 +1,325 @@
 {
- "kb_sha256": "520e42eba1962dc5daf2e72d3c1765c1ac14648cfe0e5b98b2903676000c71e9",
+ "kb_sha256": "ef4cfdf42e8c1df94ab0bafa4337e969d099904b395d7c0624e7061cfb94a334",
  "labels": {
-  "SSH_Bruteforce": {
-   "technique": "T1110.001",
-   "capec": "CAPEC-16",
-   "extra_mechanisms": []
-  },
   "FTP_BruteForce": {
-   "technique": "T1110.001",
-   "capec": "CAPEC-16",
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0006",
+     "technique": "T1110",
+     "sub_technique": "T1110.001"
+    }
+   ],
+   "techniques": [
+    "T1110.001"
+   ],
+   "capec": {
+    "T1110.001": [
+     "CAPEC-49"
+    ]
+   },
+   "detection": {
+    "T1110.001": false
+   }
+  },
+  "SSH_Bruteforce": {
+   "entries": [
+    {
+     "tactic": "TA0006",
+     "technique": "T1110",
+     "sub_technique": "T1110.001"
+    }
+   ],
+   "techniques": [
+    "T1110.001"
+   ],
+   "capec": {
+    "T1110.001": [
+     "CAPEC-49"
+    ]
+   },
+   "detection": {
+    "T1110.001": false
+   }
   },
   "DoS_attacks_GoldenEye": {
-   "technique": "T1499.002",
-   "capec": "CAPEC-488",
-   "extra_mechanisms": []
-  },
-  "DoS_attacks_Hulk": {
-   "technique": "T1499.002",
-   "capec": "CAPEC-488",
-   "extra_mechanisms": []
-  },
-  "DoS_attacks_SlowHTTPTest": {
-   "technique": "T1499.002",
-   "capec": "CAPEC-469",
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0040",
+     "technique": "T1499",
+     "sub_technique": "T1499.002"
+    }
+   ],
+   "techniques": [
+    "T1499.002"
+   ],
+   "capec": {
+    "T1499.002": [
+     "CAPEC-469",
+     "CAPEC-482",
+     "CAPEC-488",
+     "CAPEC-489",
+     "CAPEC-528"
+    ]
+   },
+   "detection": {
+    "T1499.002": true
+   }
   },
   "DoS_attacks_Slowloris": {
-   "technique": "T1499.002",
-   "capec": "CAPEC-469",
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0040",
+     "technique": "T1499",
+     "sub_technique": "T1499.002"
+    }
+   ],
+   "techniques": [
+    "T1499.002"
+   ],
+   "capec": {
+    "T1499.002": [
+     "CAPEC-469",
+     "CAPEC-482",
+     "CAPEC-488",
+     "CAPEC-489",
+     "CAPEC-528"
+    ]
+   },
+   "detection": {
+    "T1499.002": true
+   }
+  },
+  "DoS_attacks_SlowHTTPTest": {
+   "entries": [
+    {
+     "tactic": "TA0040",
+     "technique": "T1499",
+     "sub_technique": "T1499.002"
+    }
+   ],
+   "techniques": [
+    "T1499.002"
+   ],
+   "capec": {
+    "T1499.002": [
+     "CAPEC-469",
+     "CAPEC-482",
+     "CAPEC-488",
+     "CAPEC-489",
+     "CAPEC-528"
+    ]
+   },
+   "detection": {
+    "T1499.002": true
+   }
+  },
+  "DoS_attacks_Hulk": {
+   "entries": [
+    {
+     "tactic": "TA0040",
+     "technique": "T1499",
+     "sub_technique": "T1499.002"
+    }
+   ],
+   "techniques": [
+    "T1499.002"
+   ],
+   "capec": {
+    "T1499.002": [
+     "CAPEC-469",
+     "CAPEC-482",
+     "CAPEC-488",
+     "CAPEC-489",
+     "CAPEC-528"
+    ]
+   },
+   "detection": {
+    "T1499.002": true
+   }
   },
   "DDoS_attacks_LOIC_HTTP": {
-   "technique": "T1499.002",
-   "capec": "CAPEC-488",
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0040",
+     "technique": "T1499",
+     "sub_technique": "T1499.002"
+    }
+   ],
+   "techniques": [
+    "T1499.002"
+   ],
+   "capec": {
+    "T1499.002": [
+     "CAPEC-469",
+     "CAPEC-482",
+     "CAPEC-488",
+     "CAPEC-489",
+     "CAPEC-528"
+    ]
+   },
+   "detection": {
+    "T1499.002": true
+   }
   },
   "DDOS_attack_LOIC_UDP": {
-   "technique": "T1498.001",
-   "capec": "CAPEC-125",
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0040",
+     "technique": "T1499",
+     "sub_technique": "T1499.002"
+    }
+   ],
+   "techniques": [
+    "T1499.002"
+   ],
+   "capec": {
+    "T1499.002": [
+     "CAPEC-469",
+     "CAPEC-482",
+     "CAPEC-488",
+     "CAPEC-489",
+     "CAPEC-528"
+    ]
+   },
+   "detection": {
+    "T1499.002": true
+   }
   },
   "DDOS_attack_HOIC": {
-   "technique": "T1499.002",
-   "capec": "CAPEC-488",
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0040",
+     "technique": "T1499",
+     "sub_technique": "T1499.002"
+    }
+   ],
+   "techniques": [
+    "T1499.002"
+   ],
+   "capec": {
+    "T1499.002": [
+     "CAPEC-469",
+     "CAPEC-482",
+     "CAPEC-488",
+     "CAPEC-489",
+     "CAPEC-528"
+    ]
+   },
+   "detection": {
+    "T1499.002": true
+   }
   },
   "Brute_Force_Web": {
-   "technique": "T1110.001",
-   "capec": "CAPEC-49",
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0006",
+     "technique": "T1110",
+     "sub_technique": "T1110.001"
+    }
+   ],
+   "techniques": [
+    "T1110.001"
+   ],
+   "capec": {
+    "T1110.001": [
+     "CAPEC-49"
+    ]
+   },
+   "detection": {
+    "T1110.001": false
+   }
   },
   "Brute_Force_XSS": {
-   "technique": "T1190",
-   "capec": "CAPEC-63",
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0001",
+     "technique": "T1189",
+     "sub_technique": null
+    }
+   ],
+   "techniques": [
+    "T1189"
+   ],
+   "capec": {
+    "T1189": []
+   },
+   "detection": {
+    "T1189": true
+   }
   },
   "SQL_Injection": {
-   "technique": "T1190",
-   "capec": "CAPEC-66",
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0001",
+     "technique": "T1190",
+     "sub_technique": null
+    }
+   ],
+   "techniques": [
+    "T1190"
+   ],
+   "capec": {
+    "T1190": []
+   },
+   "detection": {
+    "T1190": true
+   }
   },
   "Infiltration": {
-   "technique": "T1046",
-   "capec": "CAPEC-300",
-   "extra_mechanisms": [
-    "T1018"
-   ]
+   "entries": [
+    {
+     "tactic": "TA0002",
+     "technique": "T1204",
+     "sub_technique": "T1204.002"
+    },
+    {
+     "tactic": "TA0007",
+     "technique": "T1046",
+     "sub_technique": null
+    }
+   ],
+   "techniques": [
+    "T1204.002",
+    "T1046"
+   ],
+   "capec": {
+    "T1204.002": [],
+    "T1046": [
+     "CAPEC-300"
+    ]
+   },
+   "detection": {
+    "T1204.002": false,
+    "T1046": true
+   }
   },
   "Bot": {
-   "technique": "T1071.001",
-   "capec": null,
-   "extra_mechanisms": []
+   "entries": [
+    {
+     "tactic": "TA0042",
+     "technique": "T1583",
+     "sub_technique": "T1583.005"
+    },
+    {
+     "tactic": "TA0009",
+     "technique": "T1113",
+     "sub_technique": null
+    }
+   ],
+   "techniques": [
+    "T1583.005",
+    "T1113"
+   ],
+   "capec": {
+    "T1583.005": [],
+    "T1113": [
+     "CAPEC-648"
+    ]
+   },
+   "detection": {
+    "T1583.005": false,
+    "T1113": false
+   }
   }
  },
  "flag_column_holds": {

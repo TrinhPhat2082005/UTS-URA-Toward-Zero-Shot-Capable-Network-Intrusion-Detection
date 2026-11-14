@@ -11,11 +11,13 @@ from __future__ import annotations
 
 import common as C
 import mitre
+from part_technique import technique_ids
 
 
 def build(ctx):
     out = []
-    for tid in sorted({m["technique"]["decision"] for m in ctx["mapping"].values()}):
+    # technique theo Table II cua Borisenko et al. 2022 (mapping/borisenko2022_table2.yaml)
+    for tid in sorted({t for ts in technique_ids(ctx["mapping"]).values() for t in ts}):
         for mid, name, desc in mitre.mitigations(tid):
             quote = mitre.clip_sentences(desc, max_words=80)
             out.append(C.passage(f"G-{tid}-{mid}", "G", {"technique": tid, "mitigation": mid}, "rendered",

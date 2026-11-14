@@ -1,0 +1,82 @@
+# KHOA DUY NHAT CUA KB: nhan CSE-CIC-IDS2018 -> tactic / technique / sub-technique ATT&CK, chep NGUYEN VAN Table II
+# cua Borisenko et al. 2022 (nguon `borisenko-2022`, PDF da khoa sha256). Khong co quyet dinh nao cua tac gia:
+#   - `row.quote` la dong cua Table II nhu pypdf trich tu PDF (validate.py kiem nguyen van trong PDF);
+#   - moi ID trong `entries` phai xuat hien trong `row.quote` (validate.py kiem);
+#   - `label` la ten nhan trong CSV cua dataset (cot Label_Text); `paper_name` la ten trong paper.
+# Technique ma KB dung cho mot entry = sub_technique neu co, nguoc lai technique.
+
+source: {src: borisenko-2022, locator: "Table II. Comparison of CSE-CIC-IDS2018 dataset attacks and MITRE ATT&CK matrix"}
+
+labels:
+  FTP_BruteForce:
+    paper_name: "FTP-BruteForce"
+    row: {src: borisenko-2022, locator: "Table II, row 1", quote: '1 FTP- BruteForce Credential Access (TA0006) Brute Force (T1110) Password Guessing (T1110.001) FTP Patator'}
+    entries:
+      - {tactic: TA0006, technique: T1110, sub_technique: T1110.001}
+  SSH_Bruteforce:
+    paper_name: "SSH-Bruteforce"
+    row: {src: borisenko-2022, locator: "Table II, row 2", quote: '2 SSH- Bruteforce Credential Access (TA0006) Brute Force (T1110) Password Guessing (T1110.001) SSH Patator'}
+    entries:
+      - {tactic: TA0006, technique: T1110, sub_technique: T1110.001}
+  DoS_attacks_GoldenEye:
+    paper_name: "DoS-GoldenEye"
+    row: {src: borisenko-2022, locator: "Table II, row 3", quote: '3 DoS- GoldenEye Impact (TA0040) Endpoint Denial of Service (T1499) Service Exhaustion Flood (T1499.002) GoldenEye'}
+    entries:
+      - {tactic: TA0040, technique: T1499, sub_technique: T1499.002}
+  DoS_attacks_Slowloris:
+    paper_name: "DoS-Slowloris"
+    row: {src: borisenko-2022, locator: "Table II, row 4", quote: '4 DoS- Slowloris Impact (TA0040) Endpoint Denial of Service (T1499) Service Exhaustion Flood (T1499.002) Slowloris'}
+    entries:
+      - {tactic: TA0040, technique: T1499, sub_technique: T1499.002}
+  DoS_attacks_SlowHTTPTest:
+    paper_name: "DoS-SlowHTTPTest"
+    row: {src: borisenko-2022, locator: "Table II, row 5", quote: '5 DoS- SlowHTT PTest Impact (TA0040) Endpoint Denial of Service (T1499) Service Exhaustion Flood (T1499.002) Slowhttptest'}
+    entries:
+      - {tactic: TA0040, technique: T1499, sub_technique: T1499.002}
+  DoS_attacks_Hulk:
+    paper_name: "DoS-Hulk"
+    row: {src: borisenko-2022, locator: "Table II, row 6", quote: '6 DoS-Hulk Impact (TA0040) Endpoint Denial of Service (T1499) Service Exhaustion Flood (T1499.002) Hulk'}
+    entries:
+      - {tactic: TA0040, technique: T1499, sub_technique: T1499.002}
+  DDoS_attacks_LOIC_HTTP:
+    paper_name: "DDoS attacks-LOIC-HTTP"
+    row: {src: borisenko-2022, locator: "Table II, row 7", quote: '7 DDoS attacks- LOIC- HTTP Impact (TA0040) Endpoint Denial of Service (T1499) Service Exhaustion Flood (T1499.002) LOIC'}
+    entries:
+      - {tactic: TA0040, technique: T1499, sub_technique: T1499.002}
+  DDOS_attack_LOIC_UDP:
+    paper_name: "DDoS-LOIC-UDP"
+    row: {src: borisenko-2022, locator: "Table II, row 8", quote: '8 DDoS- LOIC- UDP Impact (TA0040) Endpoint Denial of Service (T1499) Service Exhaustion Flood (T1499.002) LOIC'}
+    entries:
+      - {tactic: TA0040, technique: T1499, sub_technique: T1499.002}
+  DDOS_attack_HOIC:
+    paper_name: "DDOS-HOIC"
+    row: {src: borisenko-2022, locator: "Table II, row 9", quote: '9 DDOS- HOIC Impact (TA0040) Endpoint Denial of Service (T1499) Service Exhaustion Flood (T1499.002) HOIC'}
+    entries:
+      - {tactic: TA0040, technique: T1499, sub_technique: T1499.002}
+  Brute_Force_Web:
+    paper_name: "Brute Force -Web"
+    row: {src: borisenko-2022, locator: "Table II, row 10", quote: '10 Brute Force - Web Credential Access (TA0006) Brute Force (T1110) Password Guessing (T1110.001) DVWA, Selenium Framework'}
+    entries:
+      - {tactic: TA0006, technique: T1110, sub_technique: T1110.001}
+  Brute_Force_XSS:
+    paper_name: "Brute Force -XSS"
+    row: {src: borisenko-2022, locator: "Table II, row 11", quote: '11 Brute Force - XSS Initial Access (TA0001) Drive-by Compromise (T1189) - DVWA, Selenium Framework'}
+    entries:
+      - {tactic: TA0001, technique: T1189, sub_technique: null}
+  SQL_Injection:
+    paper_name: "SQL Injection"
+    row: {src: borisenko-2022, locator: "Table II, row 12", quote: '12 SQL Injection Initial Access (TA0001) Exploit Public- Facing Application (T1190) - DVWA, sqlmap'}
+    entries:
+      - {tactic: TA0001, technique: T1190, sub_technique: null}
+  Infiltration:
+    paper_name: "Infiltration"
+    row: {src: borisenko-2022, locator: "Table II, row 13", quote: '13 Infiltration Execution (TA0002) User Execution (T1204) Malicious File (T1204.002) Dropbox, Adobe Acrobat Reader 9 Discovery (TA0007) Network Service Scanning (T1046) - Nmap, portscan'}
+    entries:
+      - {tactic: TA0002, technique: T1204, sub_technique: T1204.002}
+      - {tactic: TA0007, technique: T1046, sub_technique: null}
+  Bot:
+    paper_name: "Bot"
+    row: {src: borisenko-2022, locator: "Table II, row 14", quote: '14 Bot Resource Developm ent (TA0042) Acquire Infrastructur e (T1583) Botnet (T1583.005) Ares, Zeus Collection (TA0009) Screen Capture (T1113) - screenshots'}
+    entries:
+      - {tactic: TA0042, technique: T1583, sub_technique: T1583.005}
+      - {tactic: TA0009, technique: T1113, sub_technique: null}

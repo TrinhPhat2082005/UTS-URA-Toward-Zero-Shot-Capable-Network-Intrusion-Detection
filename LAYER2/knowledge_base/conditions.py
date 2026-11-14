@@ -4,7 +4,7 @@ Danh gia dieu kien `when` cua doan H3 tren gia tri tho cua mot flow, KHONG dung 
     when = {"all": [["TotLen Fwd Pkts", "==", 0], ["TotLen Bwd Pkts", "==", 0]]}
     when = {"any": [["Init Fwd Win Byts", "==", -1], ["Init Bwd Win Byts", "==", -1]]}
 
-Dung chung cho luc build (dem tan suat) va luc chay (retrieve.py chon doan cho alert).
+Dung chung cho luc build (part_artefact.py kiem ten cot) va luc chay (retrieve.py chon doan cho alert).
 """
 from __future__ import annotations
 

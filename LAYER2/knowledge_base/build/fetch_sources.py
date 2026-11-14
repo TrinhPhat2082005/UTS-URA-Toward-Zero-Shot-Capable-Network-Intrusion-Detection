@@ -1,5 +1,6 @@
 """
-Buoc 1 cua KB: tai moi nguon trong sources.yaml ve $UTS_DATA/kb_sources/<id>/ va khoa bang sha256.
+Buoc 1 cua KB: tai moi nguon trong sources.yaml ve $UTS_DATA/kb_sources/raw/<id>/ va khoa bang sha256
+(nguon `manual`: file dat tay vao raw/<id>/, script chi khoa sha256).
 
     python LAYER2/knowledge_base/build/fetch_sources.py            # tai nguon con thieu, ghi lock
     python LAYER2/knowledge_base/build/fetch_sources.py --verify   # khong tai; so sha256 voi lock
@@ -73,6 +74,15 @@ def main():
                 ok = path.exists() and C.sha256_file(path) == entry["files"].get(f["name"], {}).get("sha256")
                 bad += not ok
                 print(f"  [{'ok ' if ok else 'BAD'}] {sid}/{f['name']}")
+                continue
+            if f.get("manual"):
+                # nguon khong tai tu dong duoc (vd PDF IEEE co ban quyen): file phai duoc dat tay vao raw/<id>/
+                if not path.exists():
+                    raise SystemExit(f"thieu file dat tay {path}: {f.get('note', '')}")
+                if f["name"] not in entry["files"]:
+                    entry["retrieved"] = today
+                entry["files"][f["name"]] = {"manual": True, "sha256": C.sha256_file(path),
+                                             "bytes": path.stat().st_size}
                 continue
             if args.refresh or not path.exists():
                 print(f"  tai {sid}/{f['name']} ...", flush=True)

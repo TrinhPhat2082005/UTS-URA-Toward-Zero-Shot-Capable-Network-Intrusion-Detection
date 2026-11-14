@@ -47,6 +47,48 @@ def first_paragraph(text):
     return text.strip().split("\n\n")[0].strip()
 
 
+@lru_cache(maxsize=None)
+def tactic_name(ta_id):
+    """Ten tactic ATT&CK theo ID (vd 'TA0040' -> 'Impact')."""
+    for o in _attack():
+        if o["type"] == "x-mitre-tactic" and _ext_id(o) == ta_id:
+            return o["name"]
+    raise KeyError(f"ATT&CK 20.1 khong co tactic {ta_id}")
+
+
+NETWORK_COMPONENT_PREFIX = "Network"        # DC0078 Network Traffic Flow, DC0082 Network Connection Creation, DC0085 ...
+
+
+def network_analytics(tid):
+    """Analytic cua technique co nguon log la data component mang (ten bat dau bang 'Network').
+    Duong noi trong ATT&CK v18+: x-mitre-detection-strategy --detects--> technique; strategy.x_mitre_analytic_refs
+    -> x-mitre-analytic; analytic.x_mitre_log_source_references[].x_mitre_data_component_ref -> data component.
+    Tra [{id, platforms, components, description}] sap theo ID, bo mo ta trung lap (cung text, khac platform)."""
+    t = technique(tid)
+    by_id = {o["id"]: o for o in _attack()}
+    comp = {o["id"]: o["name"] for o in _attack() if o["type"] == "x-mitre-data-component"}
+    strategies = [by_id[r["source_ref"]] for r in _attack()
+                  if r["type"] == "relationship" and r.get("relationship_type") == "detects"
+                  and r["target_ref"] == t["stix_id"] and r["source_ref"] in by_id]
+    out, seen = [], set()
+    for s in strategies:
+        for aid in s.get("x_mitre_analytic_refs", []):
+            a = by_id.get(aid)
+            if a is None:
+                continue
+            comps = sorted({comp.get(l.get("x_mitre_data_component_ref"), "")
+                            for l in a.get("x_mitre_log_source_references", [])} - {""})
+            if not any(c.startswith(NETWORK_COMPONENT_PREFIX) for c in comps):
+                continue
+            desc = a.get("description", "").strip()
+            if not desc or desc in seen:
+                continue
+            seen.add(desc)
+            out.append({"id": _ext_id(a), "platforms": a.get("x_mitre_platforms", []), "components": comps,
+                        "description": desc})
+    return sorted(out, key=lambda x: x["id"] or "")
+
+
 def mitigations(tid):
     """[(M-id, ten, mo ta quan he)] cua technique, theo quan he 'mitigates', sap theo M-id."""
     t = technique(tid)
@@ -88,22 +130,8 @@ def capec(cid):
     return _capec()[cid]
 
 
-def capec_maps_to(cid, tid):
-    """CAPEC v3.9 co tu lien ket muc `cid` toi technique `tid` khong (Taxonomy_Mapping ATTACK)."""
-    return tid in _capec()[cid]["attack"]
-
-
-def capec_child_of_linked(cid, tid):
-    """Route 'child_of_linked' (checklist 6.3): `cid` khong tu lien ket toi `tid`, nhung la con truc tiep
-    (ChildOf) cua mot muc CAPEC lien ket toi `tid`. Tra muc cha thoa, hoac None."""
-    for p in _capec()[cid]["parents"]:
-        if p in _capec() and tid in _capec()[p]["attack"]:
-            return p
-    return None
-
-
 def capec_linked(tid):
-    """Moi muc CAPEC lien ket toi technique `tid` (de build_report liet ke cac ung vien)."""
+    """Moi muc CAPEC v3.9 ma CAPEC tu lien ket toi technique `tid` (Taxonomy_Mapping ATTACK), theo so thu tu."""
     return sorted((c for c in _capec().values() if tid in c["attack"]), key=lambda c: int(c["id"].split("-")[1]))
 
 

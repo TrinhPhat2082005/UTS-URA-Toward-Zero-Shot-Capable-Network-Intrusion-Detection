@@ -1,21 +1,22 @@
 """
-H2 — Giao thuc, cong, co TCP: dinh nghia chuan, dung chung moi nhan.
+H2 — Giao thuc, cong, co TCP: dinh nghia chuan (IANA, IETF), khong lien quan toi dataset.
 
-Y tuong: muc 2 cua report mo ta hanh vi quan sat duoc (cong dich, giao thuc, co); VLM can nghia chuan
-cua chung de khong doan.
-  - H2-PROTO-6 / -17: dong dang ky IANA Protocol Numbers (rendered tu cac truong nguyen van).
-    Protocol 0 KHONG co doan H2: trong CICFlowMeter no la gia tri mac dinh (xem H3-NOTRANSPORT).
-  - H2-PORT-<p>: cong chinh (chiem >= 1% flow cua mot nhan tan cong, data_facts.attack_main_ports),
-    ten dich vu va mo ta tu IANA Port Registry. Cong 0 cung do H3-NOTRANSPORT giai thich.
-  - H2-FLAG-<F>: dinh nghia 8 co trong RFC 9293 muc 3.1, NGUYEN VAN; H2-FLAG-ECN-SETUP: RFC 3168 (SYN co
-    ca ECE va CWR). Khi mot cot co nam trong top feature, retrieve.py chon doan cua co MA COT DO THUC SU
-    CHUA (data_facts.flag_column_holds), khong phai co trong ten cot.
+  - H2-PROTO-6 / -17: dong dang ky IANA Protocol Numbers (rendered). Chi hai so nay vi CICFlowMeter-V3 chi ghi 6
+    (TCP) hoac 17 (UDP); con lai la gia tri mac dinh 0 (xem H3-NOTRANSPORT) — trich ma nguon trong support.
+  - H2-PORT-<p>: MOI cong co dang ky ten dich vu trong IANA Service Name and Transport Protocol Port Number
+    Registry (tcp/udp), ghep tu dong tu cac dong cua registry; khong co buoc chon loc.
+  - H2-PORT-NOTE: cau nguyen van RFC 6335 sec. 9 (dang ky cong khong cho biet flow dung dich vu nao);
+    retrieve.py dua kem moi khi chon mot doan cong.
+  - H2-FLAG-<F>: dinh nghia 8 co trong RFC 9293 muc 3.1, NGUYEN VAN; H2-FLAG-ECN-SETUP: RFC 3168 (SYN co ca ECE
+    va CWR). retrieve.py chon doan cua co MA COT THUC SU CHUA (flag_order.flag_column_holds), khong theo ten cot.
 
     khoa {"protocol": 6} | {"port": 80} | {"flag": "RST"}
 """
 from __future__ import annotations
 
 import csv
+import io
+from collections import defaultdict
 
 import common as C
 
@@ -29,22 +30,51 @@ FLAG_QUOTES = {
     "SYN": "SYN: 1 bit Synchronize sequence numbers.",
     "FIN": "FIN: 1 bit No more data from sender.",
 }
-PORT_NOTE = {
-    "id": "PORT-NOT-SERVICE", "relation": "adds",
-    "text": ("The registration does not show which service a flow actually uses: the fact that network traffic is "
-             "flowing to or from an assigned port number does not mean that it is \"good\" traffic, or even that it "
-             "is used by the assigned service."),
-    "support": [{"src": "rfc6335", "locator": "Section 9, Security Considerations",
-                 "quote": ("the fact that network traffic is flowing to or from an assigned port number does not mean "
-                           "that it is \"good\" traffic, or even that it is used by the assigned service.")}],
-}
 ECN_SETUP_QUOTE = ('We call a SYN packet with the ECE and CWR flags set an "ECN-setup SYN packet", and we call a SYN '
                    'packet with at least one of the ECE and CWR flags not set a "non-ECN-setup SYN packet".')
+PORT_NOTE_QUOTE = ("the fact that network traffic is flowing to or from an assigned port number does not mean that it "
+                   "is \"good\" traffic, or even that it is used by the assigned service.")
+PROTOCOL_CODE = [
+    {"src": "cicflowmeter-src-2018", "locator": "PacketReader.java, TCP branch", "quote": "packetInfo.setProtocol(6);"},
+    {"src": "cicflowmeter-src-2018", "locator": "PacketReader.java, UDP branch", "quote": "packetInfo.setProtocol(17);"},
+]
 
 
 def _iana_rows(path):
     with open(path, encoding="utf-8", newline="") as f:
         return list(csv.reader(f))
+
+
+def _row_quote(fields):
+    """Cac o dau cua mot dong IANA, ghi lai DUNG nhu trong file CSV (o co dau phay / xuong dong nam trong "...")."""
+    buf = io.StringIO()
+    csv.writer(buf, lineterminator="").writerow(fields)
+    return buf.getvalue()
+
+
+def _port_passages():
+    rows = [r for r in _iana_rows(C.source_path("iana-ports", "service-names-port-numbers.csv"))[1:]
+            if len(r) > 3 and r[0] and r[1].isdigit() and r[2] in ("tcp", "udp")]
+    by_port = defaultdict(list)
+    for r in rows:
+        by_port[int(r[1])].append(r)
+    out = []
+    for port in sorted(by_port):
+        names = {}                                    # ten dich vu -> (transport, mo ta), giu thu tu registry
+        for r in by_port[port]:
+            entry = names.setdefault(r[0], {"transports": [], "desc": r[3]})
+            if r[2] not in entry["transports"]:
+                entry["transports"].append(r[2])
+        # mo ta IANA co the co xuong dong va dau cham cuoi: gop khoang trang, bo dau cham cuoi (support giu nguyen dong)
+        services = "; ".join(f"'{n}' ({', '.join(e['transports'])})"
+                             + (f": {C.normalize(e['desc']).rstrip('.')}" if e["desc"] else "")
+                             for n, e in names.items())
+        out.append(C.passage(f"H2-PORT-{port}", "H2", {"port": port}, "rendered",
+                             f"Port {port} is registered by IANA as {services}.",
+                             title=f"Port {port} ({next(iter(names))})",
+                             support=[{"src": "iana-ports", "locator": f"service-names-port-numbers.csv, {r[0]} {port}/{r[2]}",
+                                       "quote": _row_quote(r[:4])} for r in by_port[port]]))
+    return out
 
 
 def build(ctx):
@@ -53,36 +83,19 @@ def build(ctx):
     for row in _iana_rows(C.source_path("iana-protocols", "protocol-numbers-1.csv")):
         if row and row[0] in ("6", "17"):
             num, kw, name, ref = row[0], row[1], row[2], row[4]
-            quote = ",".join(row[:5])
             out.append(C.passage(f"H2-PROTO-{num}", "H2", {"protocol": int(num)}, "rendered",
                                  f"IP protocol number {num} is {kw} ({name}), specified in {ref.split(';')[0]}.",
                                  title=f"Protocol {num} ({kw})",
                                  support=[{"src": "iana-protocols", "locator": f"protocol-numbers-1.csv, row {num}",
-                                           "quote": quote}]))
+                                           "quote": _row_quote(row[:5])}] + PROTOCOL_CODE))
     # --- cong -----------------------------------------------------------------------------------
-    rows = _iana_rows(C.source_path("iana-ports", "service-names-port-numbers.csv"))
-    for port in ctx["facts"]["attack_main_ports"]["ports"]:
-        if port == "0":
-            continue
-        hit = [r for r in rows if len(r) > 3 and r[1] == port and r[0] and r[2] in ("tcp", "udp")]
-        if not hit:
-            continue
-        r = hit[0]
-        quote = ",".join(r[:4])
-        # checklist 1.5d: IANA ghi cung dich vu cho tcp va udp (vd 80/udp cung la http), nen khong tach doan
-        # theo giao thuc; them ghi chu RFC 6335 sec. 9: dang ky cong khong cho biet flow dung dich vu nao.
-        # Khoa data attack_main_ports.* (ty le theo nhan, khong dung) bi bo khoi support (checklist D1);
-        # no chi con dung de CHON cong nao co doan.
-        out.append(C.passage(f"H2-PORT-{port}", "H2", {"port": int(port)}, "rendered",
-                             f"Port {port} is registered by IANA as service '{r[0]}': {r[3]}.",
-                             title=f"Port {port} ({r[0]})",
-                             support=[{"src": "iana-ports", "locator": f"service-names-port-numbers.csv, {r[0]} {port}/{r[2]}",
-                                       "quote": quote}],
-                             notes=[PORT_NOTE]))
+    out += _port_passages()
+    out.append(C.passage("H2-PORT-NOTE", "H2", {"port": "note"}, "verbatim", PORT_NOTE_QUOTE,
+                         title="What a registered port does not tell",
+                         source={"src": "rfc6335", "locator": "Section 9, Security Considerations"}))
     # --- co TCP ---------------------------------------------------------------------------------
     for flag, quote in FLAG_QUOTES.items():
-        out.append(C.passage(f"H2-FLAG-{flag}", "H2", {"flag": flag}, "verbatim", quote,
-                             title=f"TCP flag {flag}",
+        out.append(C.passage(f"H2-FLAG-{flag}", "H2", {"flag": flag}, "verbatim", quote, title=f"TCP flag {flag}",
                              source={"src": "rfc9293", "locator": "Section 3.1, Header Format, Control bits"}))
     out.append(C.passage("H2-FLAG-ECN-SETUP", "H2", {"flag": "ECE+CWR"}, "verbatim", ECN_SETUP_QUOTE,
                          title="ECN-setup SYN (ECE and CWR set together)",

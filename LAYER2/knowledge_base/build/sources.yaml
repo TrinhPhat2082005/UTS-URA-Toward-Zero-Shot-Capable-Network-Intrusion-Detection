@@ -1,5 +1,5 @@
-# Nguon cua knowledge base. Moi trich dan trong authored/*.yaml va store/passages.jsonl tro toi
-# mot `id` o day; fetch_sources.py tai file ve $UTS_DATA/kb_sources/<id>/ va ghi sha256 vao
+# Nguon cua knowledge base. Moi trich dan trong mapping/*.yaml, definitions/*.yaml va store/passages.jsonl tro toi
+# mot `id` o day; fetch_sources.py tai file ve $UTS_DATA/kb_sources/raw/<id>/ va ghi sha256 vao
 # store/sources.lock.json. Chi dung nguon thuoc cac tang duoi (xem knowledge_base/README.md).
 #
 # tier:
@@ -69,8 +69,8 @@
   files:
     - {name: BasicFlow.java, url: "https://raw.githubusercontent.com/ahlashkari/CICFlowMeter/6833ccd4ff2953fdd2ab703060d43e349494151e/src/main/java/cic/cs/unb/ca/jnetpcap/BasicFlow.java"}
 
-# Checklist 4.3: ma nguon OpenJDK 8 (tag jdk8-b132, ban GA) cua HashMap.hash() va String.hashCode(); build.gradle
-# cua CICFlowMeter khai bao sourceCompatibility = 1.8. data_facts.java_hashmap_order() tai hien dung hai ham nay.
+# Ma nguon OpenJDK 8 (tag jdk8-b132, ban GA) cua HashMap.hash() va String.hashCode(); build.gradle
+# cua CICFlowMeter khai bao sourceCompatibility = 1.8. flag_order.java_hashmap_order() tai hien dung hai ham nay.
 - id: openjdk8-src
   tier: platform
   title: "OpenJDK 8 source (jdk8u, tag jdk8-b132): java.util.HashMap and java.lang.String"
@@ -189,7 +189,7 @@
 
 # Nguon "system": file trong chinh repo nay, khong tai. Lock ghi sha256 cua noi dung LF (CRLF tren Windows
 # duoc doi ve LF) va commit cuoi cung cham toi file; fetch_sources.py tu choi khoa khi file co thay doi
-# chua commit (checklist 4.5).
+# chua commit.
 - id: layer1-code
   tier: system
   title: "Layer 1 training code of this repository (autoencoder features)"
@@ -198,3 +198,24 @@
   local:
     - {name: autoencoder.py,       path: "LAYER1/03_training/models/autoencoder.py"}
     - {name: train_protocol_b.py,  path: "LAYER1/03_training/train_protocol_b.py"}
+
+# --------------------------------------------------------------------------------------------------
+# KHOA NHAN -> TECHNIQUE (tuan thu tuyet doi): Borisenko et al. 2022, Table II. Paper IEEE co ban quyen,
+# khong tai tu dong duoc: ban PDF dat tay vao $UTS_DATA/kb_sources/raw/borisenko-2022/ (manual: true);
+# fetch_sources.py chi khoa sha256 va kiem file co mat.
+- id: borisenko-2022
+  tier: mapping
+  title: "B. B. Borisenko, S. D. Erokhin, I. D. Martishin, A. S. Fadeev, How the CSE-CIC-IDS2018 Dataset is Related to the MITRE Matrix, 2022 SYNCHROINFO, IEEE, DOI 10.1109/SYNCHROINFO55067.2022.9840920"
+  version: "published version (IEEE Xplore)"
+  license: "IEEE copyright; short quotation of Table II; the PDF is not redistributed"
+  files:
+    - {name: borisenko2022.pdf, manual: true, note: "copy the IEEE PDF here by hand"}
+
+# Tai lieu mo rong cua Engelen et al. 2021 (DistriNet, KU Leuven): mo ta loi dem co TCP cua CICFlowMeter-V3.
+- id: engelen-2021-doc
+  tier: audit
+  title: "G. Engelen, V. Rimmer, W. Joosen, Troubleshooting an Intrusion Detection Dataset: the CICIDS2017 Case Study (IEEE SPW/WTMC 2021), extended documentation"
+  version: "page retrieved on the date in sources.lock.json"
+  license: "Research web page; short quotations for research use with citation"
+  files:
+    - {name: extended_doc.html, url: "https://downloads.distrinet-research.be/WTMC2021/extended_doc.html"}

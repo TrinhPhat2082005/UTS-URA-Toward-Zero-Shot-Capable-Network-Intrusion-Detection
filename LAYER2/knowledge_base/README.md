@@ -1,95 +1,89 @@
 # Knowledge base (KB) cho báo cáo VLM
 
 KB là kho đoạn văn có nguồn mà VLM được trích dẫn khi viết báo cáo cho một alert. Một lần tra cứu
-(`retrieval/store.py`) trả nhãn ℓ* (vote 5-NN trên vector SHAP) và cờ "không có tiền lệ gần";
-`retrieve.py` dùng nhãn, các feature có |φ| lớn nhất và giá trị thô của flow để chọn đoạn.
+(`retrieval/store.py`) trả nhãn ℓ* (vote 5-NN trên vector SHAP) và cờ zero-day; `retrieve.py` dùng nhãn,
+các feature có |φ| lớn nhất và giá trị thô của flow để chọn đoạn.
 
-## Ba nguyên tắc
+## Nguyên tắc
 
-1. **Câu nào tác giả tự viết đều nằm trong `authored/`.** Người duyệt chỉ cần đọc các file đó.
-2. **Câu nào trích nguyên văn đều được code kiểm lại với file nguồn đã khóa sha256** (`build/validate.py`).
-3. **Con số nào về dataset cũng do code tính**, và đoạn gửi VLM chỉ được dùng **claim dừng** (`build/claims.py`):
-   claim phải đúng trên train, val, từng file CSV gốc đã công bố và hai nửa của mỗi nhãn trong từng file.
-   Số không dừng (ví dụ tỉ lệ cổng theo nhãn) bị bỏ hoặc đổi thành phát biểu bất biến. Text gửi VLM và
-   rationale không có `%` (trừ ngưỡng "99.9%"). `build/data_facts.py` chỉ còn số mô tả trên train cho báo cáo.
-4. **Mọi câu trong KB là tiếng Anh** và là trích dẫn nguyên văn hoặc trích dẫn diễn giải có nguồn.
+1. **Một khóa duy nhất:** nhãn → tactic / technique / sub-technique ATT&CK theo **Table II của Borisenko et al.
+   (2022)** (IEEE SYNCHROINFO, DOI 10.1109/SYNCHROINFO55067.2022.9840920), chép nguyên văn vào
+   `mapping/borisenko2022_table2.yaml`. Mọi tri thức tấn công sau đó lấy từ MITRE theo technique ID
+   (ATT&CK v20.1, CAPEC v3.9); không có gì lấy từ dữ liệu CSE-CIC-IDS2018.
+2. **Một loại bằng chứng:** trích dẫn `{src, locator, quote}`; `build/validate.py` kiểm `quote` nằm nguyên văn
+   trong file nguồn đã khóa sha256. Không có quyết định của tác giả, không có số liệu tự tính từ dataset.
+3. **Định nghĩa feature theo đúng CICFlowMeter-V3 mà dataset dùng** (mã nguồn @50d668db); khi ReadMe và mã
+   nguồn khác nhau thì theo mã nguồn. Feature của AE chỉ có định nghĩa chung (tầng latent; MSE tái tạo).
+4. **Mọi câu trong KB là tiếng Anh.**
 
-Mỗi giá trị trong yaml thuộc đúng một loại:
+Ba loại đoạn (`kind`):
 
-| Loại | Dạng | Code kiểm gì |
+| kind | text là gì | code kiểm gì |
 |---|---|---|
-| Trích dẫn | `{src, locator, quote}` | `quote` nằm nguyên văn trong nguồn `src` |
-| Số liệu | `{data: <khóa>}` | khóa có trong `store/data_facts.json` |
-| Quyết định | `{decision, support, rationale}` | có bằng chứng và lý do; nội dung do người duyệt |
-
-Quyết định chỉ có trong `authored/mapping.yaml` (nhãn → technique ATT&CK, CAPEC, đoạn B′ phụ) và
-`authored/mechanism.yaml` (đoạn nào của mô tả ATT&CK được dùng cho mỗi technique).
+| `verbatim` | chuỗi con nguyên văn của nguồn (mô tả ATT&CK/CAPEC, câu RFC, câu ReadMe) | text nằm nguyên văn trong nguồn |
+| `rendered` | code ghép từ các trường nguyên văn (dòng Table II, dòng IANA, analytic ATT&CK, ReadMe) | mỗi support nguyên văn |
+| `defined` | định nghĩa viết trong `definitions/` (cột có ghi chú `replaces`, feature AE, artefact H3) | mỗi support nguyên văn; không có `%` |
 
 ## Cấu trúc
 
 ```
 knowledge_base/
-├── authored/                 TÁC GIẢ QUYẾT (có bằng chứng) — người duyệt đọc các file này
-│   ├── mapping.yaml          14 nhãn → câu hành vi, technique, CAPEC (+ lý do, so với profile cũ)
-│   ├── feature_names.yaml    78 cột CSV ↔ mã nguồn CICFlowMeter 2018 ↔ ReadMe (SINH BẰNG MÁY)
-│   ├── extractor_notes.yaml  ghi chú cách CICFlowMeter 2018 tính từng cột (trích mã nguồn)
-│   ├── extra_features.yaml   Dst Port, Protocol, feature của AE (không có trong ReadMe)
-│   ├── artefacts.yaml        H3: điều kiện `when` + câu cơ chế
-│   └── mechanism.yaml        B′: chọn đoạn liền nhau của mô tả ATT&CK theo technique
+├── mapping/
+│   └── borisenko2022_table2.yaml   14 nhãn: dòng Table II (trích nguyên văn từ PDF) + entries {tactic, technique, sub_technique}
+├── definitions/
+│   ├── feature_names.yaml    78 cột CSV ↔ mã nguồn CICFlowMeter 2018 ↔ ReadMe (SINH BẰNG MÁY: build/draft_features.py)
+│   ├── feature_notes.yaml    ghi chú cách CICFlowMeter 2018 tính cột (replaces | adds), trích mã nguồn + audit
+│   ├── model_features.yaml   Dst Port, Protocol, ae_recon_error, ae_latent (không có trong ReadMe)
+│   └── artefacts.yaml        H3: điều kiện `when` + câu cơ chế
 ├── build/                    CODE: NGUỒN → ĐOẠN VĂN (chạy offline)
-│   ├── sources.yaml          18 nguồn: id, tầng, phiên bản, url, giấy phép, archive_url (nguồn sống)
-│   ├── fetch_sources.py      tải nguồn → $UTS_DATA/kb_sources/, ghi sha256 (file trong repo: sha của nội dung LF + commit)
-│   ├── data_facts.py         số liệu mô tả trên train → store/data_facts.json (chỉ cho báo cáo + danh sách cột trùng)
-│   ├── claims.py             claim số liệu có kiểm tính dừng → store/claims.json (--raw: đọc 10 file CSV gốc)
-│   ├── draft_features.py     sinh authored/feature_names.yaml
-│   ├── common.py, mitre.py   đường dẫn, chuẩn hóa văn bản, đọc STIX/CAPEC (thư viện chuẩn)
-│   ├── part_label.py         A'  thẻ nhãn
-│   ├── part_mechanism.py     B'  technique ATT&CK + CAPEC (nguyên văn)
-│   ├── part_feature.py       H1  định nghĩa feature + ghi chú
-│   ├── part_protocol.py      H2  giao thức, cổng, cờ TCP
-│   ├── part_artefact.py      H3  artefact có điều kiện
-│   ├── part_mitigation.py    G'  mitigation (code điền báo cáo, không đưa VLM)
+│   ├── sources.yaml          20 nguồn: id, tầng, phiên bản, url, giấy phép (borisenko-2022: PDF đặt tay)
+│   ├── fetch_sources.py      tải nguồn → $UTS_DATA/kb_sources/raw/<id>/, ghi sha256 vào store/sources.lock.json
+│   ├── common.py, mitre.py   đường dẫn, chuẩn hóa văn bản, đọc STIX ATT&CK / CAPEC XML / PDF
+│   ├── flag_order.py         cột cờ nào thực chứa cờ nào (thứ tự HashMap của OpenJDK 8)
+│   ├── part_technique.py     M + B
+│   ├── part_feature.py       H1
+│   ├── part_protocol.py      H2
+│   ├── part_artefact.py      H3
+│   ├── part_mitigation.py    G
 │   ├── build_kb.py           chạy mọi phần → store/
-│   └── validate.py           kiểm trích dẫn, số liệu, quyết định, độ phủ
+│   └── validate.py           kiểm khóa sha256, trích dẫn, khóa Borisenko, độ phủ
 ├── store/                    KẾT QUẢ (commit) — Kaggle chỉ cần thư mục này
-│   ├── passages.jsonl        156 đoạn
-│   ├── claims.json           45 claim, giá trị trên từng nguồn, holds_all
-│   ├── index.json            nhãn → technique/CAPEC; cột cờ → cờ thực chứa; cột rời rạc
+│   ├── passages.jsonl        6.223 đoạn
+│   ├── index.json            nhãn → techniques, CAPEC, có analytic mạng không; cột cờ → cờ thực chứa; cột rời rạc
 │   ├── sources.lock.json     sha256 từng file nguồn
-│   ├── data_facts.json       số liệu dataset (+ sha256 của train_full.csv)
-│   └── build_report.md       báo cáo duyệt: mọi câu tác giả viết đặt cạnh bằng chứng
+│   └── build_report.md       báo cáo duyệt: bảng Borisenko, gaps, mọi câu `defined` đặt cạnh bằng chứng
 ├── conditions.py             đánh giá `when` của H3 (không dùng eval)
 ├── retrieve.py               LÚC CHẠY: chọn đoạn cho một alert
-├── tests/test_retrieve.py
-└── attack_profiles/, profiles.py   profile cũ, giữ để tái lập Setup 1/2 đã chạy
+└── tests/test_retrieve.py
 ```
 
 ## Các phần
 
 | Phần | Giúp mục nào của báo cáo | Khóa tra | Nguồn | Số đoạn |
 |---|---|---|---|---|
-| A' thẻ nhãn | 1, 4: ℓ* là hành vi gì | nhãn | trang UNB + số liệu; technique theo `mapping.yaml` | 14 |
-| B' cơ chế | 4: đối chiếu với technique/CAPEC | nhãn → technique, CAPEC | ATT&CK v20.1, CAPEC v3.9 (nguyên văn) | 14 |
-| H1 feature | 3: feature trong waterfall là gì | tên feature | ReadMe + mã nguồn CICFlowMeter 2018; mã Layer 1 | 81 |
-| H2 giao thức/cổng/cờ | 2: hành vi quan sát | Protocol, Dst Port, cột cờ | IANA, RFC 9293, RFC 3168 | 21 |
-| H3 artefact | 5: giới hạn của bằng chứng | điều kiện trên giá trị thô | mã nguồn CICFlowMeter, RFC 9293/7323, JLS + claim | 6 |
-| G' mitigation | 6 (code điền) | technique | quan hệ `mitigates` của ATT&CK | 19 |
+| M mapping | 1, 4: nhãn tiền lệ ứng với technique nào | nhãn | Borisenko et al. 2022, Table II (+ tên ID từ ATT&CK) | 14 |
+| B technique | 4: cơ chế tấn công | technique ID | ATT&CK v20.1: mô tả (`B-<T>`), analytic dùng data component mạng (`B-DET-<T>`); CAPEC v3.9 mà CAPEC liên kết tới technique (`B-CAPEC-n`) | 8 + 4 + 8 |
+| H1 feature | 3: feature trong waterfall là gì | tên feature | ReadMe + mã nguồn CICFlowMeter 2018, Engelen et al. 2021, DistriNet (Liu et al. 2022); mã Layer 1 | 81 |
+| H2 giao thức/cổng/cờ | 2: hành vi quan sát | Protocol, Dst Port, cột cờ | IANA (mọi cổng có đăng ký tcp/udp, không chọn lọc), RFC 6335 §9, RFC 9293, RFC 3168 | 6.077 |
+| H3 artefact | 5: giới hạn của bằng chứng | điều kiện trên giá trị thô | mã nguồn CICFlowMeter, RFC 9293/7323, JLS, IANA | 6 |
+| G mitigation | 6 (code điền, không đưa VLM) | technique ID | quan hệ `mitigates` của ATT&CK | 25 |
 
-Phát hiện quan trọng từ mã nguồn CICFlowMeter 2018, đã đưa vào H1/H2: các cột cờ chỉ phản ánh **gói đầu tiên**
-của flow và bị **hoán vị** so với tên cột (ví dụ cột `SYN Flag Cnt` chứa cờ PSH). Xem `store/build_report.md` mục 6.
+Gaps (build_report §3): T1110.001, T1204.002, T1583.005, T1113 không có analytic ATT&CK nào dùng data component
+mạng, nên các nhãn đó chỉ có `B-<T>` (+ CAPEC nếu có).
+
+Cột cờ: chỉ phản ánh **gói đầu tiên** của flow và bị **hoán vị** so với tên cột (ví dụ `SYN Flag Cnt` chứa PSH,
+`PSH Flag Cnt` chứa SYN). H1 của mỗi cột cờ nói cờ thực chứa; H2 chọn định nghĩa RFC của cờ thực chứa.
 
 ## Build lại và kiểm
 
 ```bash
 export UTS_DATA=<workspace>/LAYER2
 python LAYER2/knowledge_base/build/fetch_sources.py            # tải nguồn (--verify: chỉ so sha256)
-python LAYER2/knowledge_base/build/data_facts.py
-export UTS_BENCH=<workspace>/zeroshot_benchmark                # chỉ cần cho --raw
-python LAYER2/knowledge_base/build/claims.py --raw             # claim trên train, val + 10 file gốc (~15 phút);
-                                                               # không --raw: chỉ tính lại train/val, giữ giá trị file gốc
-python LAYER2/knowledge_base/build/build_kb.py                 # sinh store/ + build_report.md + validate
+python LAYER2/knowledge_base/build/build_kb.py                 # sinh store/ + build_report.md + validate (~5 s)
 python LAYER2/knowledge_base/tests/test_retrieve.py
 ```
+
+PDF Borisenko 2022 không tải tự động: đặt tay vào `$UTS_DATA/kb_sources/raw/borisenko-2022/borisenko2022.pdf`.
 
 ## Dùng lúc chạy
 
@@ -98,51 +92,18 @@ from knowledge_base.retrieve import KnowledgeBase
 sel = KnowledgeBase().select(label, flagged, top_features, x_raw, contrast_features=..., exclude_labels=...)
 sel.passages      # đoạn đưa VLM, theo thứ tự; mỗi đoạn có cite (mã để VLM trích) và role
                   #   (attack_type_background | comparison_only | definition | caveat)
-sel.mitigations   # G' cho code điền mục 6
+sel.techniques    # technique của nhãn theo Borisenko (rỗng khi bật cờ)
+sel.mitigations   # G cho code điền mục 6
 sel.missing       # [{pid, reason}] đoạn lẽ ra được chọn nhưng KB không có
 ```
 
+- Không cờ: M-<nhãn>, rồi với mỗi technique: `B-<T>`, `B-DET-<T>` (nếu có), các `B-CAPEC-n`; G cho mọi technique.
+- Bật cờ zero-day: bỏ M, B giữ nội dung nhưng ẩn tiêu đề và `cite` = `REF-MECH-n`; không có G.
+- Protocol A: nhãn trong `exclude_labels` không bao giờ được chọn.
+- Có đoạn cổng thì kèm `H2-PORT-NOTE` (RFC 6335: cổng đăng ký không cho biết dịch vụ thực dùng).
 - `contrast_features` nhận `row["feature_key"]` của bảng C (`evidence/contrast.py`); dòng latent gộp có khóa `ae_latent`.
 - Giá trị thô không hữu hạn (NaN, Inf, chuỗi) không gây lỗi: H2 của trường đó bị bỏ, điều kiện `when` coi là không đúng.
-- Thiếu `H2-PORT-*` / `H2-PROTO-*` là bình thường (KB chỉ có cổng chính) nên chỉ ghi vào `sel.missing`.
-  Thiếu A′/B′/H1/H3 thì có `warnings.warn`; `KnowledgeBase(strict=True)` thì raise `KeyError` (dùng cho test và experiment).
+- Thiếu `H2-PORT-*` (cổng không đăng ký IANA) / `H2-PROTO-*` (giao thức 0) chỉ ghi vào `sel.missing`.
+  Thiếu M/B/H1/H3 thì có `warnings.warn`; `KnowledgeBase(strict=True)` thì raise `KeyError`.
 
-Chưa nối vào `evidence/build.py` và prompt: việc đó thuộc đợt viết lại prompt (D6).
-
-## Thay đổi
-
-Mỗi thay đổi ghi mã mục trong `workspace/kb_checklist.md` và loại sửa (build = phải chạy lại build; runtime = chỉ đổi lúc chạy).
-
-| Ngày | Mục | Loại | Thay đổi |
-|---|---|---|---|
-| 2026-11-13 | 0.1 | runtime | Bỏ `Selection.required`: đánh giá chỉ dùng faithfulness + groundedness |
-| 2026-11-13 | 2.1 | runtime | `_finite_int` cho Protocol/Dst Port; `conditions._term` coi NaN/Inf/chuỗi là không đúng |
-| 2026-11-13 | 2.2 | runtime | `Selection.missing`, cảnh báo khi thiếu A′/B′/H1/H3, tham số `strict` |
-| 2026-11-13 | 2.3 | runtime | Bảng C có `feature_key`; `_h1_pid` nhận khóa `ae_latent` của dòng latent gộp |
-| 2026-11-13 | D1, 4.10 | build | `build/claims.py` + `store/claims.json`: 45 claim, đều đúng trên train, val, 10 file gốc và hai nửa mỗi nhãn. validate: đoạn gửi VLM chỉ dùng claim dừng (ngoại lệ `flag_column_holds`). Câu "in this dataset" → "in the published CSE-CIC-IDS2018 CSV files" |
-| 2026-11-13 | 4.5 | build | Nguồn `layer1-code`: sha256 của nội dung LF + commit; `fetch_sources` từ chối khóa file có thay đổi chưa commit |
-| 2026-11-13 | 1.1 | build | Ghi chú có `relation: replaces | adds`; 22 cột `replaces` (12 cột cờ, 6 cột bulk, 2 Init Win, Fwd Act Data Pkts, Fwd Seg Size Min) mở đầu bằng nghĩa thật, định nghĩa ReadMe bỏ khỏi text gửi VLM (danh sách: build_report §6b) |
-| 2026-11-13 | 1.2a–d | build | Thẻ BFW, Infiltration, Bot, FTP, SlowHTTPTest viết lại: tách kịch bản, dữ liệu (claim) và audit DistriNet; bỏ "attachment"; không có `%` |
-| 2026-11-13 | 1.3 | build | Thẻ A′ mở đầu "Reference label X (CSE-CIC-IDS2018)" |
-| 2026-11-13 | 1.4 | runtime | Role A′/B′: `attack_type_background` (không cờ) / `comparison_only` (cờ) |
-| 2026-11-13 | 1.5a | build | Nguồn RFC 7323; H3-NOWIN trích đủ câu RFC 9293 về window scaling; đoạn mới H3-WINSCALE (TCP, gói đầu không phải SYN) |
-| 2026-11-13 | 1.5b, 1.5c | build | Ghi chú XN-FIRST-PACKET-TWICE, XN-DOWNUP-INTEGER (`adds`) + claim bất biến |
-| 2026-11-13 | 1.5d | build | Nguồn RFC 6335; mỗi H2-PORT có ghi chú "đăng ký cổng không cho biết dịch vụ thực dùng"; bỏ khóa `attack_main_ports` khỏi support |
-| 2026-11-13 | 1.5e | quyết định | Không ghi số Init Win theo nhãn (không dừng) |
-| 2026-11-13 | 1.6 | build + runtime | Câu technique của A′ ở trường `technique_text`, chỉ nối khi không cờ; khi cờ B′ ẩn tiêu đề, `cite` = REF-MECH-n (U11 = A) |
-| 2026-11-13 | 4.6 | build | validate cấm `%` trong text gửi VLM và trong text/rationale của yaml (trừ "99.9%"); rationale Bot/Infiltration/GoldenEye/Hulk/LOIC-UDP trỏ claim |
-| 2026-11-13 | 6.3 | build | SSH, FTP → CAPEC-16 qua route mới `child_of_linked` (CAPEC-16 ChildOf 49, 49 → T1110.001); BFW giữ CAPEC-49 |
-| 2026-11-13 | nguồn | build | Thêm nguồn `distrinet-2018` (tầng audit, trang đi kèm Liu et al. 2022) |
-| 2026-11-14 | 4.1 | build | `cicflowmeter-src-2018` ghi "dữ liệu khớp code eaa853dd…50d668db", không nói commit nào sinh dataset; thêm `DateFormatter.java`; build_report §6a "version bracket" |
-| 2026-11-14 | 4.2 | build | Timeout 120 s trích từ GUI (FlowOfflinePane, ReadPcapFileWorker) và TrafficFlowWorker, kèm `build.gradle` loại CICFlowMeter.java; XN-FLOW-TIMEOUT, H3-TIMEOUT nói "default" |
-| 2026-11-14 | 4.3 | build | Bản nhẹ: nguồn `openjdk8-src` (HashMap.hash, putVal, String.hashCode tại jdk8-b132), `build.gradle` (Java 1.8), `cicflowmeter-src-2018-06` (BasicFlow @6833ccd4, thứ tự cờ tường minh) làm support của XN-FLAG-ORDER; test đối chiếu thứ tự với claim cột trùng |
-| 2026-11-14 | 4.9 | build | `archive_url` (Wayback) cho UNB, IANA ports, IANA protocols, DistriNet; kết quả so với bản khóa ghi trong comment sources.yaml |
-| 2026-11-14 | 5.1 | build | `quote_ok(src, quote, locator)`: locator bắt đầu bằng tên file của nguồn thì chỉ kiểm trong file đó |
-| 2026-11-14 | 5.2 | build | Câu trích < 5 từ được liệt kê trong build_report §6c để người duyệt |
-| 2026-11-14 | 5.3 | build | HTML: chèn dấu ngăn ô bảng; câu trích không được vượt ô. Câu Table 1 dòng DoS (vượt ô) tách thành hai câu, mỗi ô một câu |
-| 2026-11-14 | 5.4 | build | Mọi quyết định bắt buộc có rationale (`route` không thay được); route `description` chỉ hợp lệ khi CAPEC không liên kết mục nào tới technique |
-| 2026-11-14 | 6.1 | build | Rationale XSS → T1190 trích cả câu XSS và câu "Unlike Exploit Public-Facing Application" của T1189 |
-| 2026-11-14 | 6.2 | build | Không đổi schema; thêm B′ phụ `B-T1018` cho Infiltration (`mechanism_extra`), ẩn ID khi bật cờ, không có G′ |
-| 2026-11-14 | 6.4 | build | Rationale GoldenEye ghi rõ trang dataset không mô tả cách tool hoạt động |
-| 2026-11-14 | 6.5 | build | `authored/mechanism.yaml`: chọn đoạn liền nhau của mô tả ATT&CK theo technique (T1499.002 đoạn 1–2, T1110.001 đoạn 1–4); `normalize` bỏ thẻ `<code>` |
-| 2026-11-14 | 6.6 | quy trình | Phiếu gán mù cho người thứ hai: `workspace/kb_fix/06_second_annotator.md` (chưa có người gán) |
+Chưa nối vào `evidence/build.py` và prompt (bước tiếp theo).
