@@ -107,9 +107,6 @@ META_COLS = ["Label", "Label_Text", "Flow ID", "Src IP", "Src Port", "Dst IP",
 #   reference_sets/protocol_a/<fold>/<variant>.npz   Protocol A, tung fold LOAO (R3, Setup 2)
 REFERENCE_SETS_DIR = os.path.join(DATA_ROOT, "artifacts", "reference_sets")
 REFERENCE_SET_NPZ = os.path.join(REFERENCE_SETS_DIR, "protocol_b", f"{VARIANT}.npz")
-ATTACK_PROFILES_DIR = os.path.join(
-    LAYER2_DIR, "knowledge_base", "attack_profiles"
-)
 
 RAG_TOP_K = 3                     # 3 loai co khoang cach L2 toi flow gan nhat nho nhat
 RAG_NOVELTY_K = 10                # s(q) = trung binh L2 toi 10 lang gieng gan nhat
@@ -194,7 +191,6 @@ def describe():
         ("train_full", TRAIN_FULL_CSV, os.path.exists(TRAIN_FULL_CSV)),
         ("val_full", VAL_BINARY_CSV, os.path.exists(VAL_BINARY_CSV)),
         ("reference R", REFERENCE_SET_NPZ, os.path.exists(REFERENCE_SET_NPZ)),
-        ("profiles", ATTACK_PROFILES_DIR, os.path.isdir(ATTACK_PROFILES_DIR)),
     ]
     missing = []
     for name, val, ok in rows:

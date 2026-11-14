@@ -33,7 +33,7 @@ cách, novelty, cờ zero-day và 5 ảnh.
 | `prompts.py` | 3.7, Fig. `vlmio` | Mọi text gửi VLM và parser: prompt báo cáo 6 mục (demo live), prompt chọn ứng viên (Setup 1/2), context của retriever (`format_retrieval_context`) |
 | `utils/plot_shap.py`, `utils/plot_flow.py` | 3.7 | SHAP waterfall và 4 biểu đồ luồng |
 | `utils/io.py` | | `append_jsonl`, commit của code |
-| `knowledge_base/` | 3.6 | Knowledge base có nguồn (153 đoạn, mọi trích dẫn được kiểm nguyên văn): xem `knowledge_base/README.md`. `attack_profiles/` + `profiles.py` là profile cũ, giữ để tái lập Setup 1/2 đã chạy |
+| `knowledge_base/` | 3.6 | Knowledge base có nguồn (6.238 đoạn; khóa nhãn → technique theo Borisenko 2022 Table II; mọi trích dẫn được kiểm nguyên văn): xem `knowledge_base/README.md`. Profile cũ đã xóa (còn trong git, commit `fe87142`) |
 | `tests/` | | Test của `retrieval/store.py` và `evidence/contrast.py` (gồm kiểm khớp dòng φ ↔ giá trị thô trên R thật) |
 | `pipeline.py` | | `analyze_sample` (hai chặng cho một dòng), lấy mẫu alert, vẽ lại ảnh; vẫn gọi được `pipeline.Layer1Engine/EvidenceBuilder/VLMRunner/append_jsonl` như trước |
 | `metrics.py`, `METRIC.md`, `run_layer2.ipynb`, `_make_notebook.py` | 4.5 | Đợt pilot với prompt báo cáo 6 mục (giữ nguyên) |

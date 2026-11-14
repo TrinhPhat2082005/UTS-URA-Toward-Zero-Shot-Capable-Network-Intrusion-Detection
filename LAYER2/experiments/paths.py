@@ -25,7 +25,6 @@ SPLITS = SPLITS_ROOT / "by_label"               # 14 fold LOAO, moi fold mot thu
 L1_CODE = Path(os.environ.get("UTS_LAYER1_CODE", BENCH / "04_training_v2"))
 L1_ART = Path(os.environ.get("UTS_LAYER1_ART", BENCH / "04_training_v2" / "artifacts"))
 BASE_ART = Path(os.environ.get("UTS_BASELINE_ART", WS / "baselines_friends" / "artifacts"))
-PROFILES = LAYER2 / "knowledge_base" / "attack_profiles"
 ARTIFACTS = Path(os.environ.get("UTS_DATA", LAYER2)) / "artifacts"   # giong config.ARTIFACTS_DIR
 # Tap R cua ca hai protocol: retrieval/reference_set.py (protocol_b_path, protocol_a_path)
 
